@@ -1,7 +1,7 @@
 """
 FileUtils module
 
-Version: 0.4.0
+Version: 0.4.01
 Author: Your Name
 Date: 2023-10-29
 
@@ -20,7 +20,7 @@ Usage:
 
 """
 
-__version__ = "0.4.0"
+__version__ = "0.4.01"
 __author__ = "Topi Järvinen"
 
 import argparse
@@ -129,20 +129,13 @@ class FileUtils:
             print(f"Warning: Error loading configuration file {config_file}: {e}. Using default values.")
             
         return config
-
     def __init__(
         self,
         project_root: Optional[Union[str, Path]] = None,
         config_file: Optional[Union[str, Path]] = None,
     ) -> None:
-        """
-        Initialize FileUtils with project root and configuration.
-        
-        Args:
-            project_root: Optional root directory for the project
-            config_file: Optional path to configuration file
-        """
-        # Set project root first
+        """Initialize FileUtils with project root and configuration."""
+    # Set project root first
         self.project_root = (
             Path(project_root) if project_root else self._get_project_root()
         )
