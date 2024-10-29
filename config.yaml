@@ -1,0 +1,21 @@
+# Configuration settings for FileUtils
+
+csv_delimiter: ","
+encoding: "utf-8"
+quoting: 0  # csv.QUOTE_MINIMAL
+include_timestamp: true
+logging_level: "DEBUG"
+disable_logging: false
+directory_structure:
+  data:
+    - raw
+    - interim
+    - processed
+  reports:
+    - figures
+    - outputs
+  models: []
+  src:
+    - scripts
+    - notebooks
+parquet_compression: "snappy"  # Default compression for parquet files

@@ -1,0 +1,24 @@
+# File operations settings
+output_format: "xlsx"  # Can be "csv" or "xlsx"
+csv_delimiter: ";"
+encoding: "utf-8"
+quoting: 1  # csv.QUOTE_ALL
+include_timestamp: true
+
+# Logging settings
+# logging_level: "WARNING"
+logging_level: "INFO"
+# logging_level: "DEBUG"
+disable_logging: false
+
+# Directory structure
+directory_structure:
+  data:
+    - raw
+    - interim
+    - processed
+  reports:
+    - figures
+    - outputs
+  models: []
+  src: []
