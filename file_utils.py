@@ -20,7 +20,7 @@ Usage:
 
 """
 
-__version__ = "0.4.01"
+__version__ = "0.4.02"
 __author__ = "Topi Järvinen"
 
 import argparse
@@ -30,15 +30,15 @@ import logging
 import logging.config
 from datetime import datetime
 from enum import Enum
+from json import JSONDecodeError
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-from typing import Any, Dict, List, Optional, Union, Tuple
+import pandas as pd
 import yaml
+from jsonschema import ValidationError, validate
 from yaml.parser import ParserError
 from yaml.scanner import ScannerError
-from json import JSONDecodeError
-import pandas as pd
-from jsonschema import validate, ValidationError
 
 DEFAULT_CONFIG = {
     "csv_delimiter": ";",
@@ -84,6 +84,7 @@ class OutputFileType(Enum):
     JSON = "json"
     YAML = "yaml"
 
+
 class FileUtils:
     """
     A utility class for handling file operations in data science projects.
@@ -103,56 +104,82 @@ class FileUtils:
         """
         Load initial configuration without using class methods.
         This is used during initialization before the logger is set up.
-        
+
         Args:
             config_file: Path to the configuration file
-            
+
         Returns:
             Dict: Configuration dictionary
         """
         config = DEFAULT_CONFIG.copy()
-        
+
         if config_file is None:
             return config
-            
+
         config_path = Path(config_file)
         if not config_path.exists():
             return config
-            
+
         try:
-            with open(config_path, 'r', encoding='utf-8') as f:
+            with open(config_path, "r", encoding="utf-8") as f:
                 user_config = yaml.safe_load(f) or {}
-                
+
             validate(instance=user_config, schema=CONFIG_SCHEMA)
             config.update(user_config)
         except Exception as e:
-            print(f"Warning: Error loading configuration file {config_file}: {e}. Using default values.")
-            
+            print(
+                f"Warning: Error loading configuration file {config_file}: {e}. Using default values."
+            )
+
         return config
+
     def __init__(
         self,
         project_root: Optional[Union[str, Path]] = None,
         config_file: Optional[Union[str, Path]] = None,
+        log_level: Optional[str] = None,
     ) -> None:
-        """Initialize FileUtils with project root and configuration."""
-    # Set project root first
+        """Initialize FileUtils.
+
+        Args:
+            project_root: Optional project root directory
+            config_file: Optional configuration file path
+            log_level: Optional logging level (e.g., "DEBUG", "INFO")
+                      If provided, overrides the level from config
+        """
+        """Initialize FileUtils."""
+        # Set project root first
         self.project_root = (
             Path(project_root) if project_root else self._get_project_root()
         )
-        
-        # Load initial configuration before setting up logging
+
+        # Load initial configuration
         self.config = self._load_initial_config(config_file)
-        
+
+        # Create a temporary logger for initialization messages
+        self.logger = logging.getLogger(__name__)
+
+        # Override config logging level if provided
+        if log_level:
+            if "logging" not in self.config:
+                self.config["logging"] = {}
+            self.config["logging"]["level"] = log_level
+
         # Set up logging
         self._setup_logging()
+
         self.logger = logging.getLogger(__name__)
-        
+        self.logger.debug(
+            "Initialized FileUtils with log level: %s",
+            self.config.get("logging", {}).get("level", "INFO"),
+        )
+
         # Log initial information
         self.logger.debug(f"Project root: {self.project_root}")
-        
+
         # Set up directory structure
         self._setup_directory_structure()
-        
+
         # Now that everything is set up, we can load the full configuration
         if config_file:
             self.config = self._load_config(config_file)
@@ -177,18 +204,18 @@ class FileUtils:
     def _load_config(self, config_file: Union[str, Path]) -> Dict:
         """
         Load full configuration from a YAML file after logger is initialized.
-        
+
         Args:
             config_file: Path to the configuration file
-            
+
         Returns:
             Dict: Updated configuration dictionary
         """
         try:
             config_path = Path(config_file)
-            with open(config_path, 'r', encoding=self.config['encoding']) as f:
+            with open(config_path, "r", encoding=self.config["encoding"]) as f:
                 user_config = yaml.safe_load(f) or {}
-                
+
             validate(instance=user_config, schema=CONFIG_SCHEMA)
             self.config.update(user_config)
             self.logger.debug(f"Loaded configuration from {config_file}")
@@ -197,39 +224,45 @@ class FileUtils:
                 f"Error loading configuration file {config_file}: {e}. "
                 "Keeping existing configuration."
             )
-        
+
         return self.config
 
     def _setup_logging(self) -> None:
-        """Set up logging based on configuration settings."""
-        if self.config.get("disable_logging", False):
-            logging.disable(logging.CRITICAL)
-            return
+        """Set up logging configuration."""
+        # Get logging config
+        log_config = self.config.get("logging", {})
 
-        logging_level = self.config.get("logging_level", "INFO").upper()
-        log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        date_format = "%Y-%m-%d %H:%M:%S"
+        # Get level from config (with default fallback)
+        level_str = log_config.get("level", "INFO")
 
-        logging_config = {
-            "version": 1,
-            "disable_existing_loggers": False,
-            "formatters": {
-                "standard": {"format": log_format, "datefmt": date_format},
-            },
-            "handlers": {
-                "console": {
-                    "class": "logging.StreamHandler",
-                    "formatter": "standard",
-                    "level": logging_level,
-                },
-            },
-            "root": {
-                "handlers": ["console"],
-                "level": logging_level,
-            },
-        }
+        # Convert string level to numeric
+        try:
+            level = getattr(logging, level_str.upper())
+        except (AttributeError, TypeError):
+            self.logger.warning(f"Invalid logging level '{level_str}', using INFO")
+            level = logging.INFO
 
-        logging.config.dictConfig(logging_config)
+        # Configure root logger if handlers don't exist
+        root_logger = logging.getLogger()
+
+        if not root_logger.handlers:
+            # Set up handler
+            handler = logging.StreamHandler()
+            formatter = logging.Formatter(
+                log_config.get(
+                    "format", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+                ),
+                datefmt=log_config.get("date_format", "%Y-%m-%d %H:%M:%S"),
+            )
+            handler.setFormatter(formatter)
+            handler.setLevel(level)
+            root_logger.addHandler(handler)
+
+        # Always set the root logger level
+        root_logger.setLevel(level)
+        # Also set level for any existing handlers
+        for handler in root_logger.handlers:
+            handler.setLevel(level)
 
     def get_logger(self, name: str) -> logging.Logger:
         """
@@ -267,48 +300,51 @@ class FileUtils:
             self.logger.warning(f"Data path {path} does not exist. Creating it.")
             path.mkdir(parents=True, exist_ok=True)
         return path
-    
+
     def _get_output_path(
         self,
         file_path: Union[str, Path],
         output_type: str,
         extension: str,
-        include_timestamp: Optional[bool] = None
+        include_timestamp: Optional[bool] = None,
     ) -> Path:
         """
         Utility method to generate output file paths with consistent timestamp handling.
-        
+
         Args:
             file_path: Base file path
             output_type: Type of output directory
             extension: File extension (without dot)
             include_timestamp: Whether to include timestamp
-            
+
         Returns:
             Path: Complete output path
         """
         if include_timestamp is None:
             include_timestamp = self.config.get("include_timestamp", True)
 
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S") if include_timestamp else ""
+        timestamp = (
+            datetime.now().strftime("%Y%m%d_%H%M%S") if include_timestamp else ""
+        )
         file_path = Path(file_path)
-        
+
         # Ensure correct extension
-        if not file_path.suffix or file_path.suffix.lower() != f'.{extension}':
-            file_path = file_path.with_suffix(f'.{extension}')
+        if not file_path.suffix or file_path.suffix.lower() != f".{extension}":
+            file_path = file_path.with_suffix(f".{extension}")
 
         return self.get_data_path(output_type) / (
-            f"{file_path.stem}_{timestamp}{file_path.suffix}" if timestamp
+            f"{file_path.stem}_{timestamp}{file_path.suffix}"
+            if timestamp
             else file_path
         )
 
     # Saving methods
 
     def load_yaml(
-        self, 
-        file_path: Union[str, Path], 
+        self,
+        file_path: Union[str, Path],
         input_type: str = "raw",
-        safe_load: bool = True
+        safe_load: bool = True,
     ) -> Dict[str, Any]:
         """
         Load data from a YAML file.
@@ -319,13 +355,17 @@ class FileUtils:
             yaml_path = file_path
         else:
             yaml_path = self.get_data_path(input_type) / Path(file_path)
-        
+
         if not yaml_path.exists():
             raise FileNotFoundError(f"File does not exist: {yaml_path}")
 
         try:
-            with open(yaml_path, 'r', encoding=self.config['encoding']) as f:
-                data = yaml.safe_load(f) if safe_load else yaml.load(f, Loader=yaml.FullLoader)
+            with open(yaml_path, "r", encoding=self.config["encoding"]) as f:
+                data = (
+                    yaml.safe_load(f)
+                    if safe_load
+                    else yaml.load(f, Loader=yaml.FullLoader)
+                )
                 if data is None:
                     return {}
                 return data
@@ -343,7 +383,7 @@ class FileUtils:
         output_type: str = "processed",
         include_timestamp: Optional[bool] = None,
         default_flow_style: bool = False,
-        sort_keys: bool = False
+        sort_keys: bool = False,
     ) -> Path:
         """
         Save data to a YAML file.
@@ -365,25 +405,28 @@ class FileUtils:
         if include_timestamp is None:
             include_timestamp = self.config.get("include_timestamp", True)
 
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S") if include_timestamp else ""
+        timestamp = (
+            datetime.now().strftime("%Y%m%d_%H%M%S") if include_timestamp else ""
+        )
         file_path = Path(file_path)
-        if not file_path.suffix or file_path.suffix.lower() != '.yaml':
-            file_path = file_path.with_suffix('.yaml')
+        if not file_path.suffix or file_path.suffix.lower() != ".yaml":
+            file_path = file_path.with_suffix(".yaml")
 
         output_path = self.get_data_path(output_type) / (
-            f"{file_path.stem}_{timestamp}{file_path.suffix}" if timestamp
+            f"{file_path.stem}_{timestamp}{file_path.suffix}"
+            if timestamp
             else file_path
         )
 
         try:
-            with open(output_path, 'w', encoding=self.config['encoding']) as f:
+            with open(output_path, "w", encoding=self.config["encoding"]) as f:
                 yaml.dump(
                     data,
                     f,
                     default_flow_style=default_flow_style,
                     sort_keys=sort_keys,
                     allow_unicode=True,
-                    indent=2
+                    indent=2,
                 )
             self.logger.info(f"Data saved to {output_path}")
             return output_path
@@ -392,9 +435,7 @@ class FileUtils:
             raise ValueError(f"Error saving YAML to {output_path}") from e
 
     def load_json(
-        self, 
-        file_path: Union[str, Path], 
-        input_type: str = "raw"
+        self, file_path: Union[str, Path], input_type: str = "raw"
     ) -> Dict[str, Any]:
         """
         Load data from a JSON file.
@@ -415,7 +456,7 @@ class FileUtils:
             raise FileNotFoundError(f"File does not exist: {file_path}")
 
         try:
-            with open(file_path, 'r', encoding=self.config['encoding']) as f:
+            with open(file_path, "r", encoding=self.config["encoding"]) as f:
                 data = json.load(f)
                 return data
         except JSONDecodeError as e:
@@ -432,7 +473,7 @@ class FileUtils:
         output_type: str = "processed",
         include_timestamp: Optional[bool] = None,
         indent: int = 2,
-        ensure_ascii: bool = False
+        ensure_ascii: bool = False,
     ) -> Path:
         """
         Save data to a JSON file.
@@ -454,24 +495,27 @@ class FileUtils:
         if include_timestamp is None:
             include_timestamp = self.config.get("include_timestamp", True)
 
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S") if include_timestamp else ""
+        timestamp = (
+            datetime.now().strftime("%Y%m%d_%H%M%S") if include_timestamp else ""
+        )
         file_path = Path(file_path)
-        if not file_path.suffix or file_path.suffix.lower() != '.json':
-            file_path = file_path.with_suffix('.json')
+        if not file_path.suffix or file_path.suffix.lower() != ".json":
+            file_path = file_path.with_suffix(".json")
 
         output_path = self.get_data_path(output_type) / (
-            f"{file_path.stem}_{timestamp}{file_path.suffix}" if timestamp
+            f"{file_path.stem}_{timestamp}{file_path.suffix}"
+            if timestamp
             else file_path
         )
 
         try:
-            with open(output_path, 'w', encoding=self.config['encoding']) as f:
+            with open(output_path, "w", encoding=self.config["encoding"]) as f:
                 json.dump(
                     data,
                     f,
                     indent=indent,
                     ensure_ascii=ensure_ascii,
-                    default=str  # Handles datetime objects
+                    default=str,  # Handles datetime objects
                 )
             self.logger.info(f"Data saved to {output_path}")
             return output_path
@@ -486,7 +530,7 @@ class FileUtils:
         output_type: str = "processed",  # Changed from output_dir
         file_name: Optional[str] = None,
         include_timestamp: Optional[bool] = None,
-        **kwargs
+        **kwargs,
     ) -> Tuple[Dict[str, str], Optional[str]]:
         """
         Save data to disk in various formats.
@@ -508,16 +552,20 @@ class FileUtils:
 
         if output_filetype in [OutputFileType.YAML, OutputFileType.JSON]:
             if isinstance(data, pd.DataFrame):
-                data = data.to_dict(orient='records')
-            
-            save_method = self.save_yaml if output_filetype == OutputFileType.YAML else self.save_json
+                data = data.to_dict(orient="records")
+
+            save_method = (
+                self.save_yaml
+                if output_filetype == OutputFileType.YAML
+                else self.save_json
+            )
             file_name = file_name or "data"
             saved_path = save_method(
                 data=data,
                 file_path=file_name,
                 output_type=output_type,
                 include_timestamp=include_timestamp,
-                **kwargs
+                **kwargs,
             )
             return {file_name: str(saved_path)}, None
 
@@ -553,7 +601,7 @@ class FileUtils:
             file_path=file_name or "saved_data",
             output_type=output_type,
             extension=output_filetype.value,
-            include_timestamp=include_timestamp
+            include_timestamp=include_timestamp,
         )
 
         if output_filetype == OutputFileType.CSV:
@@ -589,7 +637,7 @@ class FileUtils:
                 file_path=file_name or key,
                 output_type=output_type,
                 extension=output_filetype.value,
-                include_timestamp=include_timestamp
+                include_timestamp=include_timestamp,
             )
 
             if output_filetype == OutputFileType.CSV:
@@ -624,7 +672,7 @@ class FileUtils:
                 )
             else:
                 raise ValueError(f"Unsupported file type: {output_filetype}")
-    
+
     def _save_multiple_dataframes_to_excel(
         self,
         data: Dict[str, pd.DataFrame],
@@ -637,7 +685,7 @@ class FileUtils:
             file_path=file_name or "multiple_sheets",
             output_type=output_type,
             extension="xlsx",
-            include_timestamp=include_timestamp
+            include_timestamp=include_timestamp,
         )
 
         try:
@@ -645,7 +693,7 @@ class FileUtils:
             with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
                 for sheet_name, df in data.items():
                     df.to_excel(writer, sheet_name=sheet_name, index=False)
-            
+
             self.logger.info(f"Data saved to {output_path}")
             return {output_path.stem: str(output_path)}, None
         except Exception as e:
@@ -666,14 +714,16 @@ class FileUtils:
     ) -> Tuple[Dict[str, str], str]:
         """Save multiple DataFrames to separate CSV files and create metadata."""
         saved_files = {}
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S") if include_timestamp else ""
-        
+        timestamp = (
+            datetime.now().strftime("%Y%m%d_%H%M%S") if include_timestamp else ""
+        )
+
         for key, df in data.items():
             output_path = self._get_output_path(
                 file_path=key,
                 output_type=output_type,
                 extension="csv",
-                include_timestamp=include_timestamp
+                include_timestamp=include_timestamp,
             )
             df.to_csv(
                 output_path,
@@ -692,13 +742,13 @@ class FileUtils:
                 for key, path in saved_files.items()
             },
             "config": self.config,
-            "version": __version__
+            "version": __version__,
         }
 
         metadata_path = self.save_json(
             data=metadata,
             file_path=f"metadata_{timestamp}" if timestamp else "metadata",
-            output_type=output_type
+            output_type=output_type,
         )
 
         return saved_files, str(metadata_path)
@@ -712,13 +762,13 @@ class FileUtils:
     ) -> Tuple[Dict[str, str], None]:
         """Save multiple DataFrames to separate Parquet files."""
         saved_files = {}
-        
+
         for key, df in data.items():
             output_path = self._get_output_path(
                 file_path=key,
                 output_type=output_type,
                 extension="parquet",
-                include_timestamp=include_timestamp
+                include_timestamp=include_timestamp,
             )
             df.to_parquet(output_path, index=False)
             saved_files[key] = str(output_path)
@@ -813,37 +863,35 @@ class FileUtils:
             raise ValueError(
                 f"Unable to determine the correct delimiter for {file_path}"
             ) from e
-        
+
     def load_csvs_from_metadata(
-        self,
-        metadata_file: Union[str, Path],
-        input_type: str = "raw"
+        self, metadata_file: Union[str, Path], input_type: str = "raw"
     ) -> Dict[str, pd.DataFrame]:
-            """
-            Load multiple CSV files based on a metadata JSON file.
-            Now using the new JSON loading functionality.
-            """
+        """
+        Load multiple CSV files based on a metadata JSON file.
+        Now using the new JSON loading functionality.
+        """
+        try:
+            metadata = self.load_json(metadata_file, input_type)
+        except (FileNotFoundError, ValueError) as e:
+            raise ValueError(f"Error loading metadata file: {metadata_file}") from e
+
+        dataframes = {}
+        for key, file_info in metadata.get("files", {}).items():
+            file_path = self.get_data_path(input_type) / Path(file_info["path"])
+            if not file_path.exists():
+                self.logger.warning(f"File does not exist: {file_path}")
+                continue
+
             try:
-                metadata = self.load_json(metadata_file, input_type)
-            except (FileNotFoundError, ValueError) as e:
-                raise ValueError(f"Error loading metadata file: {metadata_file}") from e
+                df = self.load_single_file(file_path)
+                dataframes[key] = df
+                self.logger.info(f"Successfully loaded CSV file: {file_path}")
+            except Exception as e:
+                self.logger.error(f"Failed to load CSV file {file_path}: {e}")
+                raise ValueError(f"Error loading CSV file: {file_path}") from e
 
-            dataframes = {}
-            for key, file_info in metadata.get("files", {}).items():
-                file_path = self.get_data_path(input_type) / Path(file_info["path"])
-                if not file_path.exists():
-                    self.logger.warning(f"File does not exist: {file_path}")
-                    continue
-                
-                try:
-                    df = self.load_single_file(file_path)
-                    dataframes[key] = df
-                    self.logger.info(f"Successfully loaded CSV file: {file_path}")
-                except Exception as e:
-                    self.logger.error(f"Failed to load CSV file {file_path}: {e}")
-                    raise ValueError(f"Error loading CSV file: {file_path}") from e
-
-            return dataframes
+        return dataframes
 
     def _load_excel(self, file_path: Path) -> pd.DataFrame:
         """
@@ -910,11 +958,9 @@ class FileUtils:
         except Exception as e:
             self.logger.error(f"Failed to load Parquet file: {e}")
             raise ValueError(f"Error loading Parquet file: {file_path}") from e
-        
+
     def load_excel_sheets(
-        self,
-        file_path: Union[str, Path],
-        input_type: str = "raw"
+        self, file_path: Union[str, Path], input_type: str = "raw"
     ) -> Dict[str, pd.DataFrame]:
         """
         Load all sheets from an Excel file into a dictionary of DataFrames.
@@ -934,7 +980,7 @@ class FileUtils:
             >>> file_utils = FileUtils()
             >>> sheets = file_utils.load_excel_sheets('data.xlsx', input_type='raw')
         """
-   
+
         file_path = self.get_data_path(input_type) / Path(file_path)
         if not file_path.exists():
             raise FileNotFoundError(f"File does not exist: {file_path}")
@@ -948,7 +994,7 @@ class FileUtils:
                     sheet_name: excel_file.parse(sheet_name)
                     for sheet_name in excel_file.sheet_names
                 }
-            
+
             self.logger.info(
                 f"Successfully loaded {len(dataframes)} sheets from {file_path}"
             )
@@ -1010,9 +1056,7 @@ class FileUtils:
         return dataframes
 
     def load_data_from_metadata(
-        self,
-        metadata_file: Union[str, Path],
-        input_type: str = "raw"
+        self, metadata_file: Union[str, Path], input_type: str = "raw"
     ) -> Dict[str, pd.DataFrame]:
         """
         Load multiple files based on a metadata file.
@@ -1105,28 +1149,28 @@ class FileUtils:
         keep_index: bool = False,
     ):
         """
+            Saves given dataframes and optional parameters to individual sheets in an Excel file.
+
+            Args:
+                dataframes_dict (Dict[str, pd.DataFrame]): Dictionary where keys are sheet names and values are dataframes to save.
+                file_name (str): The base name for the Excel file to save, without extension.
+                output_type (str): The type of output ("figures", "models", or "reports").
+                parameters_dict (Optional[Dict]): Dictionary containing parameters to be saved on a separate sheet.
+                include_timestamp (Optional[bool]): Whether to include a timestamp in the filename.
+                keep_index (bool): Whether to include the index in the saved file.
+
+            Raises:
+                TypeError: If the input types are incorrect.
+
+            Examples:
+                >>> file_utils = FileUtils()
+                >>> dfs = {'Sheet1': pd.DataFrame({'A': [1]}), 'Sheet2': pd.DataFrame({'B': [2]})}
+                >>> parameters = {'param1': ('value1', 'comment1'), 'param2': ('value2', 'comment2')}
+                >>> file_utils.save_dataframes_to_excel(dfs, 'output', parameters_dict=parameters)
+
         Saves given dataframes and optional parameters to individual sheets in an Excel file.
-
-        Args:
-            dataframes_dict (Dict[str, pd.DataFrame]): Dictionary where keys are sheet names and values are dataframes to save.
-            file_name (str): The base name for the Excel file to save, without extension.
-            output_type (str): The type of output ("figures", "models", or "reports").
-            parameters_dict (Optional[Dict]): Dictionary containing parameters to be saved on a separate sheet.
-            include_timestamp (Optional[bool]): Whether to include a timestamp in the filename.
-            keep_index (bool): Whether to include the index in the saved file.
-
-        Raises:
-            TypeError: If the input types are incorrect.
-
-        Examples:
-            >>> file_utils = FileUtils()
-            >>> dfs = {'Sheet1': pd.DataFrame({'A': [1]}), 'Sheet2': pd.DataFrame({'B': [2]})}
-            >>> parameters = {'param1': ('value1', 'comment1'), 'param2': ('value2', 'comment2')}
-            >>> file_utils.save_dataframes_to_excel(dfs, 'output', parameters_dict=parameters)
-        
-    Saves given dataframes and optional parameters to individual sheets in an Excel file.
-    Now using the new utility methods for path handling.
-    """
+        Now using the new utility methods for path handling.
+        """
         if not isinstance(dataframes_dict, dict):
             raise TypeError("dataframes_dict must be a dictionary")
 
@@ -1143,7 +1187,7 @@ class FileUtils:
             file_path=file_name,
             output_type=output_type,
             extension="xlsx",
-            include_timestamp=include_timestamp
+            include_timestamp=include_timestamp,
         )
 
         with pd.ExcelWriter(file_path, engine="openpyxl") as writer:
