@@ -156,19 +156,39 @@ class FileUtils:
         # Load initial configuration
         self.config = self._load_initial_config(config_file)
 
-        # Create a temporary logger for initialization messages
+        # Get current root logger level if none specified
+        if log_level is None:
+            root_logger = logging.getLogger()
+            current_level = logging.getLevelName(root_logger.getEffectiveLevel())
+            log_level = current_level
+
         self.logger = logging.getLogger(__name__)
+        if not self.logger.handlers:
+            # Only set up handler if none exists
+            handler = logging.StreamHandler()
+            handler.setLevel(log_level)
+            formatter = logging.Formatter(
+                "%(asctime)s - %(name)s - %(levelname)s [%(filename)s:%(lineno)d] - %(message)s"
+            )
+            handler.setFormatter(formatter)
+            self.logger.addHandler(handler)
+
+        # Set logger level but don't modify root logger
+        self.logger.setLevel(log_level)
+
+        # Create a temporary logger for initialization messages
+        # self.logger = logging.getLogger(__name__)
 
         # Override config logging level if provided
-        if log_level:
-            if "logging" not in self.config:
-                self.config["logging"] = {}
-            self.config["logging"]["level"] = log_level
+        # if log_level:
+        #     if "logging" not in self.config:
+        #         self.config["logging"] = {}
+        #     self.config["logging"]["level"] = log_level
 
-        # Set up logging
-        self._setup_logging()
+        # # Set up logging
+        # self._setup_logging()
 
-        self.logger = logging.getLogger(__name__)
+        # self.logger = logging.getLogger(__name__)
         self.logger.debug(
             "Initialized FileUtils with log level: %s",
             self.config.get("logging", {}).get("level", "INFO"),
@@ -625,7 +645,7 @@ class FileUtils:
     def _save_dataframe_data(
         self,
         data: Dict[str, pd.DataFrame],
-        output_type: str,  # Changed from output_dir
+        output_type: str,
         file_name: Optional[str],
         include_timestamp: Optional[bool],
         output_filetype: OutputFileType,
@@ -640,7 +660,12 @@ class FileUtils:
                 include_timestamp=include_timestamp,
             )
 
-            if output_filetype == OutputFileType.CSV:
+            # Use ExcelWriter even for single DataFrame to preserve sheet name
+            if output_filetype == OutputFileType.XLSX:
+                with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
+                    for sheet_name, dataframe in data.items():
+                        dataframe.to_excel(writer, sheet_name=sheet_name, index=False)
+            elif output_filetype == OutputFileType.CSV:
                 df.to_csv(
                     output_path,
                     index=False,
@@ -648,8 +673,6 @@ class FileUtils:
                     sep=self.config["csv_delimiter"],
                     quoting=self.config["quoting"],
                 )
-            elif output_filetype == OutputFileType.XLSX:
-                df.to_excel(output_path, index=False, engine="openpyxl")
             elif output_filetype == OutputFileType.PARQUET:
                 df.to_parquet(output_path, index=False)
             else:
