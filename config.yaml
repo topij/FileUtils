@@ -1,10 +1,11 @@
 # Configuration settings for FileUtils
 
-csv_delimiter: ","
+# Basic settings
+csv_delimiter: ";"
 encoding: "utf-8"
 quoting: 0  # csv.QUOTE_MINIMAL
 include_timestamp: true
-logging_level: "DEBUG"
+logging_level: "INFO"
 disable_logging: false
 
 # Directory structure
@@ -13,6 +14,7 @@ directory_structure:
     - raw
     - interim
     - processed
+    - configurations
   reports:
     - figures
     - outputs

@@ -20,7 +20,7 @@ Usage:
 
 """
 
-__version__ = "0.4.02"
+__version__ = "0.4.1"
 __author__ = "Topi Järvinen"
 
 import argparse
@@ -1249,6 +1249,23 @@ class FileUtils:
         )
         file_utils._setup_directory_structure()
         file_utils.logger.info("Directory structure created successfully.")
+
+    @classmethod
+    def create_azure_utils(
+        cls,
+        connection_string: Optional[str] = None,
+        project_root: Optional[Union[str, Path]] = None,
+    ) -> "AzureFileUtils":
+        """Factory method to create Azure-enabled FileUtils instance."""
+        try:
+            from .azure_file_utils import AzureFileUtils
+
+            return AzureFileUtils(connection_string, project_root)
+        except ImportError:
+            logger.warning(
+                "Azure dependencies not installed. Using standard FileUtils."
+            )
+            return cls(project_root)
 
 
 def main():
