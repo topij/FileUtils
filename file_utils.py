@@ -270,7 +270,8 @@ class FileUtils:
             handler = logging.StreamHandler()
             formatter = logging.Formatter(
                 log_config.get(
-                    "format", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+                    "format",
+                    "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
                 ),
                 datefmt=log_config.get("date_format", "%Y-%m-%d %H:%M:%S"),
             )
@@ -1219,7 +1220,9 @@ class FileUtils:
 
             if parameters_dict:
                 params_df = pd.DataFrame.from_dict(
-                    parameters_dict, orient="index", columns=["Value", "Comment"]
+                    parameters_dict,
+                    orient="index",
+                    columns=["Value", "Comment"],
                 )
                 params_df.reset_index(inplace=True)
                 params_df.rename(columns={"index": "Parameter Name"}, inplace=True)

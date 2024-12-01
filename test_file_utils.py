@@ -150,11 +150,15 @@ class TestFileUtils(unittest.TestCase):
 
         # Create FileUtils with DEBUG override
         file_utils = FileUtils(
-            project_root=self.temp_dir, config_file=config_path, log_level="DEBUG"
+            project_root=self.temp_dir,
+            config_file=config_path,
+            log_level="DEBUG",
         )
 
         # Check if DEBUG level was applied
-        self.assertEqual(logging.getLevelName(logging.getLogger().level), "DEBUG")
+        self.assertEqual(
+            logging.getLevelName(logging.getLogger().level), "DEBUG"
+        )
 
     def tearDown(self):
         """Clean up temporary directory and restore logging after tests."""
@@ -284,8 +288,12 @@ class TestFileUtils(unittest.TestCase):
             )
 
             self.assertEqual(len(loaded_dfs), 2)
-            pd.testing.assert_frame_equal(loaded_dfs["sheet1"], df_dict["sheet1"])
-            pd.testing.assert_frame_equal(loaded_dfs["sheet2"], df_dict["sheet2"])
+            pd.testing.assert_frame_equal(
+                loaded_dfs["sheet1"], df_dict["sheet1"]
+            )
+            pd.testing.assert_frame_equal(
+                loaded_dfs["sheet2"], df_dict["sheet2"]
+            )
         finally:
             # Clean up references
             df_dict.clear()
@@ -321,7 +329,9 @@ class TestFileUtils(unittest.TestCase):
             )
 
         # Test invalid YAML
-        invalid_yaml_path = self.temp_dir / "data" / "processed" / "invalid.yaml"
+        invalid_yaml_path = (
+            self.temp_dir / "data" / "processed" / "invalid.yaml"
+        )
         invalid_yaml_path.parent.mkdir(parents=True, exist_ok=True)
         with open(invalid_yaml_path, "w") as f:
             f.write("invalid: yaml: content: {[")
