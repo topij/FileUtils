@@ -6,6 +6,8 @@ quoting: 0  # csv.QUOTE_MINIMAL
 include_timestamp: true
 logging_level: "DEBUG"
 disable_logging: false
+
+# Directory structure
 directory_structure:
   data:
     - raw
@@ -18,4 +20,20 @@ directory_structure:
   src:
     - scripts
     - notebooks
-parquet_compression: "snappy"  # Default compression for parquet files
+
+# File format settings
+parquet_compression: "snappy"
+
+# Azure Storage settings (optional)
+azure:
+  enabled: false  # Set to true to enable Azure storage
+  container_mapping:
+    raw: "raw-data"
+    processed: "processed-data"
+    interim: "interim-data"
+    parameters: "parameters"
+    configurations: "configurations"
+  retry_settings:
+    max_retries: 3
+    retry_delay: 1
+  connection_string: ""  # Set via environment variable
