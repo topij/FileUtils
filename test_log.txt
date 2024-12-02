@@ -1,0 +1,767 @@
+Warning: Error loading configuration file C:\Users\tja\AppData\Local\Temp\tmpl672_3dg\config.yaml: 'logging_level' is a required property
+
+Failed validating 'required' in schema:
+    {'type': 'object',
+     'properties': {'csv_delimiter': {'type': 'string'},
+                    'encoding': {'type': 'string'},
+                    'quoting': {'type': 'integer'},
+                    'include_timestamp': {'type': 'boolean'},
+                    'logging_level': {'type': 'string'},
+                    'disable_logging': {'type': 'boolean'},
+                    'directory_structure': {'type': 'object'}},
+     'required': ['csv_delimiter',
+                  'encoding',
+                  'quoting',
+                  'include_timestamp',
+                  'logging_level',
+                  'disable_logging']}
+
+On instance:
+    {'csv_delimiter': ',',
+     'directory_structure': {'data': ['raw', 'interim', 'processed'],
+                             'models': [],
+                             'reports': ['figures', 'outputs'],
+                             'src': []},
+     'disable_logging': False,
+     'encoding': 'utf-8',
+     'include_timestamp': True,
+     'logging': {'format': '%(asctime)s - %(name)s - %(levelname)s - '
+                           '%(message)s',
+                 'level': 'INFO'},
+     'quoting': 0}. Using default values.
+Warning: Error loading configuration file C:\Users\tja\AppData\Local\Temp\tmpl672_3dg\config.yaml: 'logging_level' is a required property
+
+Failed validating 'required' in schema:
+    {'type': 'object',
+     'properties': {'csv_delimiter': {'type': 'string'},
+                    'encoding': {'type': 'string'},
+                    'quoting': {'type': 'integer'},
+                    'include_timestamp': {'type': 'boolean'},
+                    'logging_level': {'type': 'string'},
+                    'disable_logging': {'type': 'boolean'},
+                    'directory_structure': {'type': 'object'}},
+     'required': ['csv_delimiter',
+                  'encoding',
+                  'quoting',
+                  'include_timestamp',
+                  'logging_level',
+                  'disable_logging']}
+
+On instance:
+    {'csv_delimiter': ',',
+     'directory_structure': {'data': ['raw', 'interim', 'processed'],
+                             'models': [],
+                             'reports': ['figures', 'outputs'],
+                             'src': []},
+     'disable_logging': False,
+     'encoding': 'utf-8',
+     'include_timestamp': True,
+     'logging': {'format': '%(asctime)s - %(name)s - %(levelname)s - '
+                           '%(message)s',
+                 'level': 'INFO'},
+     'quoting': 0}. Using default values.
+Warning: Error loading configuration file C:\Users\tja\AppData\Local\Temp\tmp7lb9bx34\config.yaml: 'logging_level' is a required property
+
+Failed validating 'required' in schema:
+    {'type': 'object',
+     'properties': {'csv_delimiter': {'type': 'string'},
+                    'encoding': {'type': 'string'},
+                    'quoting': {'type': 'integer'},
+                    'include_timestamp': {'type': 'boolean'},
+                    'logging_level': {'type': 'string'},
+                    'disable_logging': {'type': 'boolean'},
+                    'directory_structure': {'type': 'object'}},
+     'required': ['csv_delimiter',
+                  'encoding',
+                  'quoting',
+                  'include_timestamp',
+                  'logging_level',
+                  'disable_logging']}
+
+On instance:
+    {'csv_delimiter': ',',
+     'directory_structure': {'data': ['raw', 'interim', 'processed'],
+                             'models': [],
+                             'reports': ['figures', 'outputs'],
+                             'src': []},
+     'disable_logging': False,
+     'encoding': 'utf-8',
+     'include_timestamp': True,
+     'logging': {'format': '%(asctime)s - %(name)s - %(levelname)s - '
+                           '%(message)s',
+                 'level': 'INFO'},
+     'quoting': 0}. Using default values.
+Warning: Error loading configuration file C:\Users\tja\AppData\Local\Temp\tmp7lb9bx34\config.yaml: 'logging_level' is a required property
+
+Failed validating 'required' in schema:
+    {'type': 'object',
+     'properties': {'csv_delimiter': {'type': 'string'},
+                    'encoding': {'type': 'string'},
+                    'quoting': {'type': 'integer'},
+                    'include_timestamp': {'type': 'boolean'},
+                    'logging_level': {'type': 'string'},
+                    'disable_logging': {'type': 'boolean'},
+                    'directory_structure': {'type': 'object'}},
+     'required': ['csv_delimiter',
+                  'encoding',
+                  'quoting',
+                  'include_timestamp',
+                  'logging_level',
+                  'disable_logging']}
+
+On instance:
+    {'csv_delimiter': ',',
+     'directory_structure': {'data': ['raw', 'interim', 'processed'],
+                             'models': [],
+                             'reports': ['figures', 'outputs'],
+                             'src': []},
+     'disable_logging': False,
+     'encoding': 'utf-8',
+     'include_timestamp': True,
+     'logging': {'format': '%(asctime)s - %(name)s - %(levelname)s - '
+                           '%(message)s',
+                 'level': 'INFO'},
+     'quoting': 0}. Using default values.
+Warning: Error loading configuration file C:\Users\tja\AppData\Local\Temp\tmpwmp1vbxb\config.yaml: 'logging_level' is a required property
+
+Failed validating 'required' in schema:
+    {'type': 'object',
+     'properties': {'csv_delimiter': {'type': 'string'},
+                    'encoding': {'type': 'string'},
+                    'quoting': {'type': 'integer'},
+                    'include_timestamp': {'type': 'boolean'},
+                    'logging_level': {'type': 'string'},
+                    'disable_logging': {'type': 'boolean'},
+                    'directory_structure': {'type': 'object'}},
+     'required': ['csv_delimiter',
+                  'encoding',
+                  'quoting',
+                  'include_timestamp',
+                  'logging_level',
+                  'disable_logging']}
+
+On instance:
+    {'csv_delimiter': ',',
+     'directory_structure': {'data': ['raw', 'interim', 'processed'],
+                             'models': [],
+                             'reports': ['figures', 'outputs'],
+                             'src': []},
+     'disable_logging': False,
+     'encoding': 'utf-8',
+     'include_timestamp': True,
+     'logging': {'format': '%(asctime)s - %(name)s - %(levelname)s - '
+                           '%(message)s',
+                 'level': 'INFO'},
+     'quoting': 0}. Using default values.
+Warning: Error loading configuration file C:\Users\tja\AppData\Local\Temp\tmpwmp1vbxb\config.yaml: 'logging_level' is a required property
+
+Failed validating 'required' in schema:
+    {'type': 'object',
+     'properties': {'csv_delimiter': {'type': 'string'},
+                    'encoding': {'type': 'string'},
+                    'quoting': {'type': 'integer'},
+                    'include_timestamp': {'type': 'boolean'},
+                    'logging_level': {'type': 'string'},
+                    'disable_logging': {'type': 'boolean'},
+                    'directory_structure': {'type': 'object'}},
+     'required': ['csv_delimiter',
+                  'encoding',
+                  'quoting',
+                  'include_timestamp',
+                  'logging_level',
+                  'disable_logging']}
+
+On instance:
+    {'csv_delimiter': ',',
+     'directory_structure': {'data': ['raw', 'interim', 'processed'],
+                             'models': [],
+                             'reports': ['figures', 'outputs'],
+                             'src': []},
+     'disable_logging': False,
+     'encoding': 'utf-8',
+     'include_timestamp': True,
+     'logging': {'format': '%(asctime)s - %(name)s - %(levelname)s - '
+                           '%(message)s',
+                 'level': 'INFO'},
+     'quoting': 0}. Using default values.
+Warning: Error loading configuration file C:\Users\tja\AppData\Local\Temp\tmppdhpqzel\config.yaml: 'logging_level' is a required property
+
+Failed validating 'required' in schema:
+    {'type': 'object',
+     'properties': {'csv_delimiter': {'type': 'string'},
+                    'encoding': {'type': 'string'},
+                    'quoting': {'type': 'integer'},
+                    'include_timestamp': {'type': 'boolean'},
+                    'logging_level': {'type': 'string'},
+                    'disable_logging': {'type': 'boolean'},
+                    'directory_structure': {'type': 'object'}},
+     'required': ['csv_delimiter',
+                  'encoding',
+                  'quoting',
+                  'include_timestamp',
+                  'logging_level',
+                  'disable_logging']}
+
+On instance:
+    {'csv_delimiter': ',',
+     'directory_structure': {'data': ['raw', 'interim', 'processed'],
+                             'models': [],
+                             'reports': ['figures', 'outputs'],
+                             'src': []},
+     'disable_logging': False,
+     'encoding': 'utf-8',
+     'include_timestamp': True,
+     'logging': {'format': '%(asctime)s - %(name)s - %(levelname)s - '
+                           '%(message)s',
+                 'level': 'INFO'},
+     'quoting': 0}. Using default values.
+Warning: Error loading configuration file C:\Users\tja\AppData\Local\Temp\tmppdhpqzel\config.yaml: 'logging_level' is a required property
+
+Failed validating 'required' in schema:
+    {'type': 'object',
+     'properties': {'csv_delimiter': {'type': 'string'},
+                    'encoding': {'type': 'string'},
+                    'quoting': {'type': 'integer'},
+                    'include_timestamp': {'type': 'boolean'},
+                    'logging_level': {'type': 'string'},
+                    'disable_logging': {'type': 'boolean'},
+                    'directory_structure': {'type': 'object'}},
+     'required': ['csv_delimiter',
+                  'encoding',
+                  'quoting',
+                  'include_timestamp',
+                  'logging_level',
+                  'disable_logging']}
+
+On instance:
+    {'csv_delimiter': ',',
+     'directory_structure': {'data': ['raw', 'interim', 'processed'],
+                             'models': [],
+                             'reports': ['figures', 'outputs'],
+                             'src': []},
+     'disable_logging': False,
+     'encoding': 'utf-8',
+     'include_timestamp': True,
+     'logging': {'format': '%(asctime)s - %(name)s - %(levelname)s - '
+                           '%(message)s',
+                 'level': 'INFO'},
+     'quoting': 0}. Using default values.
+Warning: Error loading configuration file C:\Users\tja\AppData\Local\Temp\tmpv6_aee2j\config.yaml: 'logging_level' is a required property
+
+Failed validating 'required' in schema:
+    {'type': 'object',
+     'properties': {'csv_delimiter': {'type': 'string'},
+                    'encoding': {'type': 'string'},
+                    'quoting': {'type': 'integer'},
+                    'include_timestamp': {'type': 'boolean'},
+                    'logging_level': {'type': 'string'},
+                    'disable_logging': {'type': 'boolean'},
+                    'directory_structure': {'type': 'object'}},
+     'required': ['csv_delimiter',
+                  'encoding',
+                  'quoting',
+                  'include_timestamp',
+                  'logging_level',
+                  'disable_logging']}
+
+On instance:
+    {'csv_delimiter': ',',
+     'directory_structure': {'data': ['raw', 'interim', 'processed'],
+                             'models': [],
+                             'reports': ['figures', 'outputs'],
+                             'src': []},
+     'disable_logging': False,
+     'encoding': 'utf-8',
+     'include_timestamp': True,
+     'logging': {'format': '%(asctime)s - %(name)s - %(levelname)s - '
+                           '%(message)s',
+                 'level': 'INFO'},
+     'quoting': 0}. Using default values.
+Warning: Error loading configuration file C:\Users\tja\AppData\Local\Temp\tmpv6_aee2j\config.yaml: 'logging_level' is a required property
+
+Failed validating 'required' in schema:
+    {'type': 'object',
+     'properties': {'csv_delimiter': {'type': 'string'},
+                    'encoding': {'type': 'string'},
+                    'quoting': {'type': 'integer'},
+                    'include_timestamp': {'type': 'boolean'},
+                    'logging_level': {'type': 'string'},
+                    'disable_logging': {'type': 'boolean'},
+                    'directory_structure': {'type': 'object'}},
+     'required': ['csv_delimiter',
+                  'encoding',
+                  'quoting',
+                  'include_timestamp',
+                  'logging_level',
+                  'disable_logging']}
+
+On instance:
+    {'csv_delimiter': ',',
+     'directory_structure': {'data': ['raw', 'interim', 'processed'],
+                             'models': [],
+                             'reports': ['figures', 'outputs'],
+                             'src': []},
+     'disable_logging': False,
+     'encoding': 'utf-8',
+     'include_timestamp': True,
+     'logging': {'format': '%(asctime)s - %(name)s - %(levelname)s - '
+                           '%(message)s',
+                 'level': 'INFO'},
+     'quoting': 0}. Using default values.
+Warning: Error loading configuration file C:\Users\tja\AppData\Local\Temp\tmpv6_aee2j\config_override.yaml: 'include_timestamp' is a required property
+
+Failed validating 'required' in schema:
+    {'type': 'object',
+     'properties': {'csv_delimiter': {'type': 'string'},
+                    'encoding': {'type': 'string'},
+                    'quoting': {'type': 'integer'},
+                    'include_timestamp': {'type': 'boolean'},
+                    'logging_level': {'type': 'string'},
+                    'disable_logging': {'type': 'boolean'},
+                    'directory_structure': {'type': 'object'}},
+     'required': ['csv_delimiter',
+                  'encoding',
+                  'quoting',
+                  'include_timestamp',
+                  'logging_level',
+                  'disable_logging']}
+
+On instance:
+    {'csv_delimiter': ',',
+     'encoding': 'utf-8',
+     'logging': {'level': 'INFO'},
+     'quoting': 0}. Using default values.
+Warning: Error loading configuration file C:\Users\tja\AppData\Local\Temp\tmp33t9tjfx\config.yaml: 'logging_level' is a required property
+
+Failed validating 'required' in schema:
+    {'type': 'object',
+     'properties': {'csv_delimiter': {'type': 'string'},
+                    'encoding': {'type': 'string'},
+                    'quoting': {'type': 'integer'},
+                    'include_timestamp': {'type': 'boolean'},
+                    'logging_level': {'type': 'string'},
+                    'disable_logging': {'type': 'boolean'},
+                    'directory_structure': {'type': 'object'}},
+     'required': ['csv_delimiter',
+                  'encoding',
+                  'quoting',
+                  'include_timestamp',
+                  'logging_level',
+                  'disable_logging']}
+
+On instance:
+    {'csv_delimiter': ',',
+     'directory_structure': {'data': ['raw', 'interim', 'processed'],
+                             'models': [],
+                             'reports': ['figures', 'outputs'],
+                             'src': []},
+     'disable_logging': False,
+     'encoding': 'utf-8',
+     'include_timestamp': True,
+     'logging': {'format': '%(asctime)s - %(name)s - %(levelname)s - '
+                           '%(message)s',
+                 'level': 'INFO'},
+     'quoting': 0}. Using default values.
+Warning: Error loading configuration file C:\Users\tja\AppData\Local\Temp\tmp33t9tjfx\config.yaml: 'logging_level' is a required property
+
+Failed validating 'required' in schema:
+    {'type': 'object',
+     'properties': {'csv_delimiter': {'type': 'string'},
+                    'encoding': {'type': 'string'},
+                    'quoting': {'type': 'integer'},
+                    'include_timestamp': {'type': 'boolean'},
+                    'logging_level': {'type': 'string'},
+                    'disable_logging': {'type': 'boolean'},
+                    'directory_structure': {'type': 'object'}},
+     'required': ['csv_delimiter',
+                  'encoding',
+                  'quoting',
+                  'include_timestamp',
+                  'logging_level',
+                  'disable_logging']}
+
+On instance:
+    {'csv_delimiter': ',',
+     'directory_structure': {'data': ['raw', 'interim', 'processed'],
+                             'models': [],
+                             'reports': ['figures', 'outputs'],
+                             'src': []},
+     'disable_logging': False,
+     'encoding': 'utf-8',
+     'include_timestamp': True,
+     'logging': {'format': '%(asctime)s - %(name)s - %(levelname)s - '
+                           '%(message)s',
+                 'level': 'INFO'},
+     'quoting': 0}. Using default values.
+Warning: Error loading configuration file C:\Users\tja\AppData\Local\Temp\tmpgv98nb0w\config.yaml: 'logging_level' is a required property
+
+Failed validating 'required' in schema:
+    {'type': 'object',
+     'properties': {'csv_delimiter': {'type': 'string'},
+                    'encoding': {'type': 'string'},
+                    'quoting': {'type': 'integer'},
+                    'include_timestamp': {'type': 'boolean'},
+                    'logging_level': {'type': 'string'},
+                    'disable_logging': {'type': 'boolean'},
+                    'directory_structure': {'type': 'object'}},
+     'required': ['csv_delimiter',
+                  'encoding',
+                  'quoting',
+                  'include_timestamp',
+                  'logging_level',
+                  'disable_logging']}
+
+On instance:
+    {'csv_delimiter': ',',
+     'directory_structure': {'data': ['raw', 'interim', 'processed'],
+                             'models': [],
+                             'reports': ['figures', 'outputs'],
+                             'src': []},
+     'disable_logging': False,
+     'encoding': 'utf-8',
+     'include_timestamp': True,
+     'logging': {'format': '%(asctime)s - %(name)s - %(levelname)s - '
+                           '%(message)s',
+                 'level': 'INFO'},
+     'quoting': 0}. Using default values.
+Warning: Error loading configuration file C:\Users\tja\AppData\Local\Temp\tmpgv98nb0w\config.yaml: 'logging_level' is a required property
+
+Failed validating 'required' in schema:
+    {'type': 'object',
+     'properties': {'csv_delimiter': {'type': 'string'},
+                    'encoding': {'type': 'string'},
+                    'quoting': {'type': 'integer'},
+                    'include_timestamp': {'type': 'boolean'},
+                    'logging_level': {'type': 'string'},
+                    'disable_logging': {'type': 'boolean'},
+                    'directory_structure': {'type': 'object'}},
+     'required': ['csv_delimiter',
+                  'encoding',
+                  'quoting',
+                  'include_timestamp',
+                  'logging_level',
+                  'disable_logging']}
+
+On instance:
+    {'csv_delimiter': ',',
+     'directory_structure': {'data': ['raw', 'interim', 'processed'],
+                             'models': [],
+                             'reports': ['figures', 'outputs'],
+                             'src': []},
+     'disable_logging': False,
+     'encoding': 'utf-8',
+     'include_timestamp': True,
+     'logging': {'format': '%(asctime)s - %(name)s - %(levelname)s - '
+                           '%(message)s',
+                 'level': 'INFO'},
+     'quoting': 0}. Using default values.
+Warning: Error loading configuration file C:\Users\tja\AppData\Local\Temp\tmps_cump7n\config.yaml: 'logging_level' is a required property
+
+Failed validating 'required' in schema:
+    {'type': 'object',
+     'properties': {'csv_delimiter': {'type': 'string'},
+                    'encoding': {'type': 'string'},
+                    'quoting': {'type': 'integer'},
+                    'include_timestamp': {'type': 'boolean'},
+                    'logging_level': {'type': 'string'},
+                    'disable_logging': {'type': 'boolean'},
+                    'directory_structure': {'type': 'object'}},
+     'required': ['csv_delimiter',
+                  'encoding',
+                  'quoting',
+                  'include_timestamp',
+                  'logging_level',
+                  'disable_logging']}
+
+On instance:
+    {'csv_delimiter': ',',
+     'directory_structure': {'data': ['raw', 'interim', 'processed'],
+                             'models': [],
+                             'reports': ['figures', 'outputs'],
+                             'src': []},
+     'disable_logging': False,
+     'encoding': 'utf-8',
+     'include_timestamp': True,
+     'logging': {'format': '%(asctime)s - %(name)s - %(levelname)s - '
+                           '%(message)s',
+                 'level': 'INFO'},
+     'quoting': 0}. Using default values.
+Warning: Error loading configuration file C:\Users\tja\AppData\Local\Temp\tmps_cump7n\config.yaml: 'logging_level' is a required property
+
+Failed validating 'required' in schema:
+    {'type': 'object',
+     'properties': {'csv_delimiter': {'type': 'string'},
+                    'encoding': {'type': 'string'},
+                    'quoting': {'type': 'integer'},
+                    'include_timestamp': {'type': 'boolean'},
+                    'logging_level': {'type': 'string'},
+                    'disable_logging': {'type': 'boolean'},
+                    'directory_structure': {'type': 'object'}},
+     'required': ['csv_delimiter',
+                  'encoding',
+                  'quoting',
+                  'include_timestamp',
+                  'logging_level',
+                  'disable_logging']}
+
+On instance:
+    {'csv_delimiter': ',',
+     'directory_structure': {'data': ['raw', 'interim', 'processed'],
+                             'models': [],
+                             'reports': ['figures', 'outputs'],
+                             'src': []},
+     'disable_logging': False,
+     'encoding': 'utf-8',
+     'include_timestamp': True,
+     'logging': {'format': '%(asctime)s - %(name)s - %(levelname)s - '
+                           '%(message)s',
+                 'level': 'INFO'},
+     'quoting': 0}. Using default values.
+Warning: Error loading configuration file C:\Users\tja\AppData\Local\Temp\tmpil71gfnk\config.yaml: 'logging_level' is a required property
+
+Failed validating 'required' in schema:
+    {'type': 'object',
+     'properties': {'csv_delimiter': {'type': 'string'},
+                    'encoding': {'type': 'string'},
+                    'quoting': {'type': 'integer'},
+                    'include_timestamp': {'type': 'boolean'},
+                    'logging_level': {'type': 'string'},
+                    'disable_logging': {'type': 'boolean'},
+                    'directory_structure': {'type': 'object'}},
+     'required': ['csv_delimiter',
+                  'encoding',
+                  'quoting',
+                  'include_timestamp',
+                  'logging_level',
+                  'disable_logging']}
+
+On instance:
+    {'csv_delimiter': ',',
+     'directory_structure': {'data': ['raw', 'interim', 'processed'],
+                             'models': [],
+                             'reports': ['figures', 'outputs'],
+                             'src': []},
+     'disable_logging': False,
+     'encoding': 'utf-8',
+     'include_timestamp': True,
+     'logging': {'format': '%(asctime)s - %(name)s - %(levelname)s - '
+                           '%(message)s',
+                 'level': 'INFO'},
+     'quoting': 0}. Using default values.
+Warning: Error loading configuration file C:\Users\tja\AppData\Local\Temp\tmpil71gfnk\config.yaml: 'logging_level' is a required property
+
+Failed validating 'required' in schema:
+    {'type': 'object',
+     'properties': {'csv_delimiter': {'type': 'string'},
+                    'encoding': {'type': 'string'},
+                    'quoting': {'type': 'integer'},
+                    'include_timestamp': {'type': 'boolean'},
+                    'logging_level': {'type': 'string'},
+                    'disable_logging': {'type': 'boolean'},
+                    'directory_structure': {'type': 'object'}},
+     'required': ['csv_delimiter',
+                  'encoding',
+                  'quoting',
+                  'include_timestamp',
+                  'logging_level',
+                  'disable_logging']}
+
+On instance:
+    {'csv_delimiter': ',',
+     'directory_structure': {'data': ['raw', 'interim', 'processed'],
+                             'models': [],
+                             'reports': ['figures', 'outputs'],
+                             'src': []},
+     'disable_logging': False,
+     'encoding': 'utf-8',
+     'include_timestamp': True,
+     'logging': {'format': '%(asctime)s - %(name)s - %(levelname)s - '
+                           '%(message)s',
+                 'level': 'INFO'},
+     'quoting': 0}. Using default values.
+Warning: Error loading configuration file C:\Users\tja\AppData\Local\Temp\tmp3ulzoagt\config.yaml: 'logging_level' is a required property
+
+Failed validating 'required' in schema:
+    {'type': 'object',
+     'properties': {'csv_delimiter': {'type': 'string'},
+                    'encoding': {'type': 'string'},
+                    'quoting': {'type': 'integer'},
+                    'include_timestamp': {'type': 'boolean'},
+                    'logging_level': {'type': 'string'},
+                    'disable_logging': {'type': 'boolean'},
+                    'directory_structure': {'type': 'object'}},
+     'required': ['csv_delimiter',
+                  'encoding',
+                  'quoting',
+                  'include_timestamp',
+                  'logging_level',
+                  'disable_logging']}
+
+On instance:
+    {'csv_delimiter': ',',
+     'directory_structure': {'data': ['raw', 'interim', 'processed'],
+                             'models': [],
+                             'reports': ['figures', 'outputs'],
+                             'src': []},
+     'disable_logging': False,
+     'encoding': 'utf-8',
+     'include_timestamp': True,
+     'logging': {'format': '%(asctime)s - %(name)s - %(levelname)s - '
+                           '%(message)s',
+                 'level': 'INFO'},
+     'quoting': 0}. Using default values.
+Warning: Error loading configuration file C:\Users\tja\AppData\Local\Temp\tmp3ulzoagt\config.yaml: 'logging_level' is a required property
+
+Failed validating 'required' in schema:
+    {'type': 'object',
+     'properties': {'csv_delimiter': {'type': 'string'},
+                    'encoding': {'type': 'string'},
+                    'quoting': {'type': 'integer'},
+                    'include_timestamp': {'type': 'boolean'},
+                    'logging_level': {'type': 'string'},
+                    'disable_logging': {'type': 'boolean'},
+                    'directory_structure': {'type': 'object'}},
+     'required': ['csv_delimiter',
+                  'encoding',
+                  'quoting',
+                  'include_timestamp',
+                  'logging_level',
+                  'disable_logging']}
+
+On instance:
+    {'csv_delimiter': ',',
+     'directory_structure': {'data': ['raw', 'interim', 'processed'],
+                             'models': [],
+                             'reports': ['figures', 'outputs'],
+                             'src': []},
+     'disable_logging': False,
+     'encoding': 'utf-8',
+     'include_timestamp': True,
+     'logging': {'format': '%(asctime)s - %(name)s - %(levelname)s - '
+                           '%(message)s',
+                 'level': 'INFO'},
+     'quoting': 0}. Using default values.
+Warning: Error loading configuration file C:\Users\tja\AppData\Local\Temp\tmp4oy0xuin\config.yaml: 'logging_level' is a required property
+
+Failed validating 'required' in schema:
+    {'type': 'object',
+     'properties': {'csv_delimiter': {'type': 'string'},
+                    'encoding': {'type': 'string'},
+                    'quoting': {'type': 'integer'},
+                    'include_timestamp': {'type': 'boolean'},
+                    'logging_level': {'type': 'string'},
+                    'disable_logging': {'type': 'boolean'},
+                    'directory_structure': {'type': 'object'}},
+     'required': ['csv_delimiter',
+                  'encoding',
+                  'quoting',
+                  'include_timestamp',
+                  'logging_level',
+                  'disable_logging']}
+
+On instance:
+    {'csv_delimiter': ',',
+     'directory_structure': {'data': ['raw', 'interim', 'processed'],
+                             'models': [],
+                             'reports': ['figures', 'outputs'],
+                             'src': []},
+     'disable_logging': False,
+     'encoding': 'utf-8',
+     'include_timestamp': True,
+     'logging': {'format': '%(asctime)s - %(name)s - %(levelname)s - '
+                           '%(message)s',
+                 'level': 'INFO'},
+     'quoting': 0}. Using default values.
+Warning: Error loading configuration file C:\Users\tja\AppData\Local\Temp\tmp4oy0xuin\config.yaml: 'logging_level' is a required property
+
+Failed validating 'required' in schema:
+    {'type': 'object',
+     'properties': {'csv_delimiter': {'type': 'string'},
+                    'encoding': {'type': 'string'},
+                    'quoting': {'type': 'integer'},
+                    'include_timestamp': {'type': 'boolean'},
+                    'logging_level': {'type': 'string'},
+                    'disable_logging': {'type': 'boolean'},
+                    'directory_structure': {'type': 'object'}},
+     'required': ['csv_delimiter',
+                  'encoding',
+                  'quoting',
+                  'include_timestamp',
+                  'logging_level',
+                  'disable_logging']}
+
+On instance:
+    {'csv_delimiter': ',',
+     'directory_structure': {'data': ['raw', 'interim', 'processed'],
+                             'models': [],
+                             'reports': ['figures', 'outputs'],
+                             'src': []},
+     'disable_logging': False,
+     'encoding': 'utf-8',
+     'include_timestamp': True,
+     'logging': {'format': '%(asctime)s - %(name)s - %(levelname)s - '
+                           '%(message)s',
+                 'level': 'INFO'},
+     'quoting': 0}. Using default values.
+Warning: Error loading configuration file C:\Users\tja\AppData\Local\Temp\tmpkgju75v1\config.yaml: 'logging_level' is a required property
+
+Failed validating 'required' in schema:
+    {'type': 'object',
+     'properties': {'csv_delimiter': {'type': 'string'},
+                    'encoding': {'type': 'string'},
+                    'quoting': {'type': 'integer'},
+                    'include_timestamp': {'type': 'boolean'},
+                    'logging_level': {'type': 'string'},
+                    'disable_logging': {'type': 'boolean'},
+                    'directory_structure': {'type': 'object'}},
+     'required': ['csv_delimiter',
+                  'encoding',
+                  'quoting',
+                  'include_timestamp',
+                  'logging_level',
+                  'disable_logging']}
+
+On instance:
+    {'csv_delimiter': ',',
+     'directory_structure': {'data': ['raw', 'interim', 'processed'],
+                             'models': [],
+                             'reports': ['figures', 'outputs'],
+                             'src': []},
+     'disable_logging': False,
+     'encoding': 'utf-8',
+     'include_timestamp': True,
+     'logging': {'format': '%(asctime)s - %(name)s - %(levelname)s - '
+                           '%(message)s',
+                 'level': 'INFO'},
+     'quoting': 0}. Using default values.
+Warning: Error loading configuration file C:\Users\tja\AppData\Local\Temp\tmpkgju75v1\config.yaml: 'logging_level' is a required property
+
+Failed validating 'required' in schema:
+    {'type': 'object',
+     'properties': {'csv_delimiter': {'type': 'string'},
+                    'encoding': {'type': 'string'},
+                    'quoting': {'type': 'integer'},
+                    'include_timestamp': {'type': 'boolean'},
+                    'logging_level': {'type': 'string'},
+                    'disable_logging': {'type': 'boolean'},
+                    'directory_structure': {'type': 'object'}},
+     'required': ['csv_delimiter',
+                  'encoding',
+                  'quoting',
+                  'include_timestamp',
+                  'logging_level',
+                  'disable_logging']}
+
+On instance:
+    {'csv_delimiter': ',',
+     'directory_structure': {'data': ['raw', 'interim', 'processed'],
+                             'models': [],
+                             'reports': ['figures', 'outputs'],
+                             'src': []},
+     'disable_logging': False,
+     'encoding': 'utf-8',
+     'include_timestamp': True,
+     'logging': {'format': '%(asctime)s - %(name)s - %(levelname)s - '
+                           '%(message)s',
+                 'level': 'INFO'},
+     'quoting': 0}. Using default values.

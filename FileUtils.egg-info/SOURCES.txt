@@ -1,0 +1,13 @@
+README.md
+setup.py
+FileUtils/__init__.py
+FileUtils/azure_file_utils.py
+FileUtils/check_install.py
+FileUtils/file_utils.py
+FileUtils/version.py
+FileUtils.egg-info/PKG-INFO
+FileUtils.egg-info/SOURCES.txt
+FileUtils.egg-info/dependency_links.txt
+FileUtils.egg-info/requires.txt
+FileUtils.egg-info/top_level.txt
+FileUtils/config/config.yaml

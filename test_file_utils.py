@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pandas as pd
 import yaml
-from file_utils import FileUtils, OutputFileType
+from FileUtils import FileUtils, OutputFileType
 
 logger = logging.getLogger(__name__)
 
@@ -88,77 +88,108 @@ class TestFileUtils(unittest.TestCase):
 
     def test_logging_initialization_default(self):
         """Test default logging initialization."""
-        import logging
-
-        # Create new FileUtils instance with default logging
         file_utils = FileUtils(project_root=self.temp_dir)
+        logger = file_utils.logger
+        self.assertEqual(logger.level, logging.INFO)
 
-        # Check default logging level (INFO)
-        root_logger = logging.getLogger()
-        self.assertEqual(root_logger.level, logging.INFO)
+    # def test_logging_initialization_default(self):
+    #     """Test default logging initialization."""
+    #     import logging
 
-        # Check handler level
-        self.assertTrue(root_logger.handlers)
-        self.assertEqual(root_logger.handlers[0].level, logging.INFO)
+    #     # Create new FileUtils instance with default logging
+    #     file_utils = FileUtils(project_root=self.temp_dir)
+
+    #     # Check default logging level (INFO)
+    #     root_logger = logging.getLogger()
+    #     self.assertEqual(root_logger.level, logging.INFO)
+
+    # Check handler level
+    # self.assertTrue(root_logger.handlers)
+    # self.assertEqual(root_logger.handlers[0].level, logging.INFO)
+
+    # def test_logging_initialization_with_level(self):
+    #     """Test logging initialization with specific level."""
+    #     # Reset logging configuration
+    #     root_logger = logging.getLogger()
+    #     for handler in root_logger.handlers[:]:
+    #         root_logger.removeHandler(handler)
+
+    #     # Create new FileUtils instance with DEBUG level
+    #     file_utils = FileUtils(project_root=self.temp_dir, log_level="DEBUG")
+
+    #     # Check if level was set correctly
+    #     self.assertEqual(logging.getLevelName(root_logger.level), "DEBUG")
 
     def test_logging_initialization_with_level(self):
         """Test logging initialization with specific level."""
-        # Reset logging configuration
-        root_logger = logging.getLogger()
-        for handler in root_logger.handlers[:]:
-            root_logger.removeHandler(handler)
-
-        # Create new FileUtils instance with DEBUG level
         file_utils = FileUtils(project_root=self.temp_dir, log_level="DEBUG")
-
-        # Check if level was set correctly
-        self.assertEqual(logging.getLevelName(root_logger.level), "DEBUG")
+        logger = file_utils.logger
+        self.assertEqual(logger.level, logging.DEBUG)
 
     def test_invalid_log_level(self):
         """Test handling of invalid log level."""
+        with self.assertRaises(ValueError):
+            FileUtils(project_root=self.temp_dir, log_level="INVALID_LEVEL")
         # Reset logging configuration
-        root_logger = logging.getLogger()
-        for handler in root_logger.handlers[:]:
-            root_logger.removeHandler(handler)
+        # root_logger = logging.getLogger()
+        # for handler in root_logger.handlers[:]:
+        #     root_logger.removeHandler(handler)
 
-        # Create FileUtils with invalid level
-        file_utils = FileUtils(
-            project_root=self.temp_dir,
-            config_file=None,  # Skip config to test just log level
-            log_level="INVALID_LEVEL",
-        )
+        # # Create FileUtils with invalid level
+        # file_utils = FileUtils(
+        #     project_root=self.temp_dir,
+        #     config_file=None,  # Skip config to test just log level
+        #     log_level="INVALID_LEVEL",
+        # )
 
-        # Should fall back to INFO
-        self.assertEqual(logging.getLevelName(root_logger.level), "INFO")
+        # # Should fall back to INFO
+        # self.assertEqual(logging.getLevelName(root_logger.level), "INFO")
 
     def test_logging_config_override(self):
         """Test that log_level parameter overrides config file."""
-        # Create config with INFO level
         config_data = {
             "csv_delimiter": ",",
             "encoding": "utf-8",
             "quoting": 0,
-            "include_timestamp": True,
             "logging_level": "INFO",
             "disable_logging": False,
-            "logging": {"level": "INFO"},
         }
 
         config_path = self.temp_dir / "config_override.yaml"
         with open(config_path, "w", encoding="utf-8") as f:
             yaml.dump(config_data, f)
 
-        # Create FileUtils with DEBUG override
         file_utils = FileUtils(
-            project_root=self.temp_dir,
-            config_file=config_path,
-            log_level="DEBUG",
+            project_root=self.temp_dir, config_file=config_path, log_level="DEBUG"
         )
+        self.assertEqual(file_utils.logger.level, logging.DEBUG)
 
-        # Check if DEBUG level was applied
-        self.assertEqual(
-            logging.getLevelName(logging.getLogger().level), "DEBUG"
-        )
+    # def test_logging_config_override(self):
+    #     """Test that log_level parameter overrides config file."""
+    #     # Create config with INFO level
+    #     config_data = {
+    #         "csv_delimiter": ",",
+    #         "encoding": "utf-8",
+    #         "quoting": 0,
+    #         "include_timestamp": True,
+    #         "logging_level": "INFO",
+    #         "disable_logging": False,
+    #         "logging": {"level": "INFO"},
+    #     }
+
+    #     config_path = self.temp_dir / "config_override.yaml"
+    #     with open(config_path, "w", encoding="utf-8") as f:
+    #         yaml.dump(config_data, f)
+
+    #     # Create FileUtils with DEBUG override
+    #     file_utils = FileUtils(
+    #         project_root=self.temp_dir,
+    #         config_file=config_path,
+    #         log_level="DEBUG",
+    #     )
+
+    #     # Check if DEBUG level was applied
+    #     self.assertEqual(logging.getLevelName(logging.getLogger().level), "DEBUG")
 
     def tearDown(self):
         """Clean up temporary directory and restore logging after tests."""
@@ -288,12 +319,8 @@ class TestFileUtils(unittest.TestCase):
             )
 
             self.assertEqual(len(loaded_dfs), 2)
-            pd.testing.assert_frame_equal(
-                loaded_dfs["sheet1"], df_dict["sheet1"]
-            )
-            pd.testing.assert_frame_equal(
-                loaded_dfs["sheet2"], df_dict["sheet2"]
-            )
+            pd.testing.assert_frame_equal(loaded_dfs["sheet1"], df_dict["sheet1"])
+            pd.testing.assert_frame_equal(loaded_dfs["sheet2"], df_dict["sheet2"])
         finally:
             # Clean up references
             df_dict.clear()
@@ -329,9 +356,7 @@ class TestFileUtils(unittest.TestCase):
             )
 
         # Test invalid YAML
-        invalid_yaml_path = (
-            self.temp_dir / "data" / "processed" / "invalid.yaml"
-        )
+        invalid_yaml_path = self.temp_dir / "data" / "processed" / "invalid.yaml"
         invalid_yaml_path.parent.mkdir(parents=True, exist_ok=True)
         with open(invalid_yaml_path, "w") as f:
             f.write("invalid: yaml: content: {[")

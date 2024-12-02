@@ -1,12 +1,14 @@
 """
 FileUtils module
 
-Version: 0.4.01
+Version: 0.4.1
 Author: Your Name
-Date: 2023-10-29
+Date: 2023-12-01
 
 This module provides a utility class `FileUtils` for handling file operations in data science projects. 
 It includes methods for loading, saving, and managing data files and directory structures.
+
+Optional support for Azure Blob Storage
 
 Classes:
     - OutputFileType: Enum for supported output file types.
