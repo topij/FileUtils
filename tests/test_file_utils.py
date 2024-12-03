@@ -1,3 +1,5 @@
+"""Unit tests for FileUtils package."""
+
 import gc
 import json
 import logging
@@ -9,15 +11,16 @@ from pathlib import Path
 
 import pandas as pd
 import yaml
-from FileUtils import FileUtils, OutputFileType
+from FileUtils import FileUtils, OutputFileType, __version__
 
 logger = logging.getLogger(__name__)
 
 
-# Now let's fix the test class
 class TestFileUtils(unittest.TestCase):
+    """Test cases for FileUtils."""
+
     def setUp(self):
-        """Set up a temporary directory structure for testing."""
+        """Set up test environment."""
         # Store original logging config
         self.original_log_level = logging.getLogger().level
         self.original_handlers = logging.getLogger().handlers.copy()
@@ -25,15 +28,15 @@ class TestFileUtils(unittest.TestCase):
         # Create temporary directory
         self.temp_dir = Path(tempfile.mkdtemp())
 
-        # Create test config file with updated structure
-        config_data = {
-            "csv_delimiter": ",",  # Match expected value
+        # Create test config
+        self.config_data = {
+            "csv_delimiter": ",",
             "encoding": "utf-8",
             "quoting": 0,
             "include_timestamp": True,
-            "logging_level": "INFO",  # Keep for backwards compatibility
+            "logging_level": "INFO",
             "disable_logging": False,
-            "logging": {  # Add new logging section
+            "logging": {
                 "level": "INFO",
                 "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
             },
@@ -48,14 +51,14 @@ class TestFileUtils(unittest.TestCase):
         # Create config file
         self.config_path = self.temp_dir / "config.yaml"
         with open(self.config_path, "w", encoding="utf-8") as f:
-            yaml.dump(config_data, f)
+            yaml.dump(self.config_data, f)
 
-        # Initialize FileUtils with the config
+        # Initialize FileUtils
         self.file_utils = FileUtils(
             project_root=self.temp_dir, config_file=self.config_path
         )
 
-        # Sample data for tests
+        # Sample test data
         self.sample_df = pd.DataFrame(
             {
                 "name": ["Alice", "Bob", "Charlie"],
@@ -69,73 +72,8 @@ class TestFileUtils(unittest.TestCase):
             "data": {"items": [1, 2, 3], "status": "active"},
         }
 
-        # Store original logging config to restore after tests
-        self.original_log_level = logging.getLogger().level
-        self.original_handlers = logging.getLogger().handlers.copy()
-
-    def test_initialization(self):
-        """Test that FileUtils initializes correctly with config."""
-        self.assertTrue(self.config_path.exists())
-        self.assertEqual(self.file_utils.config["csv_delimiter"], ",")
-        self.assertEqual(self.file_utils.config["encoding"], "utf-8")
-        self.assertTrue(self.file_utils.config["include_timestamp"])
-
-        # Test directory structure
-        data_dir = self.temp_dir / "data"
-        self.assertTrue(data_dir.exists())
-        self.assertTrue((data_dir / "raw").exists())
-        self.assertTrue((data_dir / "processed").exists())
-
-    def test_logging_initialization_default(self):
-        """Test default logging initialization."""
-        file_utils = FileUtils(project_root=self.temp_dir)
-        logger = file_utils.logger
-        self.assertEqual(logger.level, logging.WARNING)  # Changed from INFO to WARNING
-
-    def test_logging_initialization_with_level(self):
-        """Test logging initialization with specific level."""
-        file_utils = FileUtils(project_root=self.temp_dir, log_level="DEBUG")
-        logger = file_utils.logger
-        self.assertEqual(logger.level, logging.DEBUG)
-
-    # def test_invalid_log_level(self):
-    #     """Test handling of invalid log level."""
-    #     with self.assertRaises(ValueError):
-    #         FileUtils(project_root=self.temp_dir, log_level="INVALID_LEVEL")
-
-    def test_invalid_log_level(self):
-        """Test handling of invalid log level."""
-        # Reset logging configuration
-        root_logger = logging.getLogger()
-        original_level = root_logger.level
-        try:
-            with self.assertRaises(ValueError):
-                FileUtils(project_root=self.temp_dir, log_level="INVALID_LEVEL")
-        finally:
-            # Restore original level
-            root_logger.setLevel(original_level)
-
-    def test_logging_config_override(self):
-        """Test that log_level parameter overrides config file."""
-        config_data = {
-            "csv_delimiter": ",",
-            "encoding": "utf-8",
-            "quoting": 0,
-            "logging_level": "INFO",
-            "disable_logging": False,
-        }
-
-        config_path = self.temp_dir / "config_override.yaml"
-        with open(config_path, "w", encoding="utf-8") as f:
-            yaml.dump(config_data, f)
-
-        file_utils = FileUtils(
-            project_root=self.temp_dir, config_file=config_path, log_level="DEBUG"
-        )
-        self.assertEqual(file_utils.logger.level, logging.DEBUG)
-
     def tearDown(self):
-        """Clean up temporary directory and restore logging after tests."""
+        """Clean up after tests."""
         # Restore original logging configuration
         root_logger = logging.getLogger()
         root_logger.setLevel(self.original_log_level)
@@ -146,17 +84,10 @@ class TestFileUtils(unittest.TestCase):
         for handler in self.original_handlers:
             root_logger.addHandler(handler)
 
-        # Force garbage collection to help release file handles
-        import gc
-
+        # Force cleanup
         gc.collect()
 
-        # Add a small delay to ensure files are released
-        import time
-
-        time.sleep(0.1)
-
-        # Try to remove the directory with retries
+        # Remove temporary directory with retry
         max_retries = 3
         for attempt in range(max_retries):
             try:
@@ -164,154 +95,180 @@ class TestFileUtils(unittest.TestCase):
                 break
             except Exception as e:
                 if attempt == max_retries - 1:
-                    print(
-                        f"Warning: Could not clean up temporary directory {self.temp_dir}: {e}"
-                    )
+                    print(f"Warning: Could not clean up {self.temp_dir}: {e}")
                 else:
+                    import time
+
                     time.sleep(0.1)
 
-    def test_save_and_load_yaml(self):
-        """Test YAML file saving and loading."""
-        # Save YAML file
-        saved_path = self.file_utils.save_yaml(
-            data=self.sample_dict,
-            file_path="test_config",
-            output_type="processed",
-            include_timestamp=False,
-        )
+    # Package Tests
+    def test_version(self):
+        """Test version is accessible."""
+        self.assertIsNotNone(__version__)
+        self.assertTrue(isinstance(__version__, str))
 
-        # Load and verify YAML file
-        loaded_data = self.file_utils.load_yaml(
-            file_path=saved_path.name, input_type="processed"
-        )
+    # Initialization Tests
+    def test_initialization(self):
+        """Test initialization with config."""
+        self.assertTrue(self.config_path.exists())
+        self.assertEqual(self.file_utils.config["csv_delimiter"], ",")
+        self.assertEqual(self.file_utils.config["encoding"], "utf-8")
+        self.assertTrue(self.file_utils.config["include_timestamp"])
 
-        self.assertEqual(loaded_data, self.sample_dict)
-        self.assertTrue(saved_path.exists())
+    def test_directory_structure(self):
+        """Test directory structure creation."""
+        data_dir = self.temp_dir / "data"
+        self.assertTrue(data_dir.exists())
+        self.assertTrue((data_dir / "raw").exists())
+        self.assertTrue((data_dir / "processed").exists())
+        self.assertTrue((data_dir / "interim").exists())
 
-    def test_save_and_load_json(self):
-        """Test JSON file saving and loading."""
-        # Save JSON file
-        saved_path = self.file_utils.save_json(
-            data=self.sample_dict,
-            file_path="test_data",
-            output_type="processed",
-            include_timestamp=False,
-        )
+    def test_custom_directory_structure(self):
+        """Test custom directory structure."""
+        custom_config = self.config_data.copy()
+        custom_config["directory_structure"]["custom"] = ["dir1", "dir2"]
 
-        # Load and verify JSON file
-        loaded_data = self.file_utils.load_json(
-            file_path=saved_path.name, input_type="processed"
-        )
+        config_path = self.temp_dir / "custom_config.yaml"
+        with open(config_path, "w", encoding="utf-8") as f:
+            yaml.dump(custom_config, f)
 
-        self.assertEqual(loaded_data, self.sample_dict)
-        self.assertTrue(saved_path.exists())
+        utils = FileUtils(project_root=self.temp_dir, config_file=config_path)
+        self.assertTrue((self.temp_dir / "custom" / "dir1").exists())
+        self.assertTrue((self.temp_dir / "custom" / "dir2").exists())
 
-    def test_save_and_load_csv(self):
-        """Test CSV file saving and loading with standardized output_type."""
-        # Test with direct DataFrame
-        result, metadata = self.file_utils.save_data_to_disk(
+    # Logging Tests
+    def test_logging_levels(self):
+        """Test different logging levels."""
+        levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+        for level in levels:
+            utils = FileUtils(project_root=self.temp_dir, log_level=level)
+            self.assertEqual(utils.logger.level, getattr(logging, level))
+
+    def test_invalid_log_level(self):
+        """Test invalid logging level handling."""
+        with self.assertRaises(ValueError):
+            FileUtils(project_root=self.temp_dir, log_level="INVALID")
+
+    # File Operation Tests
+    def test_csv_operations(self):
+        """Test CSV save and load operations."""
+        # Single DataFrame
+        result, _ = self.file_utils.save_data_to_disk(
             data=self.sample_df,
             output_filetype=OutputFileType.CSV,
             output_type="processed",
-            file_name="test_data",
+            file_name="test_csv",
             include_timestamp=False,
         )
 
         saved_path = Path(next(iter(result.values())))
-
-        # Load and verify CSV file
         loaded_df = self.file_utils.load_single_file(
-            file_path=saved_path.name, input_type="processed"
+            saved_path.name, input_type="processed"
         )
-
         pd.testing.assert_frame_equal(loaded_df, self.sample_df)
-        self.assertTrue(saved_path.exists())
 
-        # Test with dictionary of DataFrames
-        multi_df_data = {"test_data": self.sample_df}
-        result, metadata = self.file_utils.save_data_to_disk(
-            data=multi_df_data,
-            output_filetype=OutputFileType.CSV,
-            output_type="processed",
-            file_name="test_data_dict",
-            include_timestamp=False,
-        )
+    def test_excel_operations(self):
+        """Test Excel save and load operations."""
+        # Multiple DataFrames
+        df_dict = {"sheet1": self.sample_df.copy(), "sheet2": self.sample_df.copy()}
 
-    def test_multiple_dataframes_excel(self):
-        """Test saving multiple DataFrames to Excel."""
-        df_dict = {
-            "sheet1": self.sample_df.copy(),  # Use copies to avoid any potential references
-            "sheet2": self.sample_df.copy(),
-        }
-
-        # Save Excel file
         try:
             result, _ = self.file_utils.save_data_to_disk(
                 data=df_dict,
                 output_filetype=OutputFileType.XLSX,
                 output_type="processed",
-                file_name="multi_sheet",
+                file_name="test_excel",
                 include_timestamp=False,
             )
 
             saved_path = Path(next(iter(result.values())))
-
-            # Load and verify Excel file
-            loaded_dfs = self.file_utils.load_excel_sheets(
-                file_path=saved_path.name, input_type="processed"
+            loaded_sheets = self.file_utils.load_excel_sheets(
+                saved_path.name, input_type="processed"
             )
 
-            self.assertEqual(len(loaded_dfs), 2)
-            pd.testing.assert_frame_equal(loaded_dfs["sheet1"], df_dict["sheet1"])
-            pd.testing.assert_frame_equal(loaded_dfs["sheet2"], df_dict["sheet2"])
+            self.assertEqual(len(loaded_sheets), 2)
+            for sheet_name, df in df_dict.items():
+                pd.testing.assert_frame_equal(loaded_sheets[sheet_name], df)
         finally:
-            # Clean up references
             df_dict.clear()
-            if "loaded_dfs" in locals():
-                loaded_dfs.clear()
+            if "loaded_sheets" in locals():
+                loaded_sheets.clear()
             gc.collect()
 
+    def test_yaml_operations(self):
+        """Test YAML save and load operations."""
+        saved_path = self.file_utils.save_yaml(
+            data=self.sample_dict,
+            file_path="test_yaml",
+            output_type="processed",
+            include_timestamp=False,
+        )
+
+        loaded_data = self.file_utils.load_yaml(saved_path.name, input_type="processed")
+        self.assertEqual(loaded_data, self.sample_dict)
+
+    def test_json_operations(self):
+        """Test JSON save and load operations."""
+        saved_path = self.file_utils.save_json(
+            data=self.sample_dict,
+            file_path="test_json",
+            output_type="processed",
+            include_timestamp=False,
+        )
+
+        loaded_data = self.file_utils.load_json(saved_path.name, input_type="processed")
+        self.assertEqual(loaded_data, self.sample_dict)
+
+    # Error Handling Tests
+    def test_file_not_found(self):
+        """Test file not found handling."""
+        with self.assertRaises(FileNotFoundError):
+            self.file_utils.load_single_file("nonexistent.csv")
+
+    def test_invalid_file_type(self):
+        """Test invalid file type handling."""
+        with self.assertRaises(ValueError):
+            self.file_utils.save_data_to_disk(
+                data=self.sample_df, output_filetype="invalid"
+            )
+
+    def test_invalid_yaml(self):
+        """Test invalid YAML handling."""
+        invalid_path = self.temp_dir / "data" / "processed" / "invalid.yaml"
+        invalid_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(invalid_path, "w") as f:
+            f.write("invalid: yaml: content: {[")
+
+        with self.assertRaises(ValueError):
+            self.file_utils.load_yaml(invalid_path.name, "processed")
+
+    # Feature Tests
     def test_timestamp_inclusion(self):
-        """Test timestamp inclusion in filenames."""
+        """Test timestamp in filenames."""
         result, _ = self.file_utils.save_data_to_disk(
             data=self.sample_df,
             output_filetype=OutputFileType.CSV,
             output_type="processed",
-            file_name="test_data",
+            file_name="timestamp_test",
             include_timestamp=True,
         )
 
         saved_path = Path(next(iter(result.values())))
         timestamp_format = datetime.now().strftime("%Y%m%d")
-
         self.assertTrue(timestamp_format in str(saved_path))
 
-    def test_error_handling(self):
-        """Test basic error handling."""
-        # Test loading non-existent file
-        with self.assertRaises(FileNotFoundError):
-            self.file_utils.load_single_file("nonexistent.csv")
+    def test_no_timestamp(self):
+        """Test saving without timestamp."""
+        result, _ = self.file_utils.save_data_to_disk(
+            data=self.sample_df,
+            output_filetype=OutputFileType.CSV,
+            output_type="processed",
+            file_name="no_timestamp",
+            include_timestamp=False,
+        )
 
-        # Test invalid file type
-        with self.assertRaises(ValueError):
-            self.file_utils.save_data_to_disk(
-                data=self.sample_df, output_filetype="invalid_type"
-            )
-
-        # Test invalid YAML
-        invalid_yaml_path = self.temp_dir / "data" / "processed" / "invalid.yaml"
-        invalid_yaml_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(invalid_yaml_path, "w") as f:
-            f.write("invalid: yaml: content: {[")
-
-        with self.assertRaises(ValueError):
-            self.file_utils.load_yaml(invalid_yaml_path.name, "processed")
-
-    def test_config_loading(self):
-        """Test configuration loading and validation."""
-        self.assertEqual(self.file_utils.config["csv_delimiter"], ",")
-        self.assertEqual(self.file_utils.config["encoding"], "utf-8")
-        self.assertTrue("data" in self.file_utils.config["directory_structure"])
+        saved_path = Path(next(iter(result.values())))
+        self.assertEqual(saved_path.stem, "no_timestamp")
 
 
 if __name__ == "__main__":

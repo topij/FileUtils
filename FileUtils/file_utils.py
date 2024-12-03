@@ -1,9 +1,9 @@
 """
 FileUtils module
 
-Version: 0.4.1
+Version: 0.4.5
 Author: Your Name
-Date: 2023-12-01
+Date: 2023-12-03
 
 This module provides a utility class `FileUtils` for handling file operations in data science projects. 
 It includes methods for loading, saving, and managing data files and directory structures.
@@ -22,7 +22,7 @@ Usage:
 
 """
 
-__version__ = "0.4.1"
+__version__ = "0.4.5"
 __author__ = "Topi Järvinen"
 
 import argparse
