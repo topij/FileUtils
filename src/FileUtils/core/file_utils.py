@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 import yaml
+import json
 
 from .base import BaseStorage, StorageError
 from .enums import OutputFileType, StorageType
@@ -15,6 +16,7 @@ from ..storage.local import LocalStorage
 from ..storage.azure import AzureStorage
 from ..utils.logging import setup_logger
 from ..config.schema import CONFIG_SCHEMA
+from ..config import DEFAULT_CONFIG
 
 
 class FileUtils:
@@ -135,6 +137,30 @@ class FileUtils:
 
         return LocalStorage(self.config)
 
+    def get_logger(self, name: str) -> logging.Logger:
+        """Get a logger with the specified name."""
+        return logging.getLogger(name)
+
+    def get_data_path(self, data_type: str = "raw") -> Path:
+        """Get the path for a specific data type directory.
+
+        Args:
+            data_type: Type of data directory (e.g., "raw", "processed").
+
+        Returns:
+            Path: Full path to the specified data directory
+
+        Examples:
+            >>> file_utils = FileUtils()
+            >>> raw_path = file_utils.get_data_path("raw")
+            >>> processed_path = file_utils.get_data_path("processed")
+        """
+        path = self.project_root / "data" / data_type
+        if not path.exists():
+            self.logger.warning(f"Data path {path} does not exist. Creating it.")
+            path.mkdir(parents=True, exist_ok=True)
+        return path
+
     def _get_output_path(
         self,
         file_name: str,
@@ -154,8 +180,8 @@ class FileUtils:
         if not file_path.suffix or file_path.suffix.lower() != f".{extension}":
             file_path = file_path.with_suffix(f".{extension}")
 
-        # Get the appropriate data directory
-        data_dir = self.project_root / "data" / output_type
+        # Use get_data_path for consistent path handling
+        data_dir = self.get_data_path(output_type)
 
         # Construct final path
         if timestamp:
@@ -270,3 +296,171 @@ class FileUtils:
         except Exception as e:
             self.logger.error(f"Failed to load Excel sheets from {file_path}: {e}")
             raise StorageError(f"Failed to load Excel sheets: {e}") from e
+
+    def load_data_from_metadata(
+        self, metadata_file: Union[str, Path], input_type: str = "raw"
+    ) -> Dict[str, pd.DataFrame]:
+        """Load multiple files based on metadata."""
+        metadata = self.load_json(metadata_file, input_type)
+        loaded_data = {}
+
+        for data_type, file_info in metadata.get("files", {}).items():
+            file_path = self.get_data_path(input_type) / Path(file_info["path"])
+            loaded_data[data_type] = self.load_single_file(file_path)
+
+        return loaded_data
+
+    def load_multiple_files(
+        self,
+        file_paths: List[Union[str, Path]],
+        input_type: str = "raw",
+        file_type: Optional[OutputFileType] = None,
+    ) -> Dict[str, pd.DataFrame]:
+        """Load multiple files of the same type."""
+        loaded_data = {}
+        for file_path in file_paths:
+            path = self.get_data_path(input_type) / Path(file_path)
+
+            if file_type:
+                if path.suffix.lower().lstrip(".") != file_type.value:
+                    raise ValueError(
+                        f"File {path} does not match type: {file_type.value}"
+                    )
+
+            loaded_data[path.stem] = self.load_single_file(path)
+
+        return loaded_data
+
+    def _load_json(self, file_path: Path) -> pd.DataFrame:
+        """Load JSON file."""
+        with open(file_path, "r", encoding=self.config["encoding"]) as f:
+            data = json.load(f)
+        return pd.DataFrame(data)
+
+    def _load_excel(self, file_path: Path) -> pd.DataFrame:
+        """Load Excel file."""
+        return pd.read_excel(file_path, engine="openpyxl")
+
+    def _load_parquet(self, file_path: Path) -> pd.DataFrame:
+        """Load Parquet file."""
+        return pd.read_parquet(file_path)
+
+    def save_json(
+        self,
+        data: Union[Dict[str, Any], List[Any]],
+        file_path: Union[str, Path],
+        output_type: str = "processed",
+        include_timestamp: Optional[bool] = None,
+        indent: int = 2,
+        ensure_ascii: bool = False,
+    ) -> Path:
+        """Save data to JSON."""
+        output_path = self._get_output_path(
+            file_path, output_type, "json", include_timestamp
+        )
+
+        with open(output_path, "w", encoding=self.config["encoding"]) as f:
+            json.dump(data, f, indent=indent, ensure_ascii=ensure_ascii, default=str)
+
+        return output_path
+
+    def save_yaml(
+        self,
+        data: Dict[str, Any],
+        file_path: Union[str, Path],
+        output_type: str = "processed",
+        include_timestamp: Optional[bool] = None,
+        default_flow_style: bool = False,
+        sort_keys: bool = False,
+    ) -> Path:
+        """Save data to YAML."""
+        output_path = self._get_output_path(
+            file_path, output_type, "yaml", include_timestamp
+        )
+
+        with open(output_path, "w", encoding=self.config["encoding"]) as f:
+            yaml.dump(
+                data,
+                f,
+                default_flow_style=default_flow_style,
+                sort_keys=sort_keys,
+                allow_unicode=True,
+            )
+
+        return output_path
+
+    def load_yaml(
+        self,
+        file_path: Union[str, Path],
+        input_type: str = "raw",
+        safe_load: bool = True,
+    ) -> Dict[str, Any]:
+        """Load YAML file."""
+        yaml_path = (
+            file_path
+            if isinstance(file_path, Path) and file_path.is_absolute()
+            else self.get_data_path(input_type) / Path(file_path)
+        )
+
+        with open(yaml_path, "r", encoding=self.config["encoding"]) as f:
+            data = (
+                yaml.safe_load(f) if safe_load else yaml.load(f, Loader=yaml.FullLoader)
+            )
+        return data or {}
+
+    def save_dataframes_to_excel(
+        self,
+        dataframes_dict: Dict[str, pd.DataFrame],
+        file_name: str,
+        output_type: str = "reports",
+        parameters_dict: Optional[Dict] = None,
+        include_timestamp: Optional[bool] = None,
+        keep_index: bool = False,
+    ) -> Path:
+        """Save multiple DataFrames to Excel with optional parameters."""
+        file_path = self._get_output_path(
+            file_name, output_type, "xlsx", include_timestamp
+        )
+
+        with pd.ExcelWriter(file_path, engine="openpyxl") as writer:
+            for sheet_name, df in dataframes_dict.items():
+                df.to_excel(writer, sheet_name=sheet_name, index=keep_index)
+
+            if parameters_dict:
+                params_df = pd.DataFrame.from_dict(
+                    parameters_dict,
+                    orient="index",
+                    columns=["Value", "Comment"],
+                )
+                params_df.reset_index(inplace=True)
+                params_df.rename(columns={"index": "Parameter Name"}, inplace=True)
+                params_df.to_excel(writer, sheet_name="Parameters", index=False)
+
+        return file_path
+
+    def save_with_metadata(
+        self,
+        data: Dict[str, pd.DataFrame],
+        output_filetype: OutputFileType = OutputFileType.CSV,
+        output_type: str = "processed",
+        file_name: Optional[str] = None,
+        include_timestamp: Optional[bool] = None,
+        **kwargs,
+    ) -> Tuple[Dict[str, str], str]:
+        """Save data with metadata using configured storage."""
+        base_path = self._get_output_path(
+            file_name or "data", output_type, output_filetype.value, include_timestamp
+        )
+
+        return self.storage.save_with_metadata(
+            data, base_path, output_filetype.value, **kwargs
+        )
+
+    def load_from_metadata(
+        self, metadata_path: Union[str, Path], input_type: str = "raw", **kwargs
+    ) -> Dict[str, pd.DataFrame]:
+        """Load data using metadata file."""
+        if not str(metadata_path).startswith("azure://"):
+            metadata_path = self.get_data_path(input_type) / metadata_path
+
+        return self.storage.load_from_metadata(metadata_path, **kwargs)

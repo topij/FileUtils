@@ -52,6 +52,20 @@ class BaseStorage(ABC):
         pass
 
     @abstractmethod
+    def save_with_metadata(
+        self, data: Dict[str, pd.DataFrame], base_path: Path, file_format: str, **kwargs
+    ) -> Tuple[Dict[str, str], str]:
+        """Save data with metadata."""
+        pass
+
+    @abstractmethod
+    def load_from_metadata(
+        self, metadata_path: Union[str, Path], **kwargs
+    ) -> Dict[str, pd.DataFrame]:
+        """Load data using metadata."""
+        pass
+
+    @abstractmethod
     def load_dataframes(
         self, file_path: Union[str, Path], **kwargs
     ) -> Dict[str, pd.DataFrame]:
