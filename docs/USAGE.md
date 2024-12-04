@@ -1,34 +1,25 @@
 # FileUtils Usage Guide
 
-This guide covers the core functionality and common use cases for FileUtils.
-
-## Table of Contents
-- [Basic Usage](#basic-usage)
-- [Working with Different File Formats](#working-with-different-file-formats)
-- [Multiple DataFrame Operations](#multiple-dataframe-operations)
-- [Directory Management](#directory-management)
-- [Configuration Options](#configuration-options)
-- [Logging and Error Handling](#logging-and-error-handling)
-- [Best Practices](#best-practices)
-- [Common Patterns](#common-patterns)
+A comprehensive guide for using FileUtils in data science projects.
 
 ## Basic Usage
 
-### Initialization
+### Initialization and Storage Selection
 
 ```python
-from FileUtils import FileUtils, OutputFileType
+from FileUtils import FileUtils, OutputFileType, StorageType
 
-# Basic initialization
-file_utils = FileUtils()
-
-# With specific project root
-file_utils = FileUtils(project_root="/path/to/project")
-
-# With custom configuration
+# Local storage (default)
 file_utils = FileUtils(
     project_root="/path/to/project",
     config_file="config.yaml"
+)
+
+# Azure storage
+azure_utils = FileUtils(
+    project_root="/path/to/project",
+    storage_type=StorageType.AZURE,
+    connection_string="your_connection_string"
 )
 ```
 
@@ -44,7 +35,7 @@ df = pd.DataFrame({
 })
 
 # Save data
-saved_files, _ = file_utils.save_data_to_disk(
+saved_files, _ = file_utils.save_data_to_storage(
     data=df,
     output_filetype=OutputFileType.CSV,
     output_type="processed",
@@ -58,133 +49,32 @@ loaded_df = file_utils.load_single_file(
 )
 ```
 
-## Working with Different File Formats
+## Configuration
 
-### CSV Files
+### YAML Configuration
 
-```python
-# Save as CSV with timestamp
-saved_files, _ = file_utils.save_data_to_disk(
-    data=df,
-    output_filetype=OutputFileType.CSV,
-    output_type="processed",
-    file_name="data_with_timestamp",
-    include_timestamp=True
-)
-
-# Save without timestamp
-saved_files, _ = file_utils.save_data_to_disk(
-    data=df,
-    output_filetype=OutputFileType.CSV,
-    output_type="processed",
-    file_name="data_no_timestamp",
-    include_timestamp=False
-)
-```
-
-### Excel Files
-
-```python
-# Save single DataFrame to Excel
-saved_files, _ = file_utils.save_data_to_disk(
-    data=df,
-    output_filetype=OutputFileType.XLSX,
-    output_type="processed",
-    file_name="excel_data"
-)
-
-# Load Excel file
-df = file_utils.load_single_file(
-    "excel_data.xlsx",
-    input_type="processed"
-)
-```
-
-### Parquet Files
-
-```python
-# Save as Parquet
-saved_files, _ = file_utils.save_data_to_disk(
-    data=df,
-    output_filetype=OutputFileType.PARQUET,
-    output_type="processed",
-    file_name="parquet_data"
-)
-
-# Load Parquet file
-df = file_utils.load_single_file(
-    "parquet_data.parquet",
-    input_type="processed"
-)
-```
-
-## Multiple DataFrame Operations
-
-### Multiple Sheets in Excel
-
-```python
-# Create multiple DataFrames
-data_dict = {
-    'raw_data': df1,
-    'processed_data': df2,
-    'summary': df3
-}
-
-# Save to Excel with multiple sheets
-saved_files, _ = file_utils.save_data_to_disk(
-    data=data_dict,
-    output_filetype=OutputFileType.XLSX,
-    output_type="processed",
-    file_name="multi_sheet_report"
-)
-
-# Load all sheets
-sheets_dict = file_utils.load_excel_sheets(
-    "multi_sheet_report.xlsx",
-    input_type="processed"
-)
-```
-
-### Working with Multiple CSV Files
-
-```python
-# Save multiple CSVs with metadata
-data_dict = {
-    'sales': sales_df,
-    'customers': customers_df,
-    'products': products_df
-}
-
-saved_files, metadata_path = file_utils.save_data_to_disk(
-    data=data_dict,
-    output_filetype=OutputFileType.CSV,
-    output_type="processed",
-    file_name="dataset"
-)
-
-# Load CSVs using metadata
-dataframes = file_utils.load_csvs_from_metadata(
-    metadata_path,
-    input_type="processed"
-)
-```
-
-## Directory Management
-
-### Custom Directory Structure
-
-```python
-# Create custom directory structure
-custom_structure = {
-    'data': ['raw', 'interim', 'processed', 'external'],
-    'reports': ['figures', 'tables', 'presentations'],
-    'models': ['trained', 'evaluations'],
-    'documentation': ['specs', 'api']
-}
-
-# Configure in YAML
-"""
+```yaml
 # config.yaml
+csv_delimiter: ","
+encoding: "utf-8"
+quoting: 0  # csv.QUOTE_MINIMAL
+include_timestamp: true
+logging_level: "INFO"
+
+# Storage settings
+storage:
+  default_type: "local"  # or "azure"
+  azure:
+    enabled: true
+    container_mapping:
+      raw: "raw-data"
+      processed: "processed-data"
+      interim: "interim-data"
+    retry_settings:
+      max_retries: 3
+      retry_delay: 1
+
+# Directory structure
 directory_structure:
   data:
     - raw
@@ -193,157 +83,204 @@ directory_structure:
     - external
   reports:
     - figures
+    - outputs
     - tables
-    - presentations
   models:
     - trained
     - evaluations
-  documentation:
-    - specs
-    - api
-"""
 
-# Initialize with custom structure
-file_utils = FileUtils(config_file="config.yaml")
-```
-
-## Configuration Options
-
-### Basic Configuration
-
-```yaml
-# config.yaml
-csv_delimiter: ","
-encoding: "utf-8"
-include_timestamp: true
-logging_level: "INFO"
-```
-
-### Advanced Configuration
-
-```yaml
-# Advanced config.yaml
-parquet_compression: "snappy"
-excel_engine: "openpyxl"
-
+# Logging settings
 logging:
   format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
   date_format: "%Y-%m-%d %H:%M:%S"
-  file_logging: true
+  file_logging: false
   log_directory: "logs"
-
-error_handling:
-  raise_on_missing_file: true
-  strict_type_checking: true
-  auto_create_directories: true
 ```
 
-## Logging and Error Handling
+### Environment Variables
 
-### Configuring Logging
+```bash
+# Azure credentials
+export AZURE_STORAGE_CONNECTION_STRING="your_connection_string"
+
+# Optional configuration
+export FILEUTILS_LOG_LEVEL="DEBUG"
+export FILEUTILS_CONFIG_PATH="/path/to/config.yaml"
+```
+
+## Advanced Usage
+
+### Working with Multiple Formats
 
 ```python
-# Initialize with specific log level
-file_utils = FileUtils(log_level="DEBUG")
+# Save in different formats
+formats = {
+    OutputFileType.CSV: "csv_data",
+    OutputFileType.XLSX: "excel_data",
+    OutputFileType.PARQUET: "parquet_data"
+}
 
-# Get logger for specific module
-logger = file_utils.get_logger(__name__)
-logger.debug("Debug message")
-logger.info("Info message")
+for format_type, filename in formats.items():
+    saved_files, _ = file_utils.save_data_to_storage(
+        data=df,
+        output_filetype=format_type,
+        output_type="processed",
+        file_name=filename
+    )
+```
+
+### Multiple DataFrames
+
+```python
+# Save multiple sheets to Excel
+data_dict = {
+    'raw_data': df1,
+    'processed': df2,
+    'summary': df3
+}
+
+saved_files, _ = file_utils.save_data_to_storage(
+    data=data_dict,
+    output_filetype=OutputFileType.XLSX,
+    output_type="processed",
+    file_name="multi_sheet_report"
+)
+
+# Load all sheets
+sheets = file_utils.load_excel_sheets(
+    "multi_sheet_report.xlsx",
+    input_type="processed"
+)
 ```
 
 ### Error Handling
 
 ```python
-# Handle missing files
-try:
-    df = file_utils.load_single_file("nonexistent.csv")
-except FileNotFoundError as e:
-    logger.error(f"File not found: {e}")
+from FileUtils.core.base import StorageError, StorageConnectionError
 
-# Handle invalid formats
 try:
-    file_utils.save_data_to_disk(
+    file_utils.save_data_to_storage(
         data=df,
-        output_filetype="invalid"
+        output_filetype=OutputFileType.PARQUET,
+        output_type="processed",
+        file_name="data"
     )
-except ValueError as e:
-    logger.error(f"Invalid file type: {e}")
+except StorageConnectionError as e:
+    print(f"Connection failed: {e}")
+    # Handle connection error
+except StorageError as e:
+    print(f"Storage operation failed: {e}")
+    # Handle general storage error
 ```
 
 ## Best Practices
 
-1. Directory Organization:
-   - Use `raw` for original, immutable data
-   - Use `interim` for intermediate processing steps
-   - Use `processed` for final, cleaned data
+### Project Organization
 
-2. File Naming:
-   - Use lowercase with underscores
-   - Include timestamps for versioning
-   - Use descriptive names
-
-3. Error Handling:
-   - Always wrap file operations in try-except blocks
-   - Log errors appropriately
-   - Provide meaningful error messages
-
-4. Configuration:
-   - Use separate configs for different environments
-   - Version control your configs
-   - Document configuration changes
-
-## Common Patterns
-
-### Data Pipeline Pattern
-
+1. Use consistent directory structure:
 ```python
-def process_data_pipeline():
-    # Load raw data
-    raw_df = file_utils.load_single_file(
-        "raw_data.csv",
-        input_type="raw"
-    )
-    
-    # Process data
-    interim_df = process_step_1(raw_df)
-    file_utils.save_data_to_disk(
-        data=interim_df,
-        output_type="interim",
-        file_name="step_1_output"
-    )
-    
-    final_df = process_step_2(interim_df)
-    file_utils.save_data_to_disk(
-        data=final_df,
-        output_type="processed",
-        file_name="final_output"
-    )
+file_utils = FileUtils(project_root="project_root")
 ```
 
-### Batch Processing Pattern
-
+2. Maintain data lineage:
 ```python
-def batch_process_files():
-    # Load multiple files
-    files = ["data1.csv", "data2.csv", "data3.csv"]
-    dataframes = []
-    
-    for file in files:
-        df = file_utils.load_single_file(
-            file,
-            input_type="raw"
-        )
-        processed_df = process_data(df)
-        dataframes.append(processed_df)
-    
-    # Save combined results
-    combined_df = pd.concat(dataframes)
-    file_utils.save_data_to_disk(
-        data=combined_df,
-        output_type="processed",
-        file_name="combined_output"
-    )
+# Raw data
+saved_files, _ = file_utils.save_data_to_storage(
+    data=raw_df,
+    output_type="raw",
+    file_name="original_data"
+)
+
+# Processed data
+processed_df = process_data(raw_df)
+saved_files, _ = file_utils.save_data_to_storage(
+    data=processed_df,
+    output_type="processed",
+    file_name="processed_data"
+)
 ```
 
-For Azure-specific usage, please refer to [Azure Setup Guide](AZURE_SETUP.md).
+### Performance Tips
+
+1. Use appropriate formats:
+   - Parquet for large datasets
+   - CSV for simple tabular data
+   - Excel for human-readable reports
+
+2. Batch operations when possible:
+```python
+# Better
+file_utils.save_data_to_storage(
+    data={'month1': df1, 'month2': df2},
+    output_filetype=OutputFileType.XLSX
+)
+
+# Avoid multiple single saves
+# for df in dataframes:
+#     file_utils.save_data_to_storage(data=df, ...)
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. Storage Connection Issues:
+```python
+# Check storage type
+print(file_utils.storage.__class__.__name__)
+
+# Verify Azure connection
+if isinstance(file_utils.storage, AzureStorage):
+    print("Azure Storage configured")
+```
+
+2. File Not Found:
+```python
+# Check file path resolution
+try:
+    df = file_utils.load_single_file("missing.csv")
+except FileNotFoundError as e:
+    print(f"File path attempted: {e}")
+    # Handle missing file
+```
+
+3. Configuration Issues:
+```python
+# Print effective configuration
+print(file_utils.config)
+
+# Verify directory structure
+for dir_type, paths in file_utils.config["directory_structure"].items():
+    print(f"{dir_type}:")
+    for path in paths:
+        full_path = file_utils.project_root / dir_type / path
+        print(f"  {path}: {'exists' if full_path.exists() else 'missing'}")
+```
+
+### Debug Mode
+
+```python
+import logging
+
+# Enable debug logging
+file_utils = FileUtils(log_level="DEBUG")
+
+# Or update existing instance
+file_utils.logger.setLevel(logging.DEBUG)
+```
+
+### Common Error Messages
+
+1. "Storage type not supported":
+   - Verify storage_type parameter
+   - Check optional dependencies installation
+
+2. "Configuration validation failed":
+   - Check config.yaml format
+   - Verify all required fields are present
+
+3. "Unable to determine file type":
+   - Specify output_filetype explicitly
+   - Check file extension matching
+
+For Azure-specific setup and troubleshooting, see [Azure Setup Guide](AZURE_SETUP.md).

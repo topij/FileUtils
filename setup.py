@@ -1,13 +1,15 @@
-from setuptools import setup
+# setup.py
+from setuptools import setup, find_packages
 
 setup(
     name="FileUtils",
-    version="0.4.5",
+    version="0.5.0",
     author="Topi Järvinen",
     description="File utilities for data science projects with Azure support",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    packages=["FileUtils"],
+    packages=find_packages(where="src"),
+    package_dir={"": "src"},
     package_data={
         "FileUtils": [
             "config/*.yaml",
@@ -39,4 +41,14 @@ setup(
         ],
     },
     python_requires=">=3.8",
+    classifiers=[
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: MIT License",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+    ],
 )
