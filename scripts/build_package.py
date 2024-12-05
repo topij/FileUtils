@@ -9,39 +9,37 @@ from pathlib import Path
 from typing import List, Optional
 
 
-# def run_command(
-#     command: str, check: bool = True
-# ) -> Optional[subprocess.CompletedProcess]:
-#     """Run a command and print output."""
-#     print(f"\n=== Running: {command} ===")
-#     try:
-#         result = subprocess.run(
-#             command, shell=True, check=check, capture_output=True, text=True
-#         )
-#         if result.stdout:
-#             print(result.stdout)
-#         if result.stderr:
-#             print(result.stderr, file=sys.stderr)
-#         return result
-#     except subprocess.CalledProcessError as e:
-#         print(f"Error running command: {e}", file=sys.stderr)
-#         if not check:
-#             return e
-#         sys.exit(1)
-
 
 def clean_previous_builds() -> None:
     """Remove previous build artifacts."""
     print("\n=== Cleaning previous builds ===")
     dirs_to_clean = ["build", "dist", "*.egg-info"]
-
+    
+    cleaned = []
     for pattern in dirs_to_clean:
         for path in Path(".").glob(pattern):
             if path.is_dir():
                 shutil.rmtree(path)
             else:
                 path.unlink()
-
+            cleaned.append(str(path))
+    
+    if cleaned:
+        print("Cleaned:")
+        for path in cleaned:
+            print(f"  {path}")
+    else:
+        print("Nothing to clean")
+    
+    # Verify dist directory is empty/doesn't exist
+    dist_dir = Path("dist")
+    if dist_dir.exists():
+        remaining = list(dist_dir.iterdir())
+        if remaining:
+            print("\nWARNING: Files still present in dist/:")
+            for file in remaining:
+                print(f"  {file.name}")
+    
     print("Clean completed")
 
 
@@ -130,28 +128,91 @@ def verify_dependencies() -> None:
     print("Dependencies verified")
 
 
-def run_command(
-    command: str, check: bool = True
-) -> Optional[subprocess.CompletedProcess]:
-    """Run a command and print output."""
-    print(f"\n=== Running: {command} ===")
+def run_command(cmd: str, check: bool = True, capture_output: bool = False) -> subprocess.CompletedProcess:
+    """Run a command and print output in real-time unless captured.
+    
+    Args:
+        cmd: Command to run
+        check: Whether to treat non-zero exit codes as error
+        capture_output: Whether to capture and return output instead of printing
+        
+    Returns:
+        CompletedProcess: The completed process with return code and output
+    """
+    print(f"\nRunning: {cmd}")
     try:
-        # Don't capture output so we can see it in real time
-        result = subprocess.run(
-            command,
-            shell=True,
-            check=False,  # Don't raise exception immediately
-            capture_output=False,  # Show output in real time
-        )
-        if result.returncode != 0 and check:
+        if capture_output:
+            result = subprocess.run(
+                cmd,
+                shell=True,
+                check=False,
+                text=True,
+                capture_output=True
+            )
+        else:
+            result = subprocess.run(
+                cmd,
+                shell=True,
+                check=False,
+                text=True
+            )
+        
+        if check and result.returncode != 0:
             print(f"Command failed with exit code {result.returncode}")
-            sys.exit(result.returncode)
+            if capture_output and result.stderr:
+                print(f"Error output: {result.stderr}")
+            raise subprocess.CalledProcessError(result.returncode, cmd)
+            
         return result
+        
     except Exception as e:
         print(f"Error running command: {e}", file=sys.stderr)
         if check:
             raise
-        return None
+        return subprocess.CompletedProcess(cmd, -1)
+
+
+def test_installation() -> None:
+    """Test package installation in a fresh conda environment."""
+    print("\n=== Testing installation ===")
+    test_env_name = "fileutils_test"
+
+    # Remove existing test environment if it exists
+    run_command(f"conda env remove -n {test_env_name} --yes", check=False)
+
+    # Create fresh conda environment with minimum Python
+    result = run_command(f"conda create -n {test_env_name} python=3.8 -y")
+    if result.returncode != 0:
+        print("Failed to create conda environment")
+        return
+
+    # Get wheel file
+    wheel = next(Path("dist").glob("*.whl"))
+
+    # Install and test package
+    commands = [
+        f"conda run -n {test_env_name} pip install {wheel}[all]",
+        f'conda run -n {test_env_name} python -c "from FileUtils.version import __version__; print(__version__)"',
+        f'conda run -n {test_env_name} python -c "from FileUtils.core.base import BaseStorage"',
+        f'conda run -n {test_env_name} python -c "from FileUtils.storage.azure import AzureStorage"',
+        f'conda run -n {test_env_name} python -c "from FileUtils import FileUtils"',  # Basic import test
+    ]
+
+    success = True
+    for cmd in commands:
+        result = run_command(cmd)
+        if result.returncode != 0:
+            print(f"\nInstallation test failed at command: {cmd}")
+            success = False
+            break
+
+    # Clean up
+    run_command(f"conda env remove -n {test_env_name} --yes", check=False)
+
+    if success:
+        print("Installation test completed successfully")
+    else:
+        print("Installation test failed")
 
 
 def build_package() -> None:
@@ -183,51 +244,29 @@ def verify_build(version: str) -> None:
     run_command("twine check dist/*")
 
     dist_dir = Path("dist")
+    
+    print("\nActual files in dist/:")
+    for file in dist_dir.iterdir():
+        print(f"  {file.name}")
+
+    # Expected files with exact names
     expected_files = [
-        f"FileUtils-{version}.tar.gz",
         f"FileUtils-{version}-py3-none-any.whl",
+        f"fileutils-{version}.tar.gz"
     ]
 
-    for file in expected_files:
-        if not (dist_dir / file).exists():
-            raise FileNotFoundError(f"Expected build file missing: {file}")
+    missing_files = []
+    for expected in expected_files:
+        if not (dist_dir / expected).exists():
+            missing_files.append(expected)
+    
+    if missing_files:
+        print("\nMissing expected files:")
+        for fname in missing_files:
+            print(f"  {fname}")
+        raise FileNotFoundError(f"Build verification failed - missing files")
 
-    print("Build files verified")
-
-
-def test_installation() -> None:
-    """Test package installation in a fresh environment."""
-    print("\n=== Testing installation ===")
-    test_env = Path("test_env")
-    if test_env.exists():
-        shutil.rmtree(test_env)
-
-    # Create and activate virtual environment
-    venv.create(test_env, with_pip=True)
-
-    # Determine activation script
-    if sys.platform == "win32":
-        activate_script = test_env / "Scripts" / "activate.bat"
-        activate_cmd = str(activate_script)
-    else:
-        activate_script = test_env / "bin" / "activate"
-        activate_cmd = f"source {activate_script}"
-
-    # Install and test package
-    wheel = next(Path("dist").glob("*.whl"))
-    commands = [
-        f"{activate_cmd} && pip install {wheel}[all]",
-        f'{activate_cmd} && python -c "from FileUtils import FileUtils; print(FileUtils.__version__)"',
-        # Test imports of new modules
-        f'{activate_cmd} && python -c "from FileUtils.core.base import BaseStorage"',
-        f'{activate_cmd} && python -c "from FileUtils.storage.azure import AzureStorage"',
-    ]
-
-    for cmd in commands:
-        run_command(cmd)
-
-    print("Installation test completed")
-
+    print("Build files verified successfully!")
 
 def run_tests(skip_tests: bool = False) -> bool:
     """Run the test suite.

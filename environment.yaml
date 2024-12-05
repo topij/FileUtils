@@ -16,12 +16,26 @@ dependencies:
   - pyarrow>=7.0.0
   - openpyxl>=3.0.9
   # Development dependencies
-  - pytest>=6.0
   - black
   - isort
   - mypy
   - flake8
   - pre-commit
+  # Testing
+  - pytest>=6.0.0
+  - pytest-cov>=4.1.0
+  - pytest-asyncio>=0.21.0
+  - pytest-mock>=3.11.1
+  # Build tools
+  - build
+  - twine
+  - wheel
+  # Documentation
+  - mkdocs
+  - mkdocs-material
+  # Development
   - jupyter
-  - pip:
-      - git+ssh://git@github.com/topij/FileUtils.git#egg=FileUtils[all]
+  - ipython
+  - ipykernel
+  # - pip:
+  #    - git+ssh://git@github.com/topij/FileUtils.git#egg=FileUtils[all]
