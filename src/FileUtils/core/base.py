@@ -79,12 +79,16 @@ class BaseStorage(ABC):
         base_path = Path(file_path)
 
         if file_format == "xlsx":
-            # Special handling for Excel files with proper engine
-            engine = kwargs.get('engine', 'openpyxl')  # Default to openpyxl
-            with pd.ExcelWriter(base_path, engine=engine) as writer:
-                for sheet_name, df in dataframes.items():
-                    df.to_excel(writer, sheet_name=sheet_name, index=False)
-            saved_files[base_path.stem] = str(base_path)
+            # Special handling for Excel files with proper engine and sheet names
+            engine = kwargs.get('engine', 'openpyxl') 
+            try:
+                with pd.ExcelWriter(base_path, engine=engine) as writer:
+                    for sheet_name, df in dataframes.items():
+                        df.to_excel(writer, sheet_name=sheet_name, index=False)
+                saved_files[base_path.stem] = str(base_path)
+                self.logger.info(f"Saved Excel file with sheets: {list(dataframes.keys())}")
+            except Exception as e:
+                raise StorageError(f"Failed to save Excel file: {e}") from e
         else:
             # Save individual files
             for name, df in dataframes.items():

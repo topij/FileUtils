@@ -13,7 +13,11 @@ class LocalStorage(BaseStorage):
     """Local filesystem storage implementation."""
 
     def save_dataframe(
-        self, df: pd.DataFrame, file_path: Union[str, Path], file_format: str, **kwargs
+        self, 
+        df: pd.DataFrame, 
+        file_path: Union[str, Path], 
+        file_format: str, 
+        **kwargs
     ) -> str:
         """Save DataFrame to local filesystem."""
         try:
@@ -22,14 +26,17 @@ class LocalStorage(BaseStorage):
             if file_format == "csv":
                 df.to_csv(
                     path,
-                    index=False,
+                    index=False, 
                     encoding=self.config["encoding"],
                     sep=self.config["csv_delimiter"],
                 )
             elif file_format == "parquet":
                 df.to_parquet(path, index=False)
             elif file_format == "xlsx":
-                df.to_excel(path, index=False, engine="openpyxl")
+                # Handle Excel with sheet name 
+                sheet_name = kwargs.get('sheet_name', next(iter(kwargs)) if kwargs else 'Sheet1')
+                with pd.ExcelWriter(path, engine='openpyxl') as writer:
+                    df.to_excel(writer, sheet_name=sheet_name, index=False)
             else:
                 raise ValueError(f"Unsupported format: {file_format}")
 

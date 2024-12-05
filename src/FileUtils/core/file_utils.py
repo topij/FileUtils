@@ -61,7 +61,7 @@ class FileUtils:
         current_dir = Path.cwd()
         root_indicators = [".git", "pyproject.toml", "setup.py"]
 
-        while current_dir != current_dir.parent:
+        while current_dir != current_dir.paredatant:
             if any((current_dir / indicator).exists() for indicator in root_indicators):
                 return current_dir
             current_dir = current_dir.parent
@@ -135,13 +135,15 @@ class FileUtils:
         Returns:
             Tuple of (saved files dict, optional metadata path)
         """
-            
+  
         if isinstance(output_filetype, str):
             output_filetype = OutputFileType(output_filetype.lower())
 
         # Convert single DataFrame to dict format
         if isinstance(data, pd.DataFrame):
-            data = {"data": data}
+            # Preserve sheet name if provided in kwargs, otherwise use default
+            sheet_name = kwargs.get('sheet_name', 'Sheet1')
+            data = {sheet_name: data}
 
         # For Excel files, ensure openpyxl engine
         if output_filetype == OutputFileType.XLSX and 'engine' not in kwargs:
@@ -156,15 +158,19 @@ class FileUtils:
         )
 
         try:
-            if len(data) == 1:
+            if len(data) == 1 and output_filetype != OutputFileType.XLSX:
+                # For non-Excel single DataFrame
+                sheet_name = next(iter(data.keys()))
                 saved_path = self.storage.save_dataframe(
                     next(iter(data.values())),
                     base_path,
                     output_filetype.value,
+                    sheet_name=sheet_name,  # Pass sheet name through
                     **kwargs,
                 )
-                saved_files = {next(iter(data.keys())): saved_path}
+                saved_files = {sheet_name: saved_path}
             else:
+                # For Excel or multiple DataFrames
                 saved_files = self.storage.save_dataframes(
                     data, base_path, output_filetype.value, **kwargs
                 )
