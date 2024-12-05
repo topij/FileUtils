@@ -61,7 +61,7 @@ class FileUtils:
         current_dir = Path.cwd()
         root_indicators = [".git", "pyproject.toml", "setup.py"]
 
-        while current_dir != current_dir.paredatant:
+        while current_dir != current_dir.parent:
             if any((current_dir / indicator).exists() for indicator in root_indicators):
                 return current_dir
             current_dir = current_dir.parent
