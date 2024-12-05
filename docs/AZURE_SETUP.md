@@ -1,41 +1,48 @@
 # Azure Storage Setup Guide
 
-Complete guide for setting up and using Azure Storage with FileUtils.
-
 ## Quick Start
 
 ```python
-from FileUtils import FileUtils, StorageType
+from FileUtils import FileUtils
 
 # Initialize with Azure storage
-file_utils = FileUtils(
-    storage_type=StorageType.AZURE,
+utils = FileUtils(
+    storage_type="azure",
     connection_string="your_connection_string"
 )
 
-# Save data directly to Azure
-saved_files, _ = file_utils.save_data_to_storage(
+# Save data
+df = pd.DataFrame({'data': range(100)})
+saved_files, metadata = utils.save_data_to_storage(
     data=df,
-    output_filetype="csv",
+    output_filetype="parquet",
     output_type="processed",
     file_name="azure_data"
 )
+
+# Load data using Azure URI
+loaded_df = utils.load_single_file(saved_files['data'])
 ```
 
-## Azure Storage Setup
+## Azure Setup Process
 
-### 1. Prerequisites
+### 1. Azure Prerequisites
+
 - Azure account with active subscription
-- Storage Account created in Azure
+- Storage Account
+  - Create in Azure Portal or using Azure CLI
+  - Performance tier: Standard
+  - Account kind: StorageV2 (recommended)
+  - Replication: LRS/GRS based on needs
 - Required permissions:
-  - `Storage Blob Data Contributor`
-  - `Storage Account Contributor`
+  - Storage Blob Data Contributor
+  - Storage Account Contributor
 
 ### 2. Connection Configuration
 
 Choose one of these methods:
 
-1. Environment Variable:
+#### Environment Variables
 ```bash
 # Windows
 set AZURE_STORAGE_CONNECTION_STRING="DefaultEndpointsProtocol=https;AccountName=..."
@@ -44,7 +51,7 @@ set AZURE_STORAGE_CONNECTION_STRING="DefaultEndpointsProtocol=https;AccountName=
 export AZURE_STORAGE_CONNECTION_STRING="DefaultEndpointsProtocol=https;AccountName=..."
 ```
 
-2. Configuration File:
+#### Configuration File
 ```yaml
 # config.yaml
 storage:
@@ -62,41 +69,31 @@ storage:
       max_delay: 30
 ```
 
-3. Direct initialization:
+#### Direct Initialization
 ```python
-file_utils = FileUtils(
+utils = FileUtils(
     storage_type="azure",
-    connection_string="your_connection_string",
-    config_file="config.yaml"
+    connection_string="your_connection_string"
 )
 ```
 
-### 3. Container Setup
+### 3. Container Structure
 
-Containers are automatically created based on configuration:
+FileUtils automatically manages these containers:
+- raw-data: Original data
+- processed-data: Final processed data
+- interim-data: Intermediate processing
+- external-data: External data sources
 
+Configure container names:
 ```yaml
-# config.yaml
 storage:
   azure:
     container_mapping:
-      raw: "raw-data"        # for raw data
-      processed: "processed-data"    # for processed data
-      interim: "interim-data"      # for intermediate data
-      configurations: "config"    # for configuration files
-```
-
-Manual container verification:
-```python
-from FileUtils.storage.azure import AzureStorage
-
-# Verify containers exist
-storage = file_utils.storage
-if isinstance(storage, AzureStorage):
-    print("Container status:")
-    for output_type, container in storage.container_mapping.items():
-        exists = storage.container_exists(container)
-        print(f"{output_type}: {container} - {'exists' if exists else 'missing'}")
+      raw: "raw-data"
+      processed: "processed-data"
+      interim: "interim-data"
+      external: "external-data"
 ```
 
 ## Usage Examples
@@ -104,17 +101,17 @@ if isinstance(storage, AzureStorage):
 ### Basic Operations
 
 ```python
-# Save DataFrame to Azure
-saved_files, _ = file_utils.save_data_to_storage(
+# Save DataFrame
+saved_files, metadata = utils.save_data_to_storage(
     data=df,
     output_filetype="parquet",
     output_type="processed",
-    file_name="azure_data"
+    file_name="data"
 )
 
-# Load from Azure
-azure_path = saved_files["data"]  # Contains azure:// URI
-loaded_df = file_utils.load_single_file(azure_path)
+# Load using Azure URI
+azure_path = saved_files['data']  # Contains azure:// URI
+loaded_df = utils.load_single_file(azure_path)
 ```
 
 ### Multiple Files
@@ -126,7 +123,7 @@ data_dict = {
     'inventory': inventory_df
 }
 
-saved_files, _ = file_utils.save_data_to_storage(
+saved_files, metadata = utils.save_data_to_storage(
     data=data_dict,
     output_filetype="xlsx",
     output_type="processed",
@@ -134,57 +131,60 @@ saved_files, _ = file_utils.save_data_to_storage(
 )
 
 # Load Excel sheets
-sheets = file_utils.load_excel_sheets(saved_files["report"])
+sheets = utils.load_excel_sheets(saved_files['report'])
 ```
 
-### Fallback Handling
+### Metadata Handling
 
 ```python
-try:
-    # Try Azure first
-    file_utils = FileUtils(
-        storage_type="azure",
-        connection_string="your_connection_string"
-    )
-except StorageConnectionError:
-    # Fallback to local storage
-    print("Azure connection failed, using local storage")
-    file_utils = FileUtils(storage_type="local")
+# Save with metadata
+saved_files, metadata_path = utils.save_with_metadata(
+    data=data_dict,
+    output_filetype="csv",
+    output_type="processed",
+    file_name="data_with_metadata"
+)
+
+# Load using metadata
+loaded_data = utils.load_from_metadata(metadata_path)
 ```
 
 ## Performance Optimization
 
-1. Use appropriate file formats:
+### 1. File Format Selection
+
 ```python
-# For large datasets
-file_utils.save_data_to_storage(
+# Large datasets: Use Parquet
+utils.save_data_to_storage(
     data=large_df,
-    output_filetype="parquet",  # Better compression
+    output_filetype="parquet",
     output_type="processed"
 )
 
-# For smaller, human-readable data
-file_utils.save_data_to_storage(
+# Small, readable data: Use CSV
+utils.save_data_to_storage(
     data=small_df,
     output_filetype="csv",
     output_type="processed"
 )
 ```
 
-2. Batch operations:
+### 2. Batch Operations
+
 ```python
-# Better performance
-file_utils.save_data_to_storage(
+# Efficient: Save multiple files at once
+utils.save_data_to_storage(
     data={"file1": df1, "file2": df2},
     output_filetype="parquet"
 )
 
-# Avoid multiple individual saves
+# Less efficient: Save files individually
 # for df in dataframes:
-#     file_utils.save_data_to_storage(data=df, ...)
+#     utils.save_data_to_storage(data=df, ...)
 ```
 
-3. Configure retry settings:
+### 3. Retry Settings
+
 ```yaml
 storage:
   azure:
@@ -196,7 +196,8 @@ storage:
 
 ## Security Best Practices
 
-1. Connection String Management:
+### 1. Connection String Management
+
 ```python
 # Use environment variables (preferred)
 import os
@@ -208,104 +209,47 @@ load_dotenv()
 connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 ```
 
-2. Container Access:
-```yaml
-storage:
-  azure:
-    container_mapping:
-      sensitive: "restricted-access"
-      public: "public-access"
-```
+### 2. Access Control
+
+- Use Azure RBAC (Role-Based Access Control)
+- Assign minimum required permissions
+- Use SAS tokens for temporary access
+- Enable secure transfer (HTTPS)
+- Configure network rules
 
 ## Troubleshooting
 
-### Common Issues
-
-1. Connection Errors:
+### Connection Issues
 ```python
-from FileUtils.core.base import StorageConnectionError
-
 try:
-    file_utils = FileUtils(
+    utils = FileUtils(
         storage_type="azure",
-        connection_string="invalid_string"
+        connection_string="connection_string"
     )
 except StorageConnectionError as e:
     print(f"Connection error: {e}")
     # Handle connection error
 ```
 
-2. Permission Issues:
+### Permission Issues
 ```python
 try:
-    file_utils.save_data_to_storage(
+    utils.save_data_to_storage(
         data=df,
         output_type="restricted"
     )
 except StorageError as e:
     if "AuthorizationFailure" in str(e):
-        print("Permission denied - check Azure role assignments")
-```
-
-3. Container Issues:
-```python
-# Verify container exists
-if not file_utils.storage.container_exists("my-container"):
-    print("Container missing - check configuration")
+        print("Permission denied")
 ```
 
 ### Debug Mode
-
-Enable detailed logging:
 ```python
-file_utils = FileUtils(
+utils = FileUtils(
     storage_type="azure",
-    connection_string="your_connection_string",
+    connection_string="connection_string",
     log_level="DEBUG"
 )
 ```
 
-### Validation Steps
-
-1. Test connection:
-```python
-def test_azure_connection(connection_string: str) -> bool:
-    try:
-        utils = FileUtils(
-            storage_type="azure",
-            connection_string=connection_string
-        )
-        # Try a simple operation
-        utils.save_data_to_storage(
-            data=pd.DataFrame({"test": [1]}),
-            output_type="processed",
-            file_name="connection_test"
-        )
-        return True
-    except Exception as e:
-        print(f"Connection test failed: {e}")
-        return False
-```
-
-2. Verify permissions:
-```python
-def verify_azure_permissions(file_utils: FileUtils) -> dict:
-    results = {}
-    for operation in ["list", "read", "write"]:
-        try:
-            if operation == "list":
-                _ = file_utils.storage.list_files("processed")
-            elif operation == "read":
-                _ = file_utils.load_single_file("test.csv")
-            else:
-                _ = file_utils.save_data_to_storage(
-                    data=pd.DataFrame({"test": [1]}),
-                    file_name="test"
-                )
-            results[operation] = "success"
-        except Exception as e:
-            results[operation] = f"failed: {str(e)}"
-    return results
-```
-
-For general usage instructions, see [Usage Guide](USAGE.md).
+For general usage instructions, see the [Usage Guide](USAGE.md).

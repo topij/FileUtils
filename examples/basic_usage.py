@@ -10,16 +10,14 @@ def demonstrate_basic_operations():
     file_utils = FileUtils()
 
     # Create sample data
-    df = pd.DataFrame(
-        {
-            "name": ["Alice", "Bob", "Charlie"],
-            "age": [25, 30, 35],
-            "city": ["New York", "London", "Paris"],
-        }
-    )
+    df = pd.DataFrame({
+        "name": ["Alice", "Bob", "Charlie"],
+        "age": [25, 30, 35],
+        "city": ["New York", "London", "Paris"],
+    })
 
     # Save as CSV
-    saved_files, _ = file_utils.save_data_to_disk(
+    saved_files, metadata = file_utils.save_data_to_storage(
         data=df,
         output_filetype=OutputFileType.CSV,
         output_type="processed",
@@ -28,7 +26,7 @@ def demonstrate_basic_operations():
     print(f"Saved CSV file: {saved_files}")
 
     # Save as Excel
-    saved_files, _ = file_utils.save_data_to_disk(
+    saved_files, metadata = file_utils.save_data_to_storage(
         data=df,
         output_filetype=OutputFileType.XLSX,
         output_type="processed",
@@ -36,24 +34,38 @@ def demonstrate_basic_operations():
     )
     print(f"Saved Excel file: {saved_files}")
 
-    # Save multiple DataFrames to Excel
+    # Save multiple DataFrames to Excel with metadata
     df2 = df.copy()
     df2["age"] = df2["age"] + 1
-    multi_df = {"original": df, "modified": df2}
-    saved_files, _ = file_utils.save_data_to_disk(
+    
+    # Create summary without multi-index
+    summary_df = (df.groupby("city")
+                   .agg({"age": ["mean", "count"]})
+                   .reset_index())
+    # Flatten column names
+    summary_df.columns = [f"{col[0]}_{col[1]}" if col[1] else col[0] 
+                         for col in summary_df.columns]
+    
+    multi_df = {
+        "original": df,
+        "modified": df2,
+        "summary": summary_df
+    }
+    
+    saved_files, metadata = file_utils.save_with_metadata(
         data=multi_df,
         output_filetype=OutputFileType.XLSX,
         output_type="processed",
         file_name="multi_sheet_data",
     )
-    print(f"Saved multi-sheet Excel file: {saved_files}")
+    print(f"Saved multi-sheet Excel file with metadata: {saved_files}")
 
-    # Load data back
-    loaded_df = file_utils.load_single_file(
-        list(saved_files.values())[0], input_type="processed"
-    )
-    print("\nLoaded data:")
-    print(loaded_df)
+    # Load data using metadata
+    loaded_data = file_utils.load_from_metadata(metadata)
+    print("\nLoaded data from metadata:")
+    for sheet_name, sheet_df in loaded_data.items():
+        print(f"\n{sheet_name}:")
+        print(sheet_df)
 
 
 if __name__ == "__main__":

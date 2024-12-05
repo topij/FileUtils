@@ -2,62 +2,93 @@
 
 import pandas as pd
 from FileUtils import FileUtils
-from FileUtils.azure_setup import AzureSetupUtils
+from FileUtils.core.base import StorageConnectionError, StorageOperationError
+from FileUtils.core.enums import OutputFileType
 
 
-def setup_azure():
-    """Set up Azure Storage containers."""
-    # Ensure Azure is properly configured
-    AzureSetupUtils.setup_azure_storage()
+def setup_azure(connection_string: str):
+    """Set up Azure Storage connection."""
+    try:
+        # Initialize Azure-enabled FileUtils
+        utils = FileUtils(
+            storage_type="azure",
+            connection_string=connection_string
+        )
+        return utils
+    except StorageConnectionError as e:
+        print(f"Failed to connect to Azure: {e}")
+        return None
 
-    # Validate setup
-    is_valid = AzureSetupUtils.validate_azure_setup()
-    if not is_valid:
-        raise RuntimeError("Azure setup validation failed")
 
-    return is_valid
-
-
-def demonstrate_azure_operations():
+def demonstrate_azure_operations(file_utils: FileUtils):
     """Demonstrate Azure Storage operations."""
-    # Initialize Azure-enabled FileUtils
-    file_utils = FileUtils.create_azure_utils()
-
-    # Create sample data
-    df = pd.DataFrame(
-        {
+    try:
+        # Create sample data
+        df = pd.DataFrame({
             "product": ["Laptop", "Phone", "Tablet"],
             "price": [1200, 800, 500],
             "stock": [50, 100, 75],
+        })
+
+        # Save to Azure Storage with metadata
+        saved_files, metadata = file_utils.save_with_metadata(
+            data={"products": df},
+            output_filetype=OutputFileType.PARQUET,  # Using Parquet for efficiency
+            output_type="processed",
+            file_name="products"
+        )
+        print(f"Saved files to Azure: {saved_files}")
+        print(f"Metadata location: {metadata}")
+
+        # Load from Azure Storage using metadata
+        loaded_data = file_utils.load_from_metadata(metadata)
+        print("\nLoaded data from Azure:")
+        print(loaded_data["products"])
+
+        # Save multiple DataFrames
+        df2 = df.copy()
+        df2["price"] = df2["price"] * 1.1  # 10% price increase
+        df3 = df.groupby("product").agg({
+            "price": "mean",
+            "stock": "sum"
+        }).reset_index()
+        
+        multi_df = {
+            "current_prices": df,
+            "new_prices": df2,
+            "summary": df3
         }
-    )
 
-    # Save to Azure Storage
-    saved_files, _ = file_utils.save_data_to_disk(
-        data=df, output_filetype="csv", output_type="processed", file_name="products"
-    )
-    print(f"Saved files to Azure: {saved_files}")
+        saved_files, metadata = file_utils.save_with_metadata(
+            data=multi_df,
+            output_filetype=OutputFileType.XLSX,
+            output_type="processed",
+            file_name="price_comparison",
+        )
+        print(f"\nSaved multi-sheet file to Azure: {saved_files}")
+        
+        # Load and verify Excel sheets
+        sheets = file_utils.load_excel_sheets(saved_files["price_comparison"])
+        print("\nLoaded Excel sheets:")
+        for name, sheet_df in sheets.items():
+            print(f"\n{name}:")
+            print(sheet_df)
 
-    # Load from Azure Storage
-    azure_path = list(saved_files.values())[0]
-    loaded_df = file_utils.load_single_file(azure_path)
-    print("\nLoaded data from Azure:")
-    print(loaded_df)
-
-    # Save multiple DataFrames
-    df2 = df.copy()
-    df2["price"] = df2["price"] * 1.1  # 10% price increase
-    multi_df = {"current_prices": df, "new_prices": df2}
-
-    saved_files, _ = file_utils.save_data_to_disk(
-        data=multi_df,
-        output_filetype="xlsx",
-        output_type="processed",
-        file_name="price_comparison",
-    )
-    print(f"\nSaved multi-sheet file to Azure: {saved_files}")
+    except StorageOperationError as e:
+        print(f"Storage operation failed: {e}")
 
 
 if __name__ == "__main__":
-    if setup_azure():
-        demonstrate_azure_operations()
+    # Get connection string from environment or config
+    import os
+    from dotenv import load_dotenv
+    
+    load_dotenv()
+    connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+    
+    if not connection_string:
+        print("Azure connection string not found. Please set AZURE_STORAGE_CONNECTION_STRING")
+    else:
+        utils = setup_azure(connection_string)
+        if utils:
+            demonstrate_azure_operations(utils)

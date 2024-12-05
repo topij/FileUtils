@@ -2,7 +2,8 @@
 
 import yaml
 from pathlib import Path
-from FileUtils import FileUtils
+import pandas as pd
+from FileUtils import FileUtils, OutputFileType
 
 
 def create_custom_config():
@@ -10,16 +11,35 @@ def create_custom_config():
     config = {
         "csv_delimiter": "|",
         "encoding": "utf-8",
-        "quoting": 0,
+        "quoting": 0,  # csv.QUOTE_MINIMAL
         "include_timestamp": True,
         "logging_level": "DEBUG",
-        "disable_logging": False,
+        
+        # Directory structure
         "directory_structure": {
             "data": ["raw", "interim", "processed", "external"],
             "reports": ["figures", "tables", "presentations"],
             "models": ["trained", "evaluations"],
-            "documentation": ["specs", "api"],
+            "docs": ["api", "guides"],
         },
+        
+        # Storage settings
+        "storage": {
+            "default_type": "local",
+            "azure": {
+                "enabled": False,
+                "container_mapping": {
+                    "raw": "raw-data",
+                    "processed": "processed-data",
+                    "interim": "interim-data",
+                },
+                "retry_settings": {
+                    "max_retries": 3,
+                    "retry_delay": 1,
+                    "max_delay": 30,
+                }
+            }
+        }
     }
 
     config_path = Path("custom_config.yaml")
@@ -45,11 +65,28 @@ def demonstrate_configuration():
         for sub_dir in sub_dirs:
             print(f"  ├── {sub_dir}/")
 
-    # Show other settings
-    print("\nOther settings:")
-    for key, value in file_utils.config.items():
-        if key != "directory_structure":
-            print(f"{key}: {value}")
+    # Test with sample data
+    df = pd.DataFrame({
+        "name": ["Alice", "Bob"],
+        "score": [95, 87]
+    })
+
+    # Save with custom delimiter
+    saved_files, metadata = file_utils.save_data_to_storage(
+        data=df,
+        output_filetype=OutputFileType.CSV,
+        output_type="processed",
+        file_name="custom_delim_test"
+    )
+
+    # Show file contents
+    print("\nFile with custom delimiter:")
+    with open(list(saved_files.values())[0], "r") as f:
+        print(f.read())
+
+    # Clean up
+    config_path.unlink()
+    print("\nConfiguration test completed")
 
 
 if __name__ == "__main__":
