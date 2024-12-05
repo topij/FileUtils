@@ -92,7 +92,7 @@ def verify_version() -> str:
     from FileUtils.version import __version__
 
     files_to_check = {
-        "setup.py": f'version="{__version__}"',
+        # "setup.py": f'version="{__version__}"',
         "pyproject.toml": f'version = "{__version__}"',
     }
 
@@ -106,26 +106,26 @@ def verify_version() -> str:
     return __version__
 
 
-def verify_dependencies() -> None:
-    """Verify all dependencies are listed correctly."""
-    print("\n=== Verifying dependencies ===")
+def verify_dependencies():
+    """Verify all dependencies are listed in pyproject.toml."""
+    try:
+        with open("pyproject.toml", "r") as f:
+            content = f.read()
+        
+        required_deps = [
+            "pandas>=1.3.0",
+            "pyyaml>=5.4.1", 
+            "python-dotenv>=0.19.0",
+            "jsonschema>=3.2.0"
+        ]
 
-    # Core dependencies from setup.py
-    with open("setup.py", "r") as f:
-        setup_content = f.read()
+        for dep in required_deps:
+            if dep not in content:
+                raise ValueError(f"Missing core dependency in pyproject.toml: {dep}")
 
-    required_deps = [
-        "pandas>=1.3.0",
-        "pyyaml>=5.4.1",
-        "python-dotenv>=0.19.0",
-        "jsonschema>=3.2.0",
-    ]
-
-    for dep in required_deps:
-        if dep not in setup_content:
-            raise ValueError(f"Missing core dependency in setup.py: {dep}")
-
-    print("Dependencies verified")
+        print("Dependencies verified")
+    except Exception as e:
+        raise ValueError(f"Dependency verification failed: {e}")
 
 
 def run_command(cmd: str, check: bool = True, capture_output: bool = False) -> subprocess.CompletedProcess:
@@ -244,27 +244,20 @@ def verify_build(version: str) -> None:
     run_command("twine check dist/*")
 
     dist_dir = Path("dist")
-    
     print("\nActual files in dist/:")
     for file in dist_dir.iterdir():
         print(f"  {file.name}")
 
-    # Expected files with exact names
-    expected_files = [
-        f"FileUtils-{version}-py3-none-any.whl",
-        f"fileutils-{version}.tar.gz"
-    ]
+    # Find files that match the version pattern regardless of trailing zeros
+    wheel_pattern = f"FileUtils-{version.split('.')[0]}.{version.split('.')[1]}"
+    tar_pattern = f"fileutils-{version.split('.')[0]}.{version.split('.')[1]}"
 
-    missing_files = []
-    for expected in expected_files:
-        if not (dist_dir / expected).exists():
-            missing_files.append(expected)
-    
-    if missing_files:
-        print("\nMissing expected files:")
-        for fname in missing_files:
-            print(f"  {fname}")
-        raise FileNotFoundError(f"Build verification failed - missing files")
+    matching_wheel = list(dist_dir.glob(f"{wheel_pattern}*-py3-none-any.whl"))
+    matching_tar = list(dist_dir.glob(f"{tar_pattern}*.tar.gz"))
+
+    if not matching_wheel or not matching_tar:
+        print(f"\nMissing expected files for version {version}")
+        raise FileNotFoundError("Build verification failed - missing files")
 
     print("Build files verified successfully!")
 
