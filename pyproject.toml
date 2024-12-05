@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "FileUtils"
-version = "0.5.2"
+version = "0.5.3"
 description = "File utilities for data science projects with Azure support"
 readme = "README.md"
 authors = [{name = "Topi Järvinen"}]
