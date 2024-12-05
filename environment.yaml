@@ -37,5 +37,4 @@ dependencies:
   - jupyter
   - ipython
   - ipykernel
-  # - pip:
-  #    - git+ssh://git@github.com/topij/FileUtils.git#egg=FileUtils[all]
+  

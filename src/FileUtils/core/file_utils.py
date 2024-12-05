@@ -135,12 +135,17 @@ class FileUtils:
         Returns:
             Tuple of (saved files dict, optional metadata path)
         """
+            
         if isinstance(output_filetype, str):
             output_filetype = OutputFileType(output_filetype.lower())
 
         # Convert single DataFrame to dict format
         if isinstance(data, pd.DataFrame):
             data = {"data": data}
+
+        # For Excel files, ensure openpyxl engine
+        if output_filetype == OutputFileType.XLSX and 'engine' not in kwargs:
+            kwargs['engine'] = 'openpyxl'
 
         # Generate output path
         base_path = format_file_path(

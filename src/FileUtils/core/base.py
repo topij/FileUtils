@@ -74,16 +74,14 @@ class BaseStorage(ABC):
         file_format: str,
         **kwargs,
     ) -> Dict[str, str]:
-        """Save multiple DataFrames.
-        
-        Default implementation for multiple files. Override for format-specific handling.
-        """
+        """Save multiple DataFrames."""
         saved_files = {}
         base_path = Path(file_path)
 
         if file_format == "xlsx":
-            # Special handling for Excel files
-            with pd.ExcelWriter(base_path) as writer:
+            # Special handling for Excel files with proper engine
+            engine = kwargs.get('engine', 'openpyxl')  # Default to openpyxl
+            with pd.ExcelWriter(base_path, engine=engine) as writer:
                 for sheet_name, df in dataframes.items():
                     df.to_excel(writer, sheet_name=sheet_name, index=False)
             saved_files[base_path.stem] = str(base_path)
