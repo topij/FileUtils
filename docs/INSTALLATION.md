@@ -1,39 +1,39 @@
 # Installation Guide for FileUtils
 
-## Installation Methods
+# Installation Methods
 
-### 1. Basic Installation
-
+## Basic Installation
 ```bash
-# Basic installation (local storage only)
-pip install "git+https://github.com/topij/FileUtils.git"
+pip install "FileUtils @ git+https://github.com/topij/FileUtils.git"
 ```
 
-### 2. Installation with Optional Features
-
+## Installation with Optional Features
 ```bash
-# With Azure support
-pip install "git+https://github.com/topij/FileUtils.git#egg=FileUtils[azure]"
+# Azure support
+pip install "FileUtils[azure] @ git+https://github.com/topij/FileUtils.git"
 
-# With Parquet support
-pip install "git+https://github.com/topij/FileUtils.git#egg=FileUtils[parquet]"
+# Parquet support
+pip install "FileUtils[parquet] @ git+https://github.com/topij/FileUtils.git"
 
-# With Excel support
-pip install "git+https://github.com/topij/FileUtils.git#egg=FileUtils[excel]"
+# Excel support
+pip install "FileUtils[excel] @ git+https://github.com/topij/FileUtils.git"
 
-# With all features
-pip install "git+https://github.com/topij/FileUtils.git#egg=FileUtils[all]"
+# All features
+pip install "FileUtils[all] @ git+https://github.com/topij/FileUtils.git"
 ```
 
-### 3. Development Installation
+## Development Installation
 
+For development work:
 ```bash
-# Clone the repository
-git clone git@github.com:topij/FileUtils.git
+# Clone repository
+git clone https://github.com/topij/FileUtils.git
 cd FileUtils
 
-# Create and activate conda environment
+# Create conda environment
 conda env create -f environment.yaml
+
+# Activate environment
 conda activate fileutils
 
 # Install in development mode
