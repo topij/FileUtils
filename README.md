@@ -1,164 +1,61 @@
 # FileUtils
 
-FileUtils is a Python utility package for managing data files in data science projects. It provides robust file operations with local and cloud storage support, focusing on reproducibility and ease of use.
+A Python utility package for consistent file operations across local and Azure storage.
 
-## Key Features
+## Features
 
-- **Multiple Storage Backends**: 
-  - Local filesystem storage
-  - Azure Blob Storage support
-  - Extensible storage abstraction for future backends
-- **Multiple Format Support**: 
-  - CSV with delimiter inference
-  - Excel (single and multi-sheet)
-  - Parquet for large datasets
-  - JSON and YAML for configuration
-- **Project Structure Management**: 
-  - Automated directory creation
-  - Standardized project layout
-  - Configurable structure
-- **Advanced Features**:
-  - Automatic metadata tracking
-  - Timestamp support for versioning
-  - Batch file operations
-  - Format conversion
-- **Developer Friendly**:
-  - Full type hints
-  - Comprehensive logging
-  - Extensive documentation
-  - Test coverage
+- Unified interface for both local and Azure Blob Storage operations
+- Automatic directory structure management
+- Support for multiple file formats:
+  - CSV
+  - Excel (.xlsx, .xls)
+  - Parquet
+  - JSON
+  - YAML
+- Configurable file operations with YAML configuration
+- Type hints and comprehensive error handling
+- Logging system with configurable levels
+- Azure Blob Storage integration
+
+## Installation
+
+See [INSTALLATION.md](docs/INSTALLATION.md) for detailed installation instructions.
+
+## Usage
+
+See [USAGE.md](docs/USAGE.md) for usage examples and API documentation.
+
+For Azure Blob Storage setup and configuration, see [AZURE_SETUP.md](docs/AZURE_SETUP.md).
 
 ## Quick Start
 
 ```python
-from FileUtils import FileUtils
-import pandas as pd
+from FileUtils import FileUtils, OutputFileType
 
-# Local storage
+# Initialize with local storage
 file_utils = FileUtils()
 
-# Azure storage
-azure_utils = FileUtils(
-    storage_type="azure",
-    connection_string="your_connection_string"
-)
+# Load DataFrame from various formats
+df_csv = file_utils.load_single_file("data.csv", input_type="raw")
+df_excel = file_utils.load_single_file("data.xlsx", input_type="raw")
+df_parquet = file_utils.load_single_file("data.parquet", input_type="raw")
+df_json = file_utils.load_single_file("data.json", input_type="raw")
+df_yaml = file_utils.load_single_file("data.yaml", input_type="raw")
 
 # Save DataFrame
-df = pd.DataFrame({'A': [1, 2, 3]})
-saved_files, metadata = file_utils.save_data_to_storage(
-    data=df,
-    output_filetype="csv",
+file_utils.save_data_to_storage(
+    data={"Sheet1": df},
+    file_name="output",
     output_type="processed",
-    file_name="my_data"
+    output_filetype=OutputFileType.XLSX
 )
-
-# Save multiple DataFrames
-data_dict = {
-    'data1': df1,
-    'data2': df2
-}
-saved_files, metadata = file_utils.save_data_to_storage(
-    data=data_dict,
-    output_filetype="xlsx",
-    output_type="processed",
-    file_name="multi_sheet_data"
-)
-
-# Load data
-loaded_df = file_utils.load_single_file("my_data.csv", input_type="processed")
-```
-
-## Installation
-
-```bash
-# Basic installation
-pip install "git+https://github.com/topij/FileUtils.git"
-
-# With Azure support
-pip install "git+https://github.com/topij/FileUtils.git#egg=FileUtils[azure]"
-
-# With Parquet support
-pip install "git+https://github.com/topij/FileUtils.git#egg=FileUtils[parquet]"
-
-# With Excel support
-pip install "git+https://github.com/topij/FileUtils.git#egg=FileUtils[excel]"
-
-# With all features
-pip install "git+https://github.com/topij/FileUtils.git#egg=FileUtils[all]"
-```
-
-## Documentation
-
-- [Installation Guide](docs/INSTALLATION.md) - Detailed installation instructions
-- [Usage Guide](docs/USAGE.md) - Core functionality and common use cases
-- [Azure Setup](docs/AZURE_SETUP.md) - Azure storage setup and configuration
-
-
-## Notes from the Author
-This project was born out of everyday needs I encountered in data analysis and business development. Along the way, I used the development process as an opportunity to learn new concepts and explore different ways of handling data and files in various environments.
-
-Please note that I am not a professional software developer, and, for example, the code has not been heavily optimized. My focus was on functionality rather than fine-tuning or optimization.
-
-Active maintenance is not guaranteed, but I may occasionally revisit and update the code base when needed.
-
-Let me know if you find this useful :-)
-
-## Project Structure
-
-FileUtils creates and manages the following default directory structure (can be changed as needed):
-```
-project_root/
-├── data/
-│   ├── raw/         # Original data
-│   ├── interim/     # Intermediate processing
-│   ├── processed/   # Final processed data
-│   └── external/    # External data sources
-├── reports/
-│   ├── figures/     # Generated graphics
-│   ├── tables/      # Generated tables
-│   └── outputs/     # Analysis outputs
-├── models/          # Trained models
-└── src/            # Source code
-```
-
-## Development
-
-For development installation:
-
-```bash
-# Clone repository
-git clone git@github.com:topij/FileUtils.git
-cd FileUtils
-
-# Create conda environment
-conda env create -f environment.yaml
-
-# Activate environment
-conda activate fileutils
-
-# Install in development mode
-python scripts/setup_dev.py
-```
-
-Run tests:
-```bash
-pytest
 ```
 
 ## Requirements
 
-- Python 3.8 or later
-- Core dependencies:
-  - pandas>=1.3.0
-  - PyYAML>=5.4.1
-  - python-dotenv>=0.19.0
-  - jsonschema>=3.2.0
-
-Optional dependencies:
-- Azure: azure-storage-blob, azure-identity
-- Parquet: pyarrow
-- Excel: openpyxl
+- Python 3.9+
+- Dependencies listed in pyproject.toml/environment.yaml
 
 ## License
 
-This project is licensed under the MIT License.
+MIT License

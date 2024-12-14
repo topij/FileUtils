@@ -1,189 +1,80 @@
-# Azure Storage Setup Guide
+# Azure Setup Guide
 
-## Quick Start
+## Prerequisites
 
+1. Azure subscription
+2. Azure Storage account
+3. Azure Blob Storage container
+4. Required Python packages:
+   - azure-storage-blob
+   - azure-identity
+
+## Authentication
+
+1. Using Connection String:
 ```python
 from FileUtils import FileUtils
 
 # Initialize with Azure storage
-utils = FileUtils(
+file_utils = FileUtils(
     storage_type="azure",
     connection_string="your_connection_string"
 )
-
-# Save data
-df = pd.DataFrame({'data': range(100)})
-saved_files, metadata = utils.save_data_to_storage(
-    data=df,
-    output_filetype="parquet",
-    output_type="processed",
-    file_name="azure_data"
-)
-
-# Load data using Azure URI
-loaded_df = utils.load_single_file(saved_files['data'])
 ```
 
-## Azure Setup Process
-
-### 1. Azure Prerequisites
-
-- Azure account with active subscription
-- Storage Account
-  - Create in Azure Portal or using Azure CLI
-  - Performance tier: Standard
-  - Account kind: StorageV2 (recommended)
-  - Replication: LRS/GRS based on needs
-- Required permissions:
-  - Storage Blob Data Contributor
-  - Storage Account Contributor
-
-### 2. Connection Configuration
-
-Choose one of these methods:
-
-#### Environment Variables
+2. Using Environment Variables:
 ```bash
-# Windows
-set AZURE_STORAGE_CONNECTION_STRING="DefaultEndpointsProtocol=https;AccountName=..."
-
-# Linux/macOS
-export AZURE_STORAGE_CONNECTION_STRING="DefaultEndpointsProtocol=https;AccountName=..."
+# Set in .env file or environment
+AZURE_STORAGE_CONNECTION_STRING=your_connection_string
 ```
 
-#### Configuration File
+## Usage with Azure Storage
+
+```python
+from FileUtils import FileUtils, OutputFileType
+
+# Initialize with Azure storage
+file_utils = FileUtils(storage_type="azure")
+
+# Load from Azure (using azure:// URL)
+df = file_utils.load_single_file("azure://container-name/path/to/file.xlsx")
+
+# Save to Azure
+file_utils.save_data_to_storage(
+    data={"Sheet1": df},
+    file_name="azure://container-name/path/to/output",
+    output_filetype=OutputFileType.XLSX
+)
+```
+
+## Supported Operations
+
+Azure storage supports all the same file formats as local storage:
+- CSV (.csv)
+- Excel (.xlsx, .xls)
+- Parquet (.parquet)
+- JSON (.json)
+- YAML (.yaml)
+
+## Configuration
+
+Azure-specific configuration in config.yaml:
 ```yaml
-# config.yaml
-storage:
-  default_type: "azure"
-  azure:
-    enabled: true
-    connection_string: "DefaultEndpointsProtocol=https;AccountName=..."
-    container_mapping:
-      raw: "raw-data"
-      processed: "processed-data"
-      interim: "interim-data"
-    retry_settings:
-      max_retries: 3
-      retry_delay: 1
-      max_delay: 30
+azure:
+  default_container: "your-container-name"
+  connection_timeout: 300
+  max_retries: 3
 ```
 
-#### Direct Initialization
-```python
-utils = FileUtils(
-    storage_type="azure",
-    connection_string="your_connection_string"
-)
-```
+## Error Handling
 
-### 3. Container Structure
+Azure operations include specific error handling for:
+- Connection issues
+- Authentication failures
+- Container/blob not found
+- Permission errors
 
-FileUtils automatically manages these containers:
-- raw-data: Original data
-- processed-data: Final processed data
-- interim-data: Intermediate processing
-- external-data: External data sources
-
-Configure container names:
-```yaml
-storage:
-  azure:
-    container_mapping:
-      raw: "raw-data"
-      processed: "processed-data"
-      interim: "interim-data"
-      external: "external-data"
-```
-
-## Usage Examples
-
-### Basic Operations
-
-```python
-# Save DataFrame
-saved_files, metadata = utils.save_data_to_storage(
-    data=df,
-    output_filetype="parquet",
-    output_type="processed",
-    file_name="data"
-)
-
-# Load using Azure URI
-azure_path = saved_files['data']  # Contains azure:// URI
-loaded_df = utils.load_single_file(azure_path)
-```
-
-### Multiple Files
-
-```python
-# Save multiple DataFrames
-data_dict = {
-    'sales': sales_df,
-    'inventory': inventory_df
-}
-
-saved_files, metadata = utils.save_data_to_storage(
-    data=data_dict,
-    output_filetype="xlsx",
-    output_type="processed",
-    file_name="report"
-)
-
-# Load Excel sheets
-sheets = utils.load_excel_sheets(saved_files['report'])
-```
-
-### Metadata Handling
-
-```python
-# Save with metadata
-saved_files, metadata_path = utils.save_with_metadata(
-    data=data_dict,
-    output_filetype="csv",
-    output_type="processed",
-    file_name="data_with_metadata"
-)
-
-# Load using metadata
-loaded_data = utils.load_from_metadata(metadata_path)
-```
-
-## Performance Optimization
-
-### 1. File Format Selection
-
-```python
-# Large datasets: Use Parquet
-utils.save_data_to_storage(
-    data=large_df,
-    output_filetype="parquet",
-    output_type="processed"
-)
-
-# Small, readable data: Use CSV
-utils.save_data_to_storage(
-    data=small_df,
-    output_filetype="csv",
-    output_type="processed"
-)
-```
-
-### 2. Batch Operations
-
-```python
-# Efficient: Save multiple files at once
-utils.save_data_to_storage(
-    data={"file1": df1, "file2": df2},
-    output_filetype="parquet"
-)
-
-# Less efficient: Save files individually
-# for df in dataframes:
-#     utils.save_data_to_storage(data=df, ...)
-```
-
-### 3. Retry Settings
+## Retry Settings
 
 ```yaml
 storage:
@@ -196,10 +87,10 @@ storage:
 
 ## Security Best Practices
 
-### 1. Connection String Management
+### Connection String Management
 
 ```python
-# Use environment variables (preferred)
+# Use environment variables
 import os
 connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 
@@ -208,14 +99,6 @@ from dotenv import load_dotenv
 load_dotenv()
 connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 ```
-
-### 2. Access Control
-
-- Use Azure RBAC (Role-Based Access Control)
-- Assign minimum required permissions
-- Use SAS tokens for temporary access
-- Enable secure transfer (HTTPS)
-- Configure network rules
 
 ## Troubleshooting
 
