@@ -1,5 +1,6 @@
 # tests/conftest.py
 
+
 import os
 import sys
 import tempfile
@@ -9,8 +10,8 @@ import csv
 import pytest
 import pandas as pd
 
-# Add the package root directory to Python path
-pkg_root = str(Path(__file__).parent.parent)
+# Add the src directory to Python path
+pkg_root = str(Path(__file__).parent.parent / "src")
 if pkg_root not in sys.path:
     sys.path.insert(0, pkg_root)
 

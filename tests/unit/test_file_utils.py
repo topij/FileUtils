@@ -4,6 +4,8 @@ import pytest
 import pandas as pd
 from pathlib import Path
 import csv
+import yaml
+import json
 
 from FileUtils import FileUtils
 from FileUtils.core.enums import OutputFileType, StorageType
@@ -124,3 +126,89 @@ def test_file_not_found(file_utils):
     """Test file not found handling."""
     with pytest.raises(StorageError):
         file_utils.load_single_file("nonexistent.csv", input_type="processed")
+
+
+def test_load_yaml(file_utils, temp_dir):
+    """Test loading YAML file."""
+    # Create test YAML file
+    yaml_data = {"name": "test", "values": [1, 2, 3], "nested": {"key": "value"}}
+    yaml_path = temp_dir / "data" / "raw" / "test.yaml"
+    yaml_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(yaml_path, "w") as f:
+        yaml.safe_dump(yaml_data, f)
+
+    # Test loading
+    loaded_data = file_utils.load_yaml("test.yaml")
+    assert loaded_data == yaml_data
+
+    # Test loading non-existent file
+    with pytest.raises(StorageError):
+        file_utils.load_yaml("nonexistent.yaml")
+
+    # Test loading invalid YAML
+    invalid_yaml = temp_dir / "data" / "raw" / "invalid.yaml"
+    with open(invalid_yaml, "w") as f:
+        f.write("invalid: yaml: content]")
+
+    with pytest.raises(StorageError):
+        file_utils.load_yaml("invalid.yaml")
+
+
+def test_load_json(file_utils, temp_dir):
+    """Test loading JSON file."""
+    # Create test JSON file
+    json_data = {"name": "test", "values": [1, 2, 3], "nested": {"key": "value"}}
+    json_path = temp_dir / "data" / "raw" / "test.json"
+    json_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(json_path, "w") as f:
+        json.dump(json_data, f)
+
+    # Test loading
+    loaded_data = file_utils.load_json("test.json")
+    assert loaded_data == json_data
+
+    # Test loading non-existent file
+    with pytest.raises(StorageError):
+        file_utils.load_json("nonexistent.json")
+
+    # Test loading invalid JSON
+    invalid_json = temp_dir / "data" / "raw" / "invalid.json"
+    with open(invalid_json, "w") as f:
+        f.write("invalid json content")
+
+    with pytest.raises(StorageError):
+        file_utils.load_json("invalid.json")
+
+
+def test_load_yaml_dataframe(file_utils, temp_dir):
+    """Test loading YAML file as DataFrame."""
+    # Create test YAML file with list of records
+    yaml_data = [{"name": "Alice", "age": 25}, {"name": "Bob", "age": 30}]
+    yaml_path = temp_dir / "data" / "raw" / "test_df.yaml"
+    yaml_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(yaml_path, "w") as f:
+        yaml.safe_dump(yaml_data, f)
+
+    # Test loading as DataFrame
+    df = file_utils.load_single_file("test_df.yaml")
+    assert len(df) == 2
+    assert sorted(df.columns) == ["age", "name"]  # Check sorted column names
+    assert df["name"].tolist() == ["Alice", "Bob"]
+    assert df["age"].tolist() == [25, 30]
+
+
+def test_load_json_dataframe(file_utils, temp_dir):
+    """Test loading JSON file as DataFrame."""
+    # Create test JSON file with list of records
+    json_data = [{"name": "Alice", "age": 25}, {"name": "Bob", "age": 30}]
+    json_path = temp_dir / "data" / "raw" / "test_df.json"
+    json_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(json_path, "w") as f:
+        json.dump(json_data, f)
+
+    # Test loading as DataFrame
+    df = file_utils.load_single_file("test_df.json")
+    assert len(df) == 2
+    assert sorted(df.columns) == ["age", "name"]  # Check sorted column names
+    assert df["name"].tolist() == ["Alice", "Bob"]
+    assert df["age"].tolist() == [25, 30]

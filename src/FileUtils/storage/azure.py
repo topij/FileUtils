@@ -1,5 +1,7 @@
 """Azure Blob Storage implementation."""
+
 from azure.storage.blob import BlobServiceClient
+import yaml
 from azure.core.exceptions import ResourceExistsError
 from typing import Dict, Union, Any, Tuple
 import io
@@ -16,7 +18,7 @@ class AzureStorage(BaseStorage):
 
     def __init__(self, connection_string: str, config: Dict[str, Any]):
         """Initialize Azure storage.
-        
+
         Args:
             connection_string: Azure storage connection string
             config: Configuration dictionary
@@ -26,7 +28,9 @@ class AzureStorage(BaseStorage):
             self.client = BlobServiceClient.from_connection_string(connection_string)
             self._ensure_containers()
         except Exception as e:
-            raise StorageConnectionError(f"Failed to connect to Azure Storage: {e}") from e
+            raise StorageConnectionError(
+                f"Failed to connect to Azure Storage: {e}"
+            ) from e
 
     def _ensure_containers(self):
         """Ensure required containers exist."""
@@ -50,59 +54,144 @@ class AzureStorage(BaseStorage):
             self.config["azure"]["container_mapping"].get("default", "data")
         )
 
-    def save_dataframe(
-        self, df: pd.DataFrame, file_path: Union[str, Path], file_format: str, **kwargs
-    ) -> str:
-        """Save DataFrame to Azure Storage."""
-        try:
-            buffer = io.BytesIO()
-            if file_format == "csv":
-                df.to_csv(buffer, index=False, encoding=self.config["encoding"])
-            elif file_format == "parquet":
-                df.to_parquet(buffer, index=False)
-            elif file_format == "xlsx":
-                df.to_excel(buffer, index=False, engine="openpyxl")
-            else:
-                raise ValueError(f"Unsupported format: {file_format}")
+    import json
 
-            buffer.seek(0)
-            container_client = self._get_container_client(file_path)
-            blob_name = str(Path(file_path).name)
-            blob_client = container_client.get_blob_client(blob_name)
-            blob_client.upload_blob(buffer, overwrite=True)
 
-            return f"azure://{container_client.container_name}/{blob_name}"
-        except Exception as e:
-            raise StorageOperationError(f"Failed to save DataFrame to Azure: {e}") from e
+import yaml
+import tempfile
+from pathlib import Path
+from typing import Union, Optional
+
+import pandas as pd
+from azure.storage.blob import BlobServiceClient
+from FileUtils.core.base import StorageOperationError
+
+
+class AzureStorage:
+    """Azure Blob Storage implementation."""
 
     def load_dataframe(self, file_path: Union[str, Path], **kwargs) -> pd.DataFrame:
-        """Load DataFrame from Azure Storage."""
+        """Load DataFrame from Azure Blob Storage."""
         try:
-            if not str(file_path).startswith("azure://"):
-                raise ValueError("Invalid Azure path format")
+            # Handle azure:// URLs
+            container_name, blob_name = self._parse_azure_url(str(file_path))
 
-            parts = str(file_path).split("/")
-            container_name = parts[2]
-            blob_name = "/".join(parts[3:])
+            # Get blob client
+            blob_client = self.blob_service_client.get_blob_client(
+                container=container_name, blob=blob_name
+            )
 
-            container_client = self.client.get_container_client(container_name)
-            blob_client = container_client.get_blob_client(blob_name)
-
+            # Get file suffix from blob name
             suffix = Path(blob_name).suffix.lower()
-            buffer = io.BytesIO()
-            blob_client.download_blob().readinto(buffer)
-            buffer.seek(0)
 
-            if suffix == ".csv":
-                return self._load_csv_from_buffer(buffer)
-            elif suffix == ".parquet":
-                return pd.read_parquet(buffer)
-            elif suffix in (".xlsx", ".xls"):
-                return pd.read_excel(buffer, engine="openpyxl")
-            else:
-                raise ValueError(f"Unsupported file format: {suffix}")
+            # Create temp file for download
+            with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as temp_file:
+                # Download blob to temp file
+                blob_data = blob_client.download_blob()
+                blob_data.readinto(temp_file)
+                temp_path = Path(temp_file.name)
+
+            try:
+                # Load based on file format
+                if suffix == ".csv":
+                    return self._load_csv_with_inference(temp_path)
+                elif suffix == ".parquet":
+                    return pd.read_parquet(temp_path)
+                elif suffix in (".xlsx", ".xls"):
+                    return pd.read_excel(temp_path, engine="openpyxl")
+                elif suffix == ".json":
+                    return self._load_json_as_dataframe(temp_path)
+                elif suffix == ".yaml":
+                    return self._load_yaml_as_dataframe(temp_path)
+                else:
+                    raise ValueError(f"Unsupported file format: {suffix}")
+            finally:
+                # Clean up temp file
+                temp_path.unlink(missing_ok=True)
+
         except Exception as e:
-            raise StorageOperationError(f"Failed to load DataFrame from Azure: {e}") from e
+            raise StorageOperationError(
+                f"Failed to load DataFrame from Azure: {e}"
+            ) from e
+
+    def _load_json_as_dataframe(self, path: Path) -> pd.DataFrame:
+        """Load JSON file as DataFrame."""
+        with open(path) as f:
+            data = json.load(f)
+            # Handle both list of records and dictionary formats
+            if isinstance(data, list):
+                df = pd.DataFrame(data)
+                # Sort columns alphabetically for consistent order
+                return df.reindex(sorted(df.columns), axis=1)
+            elif isinstance(data, dict):
+                df = pd.DataFrame.from_dict(data, orient="index")
+                return df.reindex(sorted(df.columns), axis=1)
+            else:
+                raise ValueError("JSON must contain list of records or dictionary")
+
+    def _load_yaml_as_dataframe(self, path: Path) -> pd.DataFrame:
+        """Load YAML file as DataFrame."""
+        with open(path) as f:
+            data = yaml.safe_load(f)
+            # Handle both list of records and dictionary formats
+            if isinstance(data, list):
+                df = pd.DataFrame(data)
+                # Sort columns alphabetically for consistent order
+                return df.reindex(sorted(df.columns), axis=1)
+            elif isinstance(data, dict):
+                df = pd.DataFrame.from_dict(data, orient="index")
+                return df.reindex(sorted(df.columns), axis=1)
+            else:
+                raise ValueError("YAML must contain list of records or dictionary")
+
+    def save_dataframe(
+        self, df: pd.DataFrame, file_path: Union[str, Path], **kwargs
+    ) -> None:
+        """Save DataFrame to Azure Blob Storage."""
+        try:
+            # Handle azure:// URLs
+            container_name, blob_name = self._parse_azure_url(str(file_path))
+
+            # Get blob client
+            blob_client = self.blob_service_client.get_blob_client(
+                container=container_name, blob=blob_name
+            )
+
+            # Get file suffix
+            suffix = Path(blob_name).suffix.lower()
+
+            # Create temp file for upload
+            with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as temp_file:
+                temp_path = Path(temp_file.name)
+
+                try:
+                    # Save based on file format
+                    if suffix == ".csv":
+                        df.to_csv(temp_path, index=False)
+                    elif suffix == ".parquet":
+                        df.to_parquet(temp_path)
+                    elif suffix in (".xlsx", ".xls"):
+                        df.to_excel(temp_path, index=False, engine="openpyxl")
+                    elif suffix == ".json":
+                        df.to_json(temp_path, orient="records")
+                    elif suffix == ".yaml":
+                        with open(temp_path, "w") as f:
+                            yaml.safe_dump(df.to_dict(orient="records"), f)
+                    else:
+                        raise ValueError(f"Unsupported file format: {suffix}")
+
+                    # Upload file
+                    with open(temp_path, "rb") as data:
+                        blob_client.upload_blob(data, overwrite=True)
+
+                finally:
+                    # Clean up temp file
+                    temp_path.unlink(missing_ok=True)
+
+        except Exception as e:
+            raise StorageOperationError(
+                f"Failed to save DataFrame to Azure: {e}"
+            ) from e
 
     def _load_csv_from_buffer(self, buffer: io.BytesIO) -> pd.DataFrame:
         """Load CSV from buffer with inference."""
@@ -111,6 +200,7 @@ class AzureStorage(BaseStorage):
 
         try:
             import csv
+
             dialect = csv.Sniffer().sniff(content[:1024])
             return pd.read_csv(
                 buffer,
@@ -156,7 +246,7 @@ class AzureStorage(BaseStorage):
 
             container_client = self.client.get_container_client(container_name)
             blob_client = container_client.get_blob_client(blob_name)
-            
+
             if blob_client.exists():
                 blob_client.delete_blob()
                 return True
@@ -176,7 +266,9 @@ class AzureStorage(BaseStorage):
 
         metadata = {
             "timestamp": datetime.now().isoformat(),
-            "files": {k: {"path": v, "format": file_format} for k, v in saved_files.items()},
+            "files": {
+                k: {"path": v, "format": file_format} for k, v in saved_files.items()
+            },
             "config": self.config,
             "storage": "azure",
         }
@@ -226,3 +318,49 @@ class AzureStorage(BaseStorage):
         blob_client.download_blob().readinto(buffer)
         buffer.seek(0)
         return self._load_csv_from_buffer(buffer)
+
+    def load_yaml(self, file_path: Union[str, Path], **kwargs) -> Any:
+        """Load YAML file from Azure Storage."""
+        try:
+            if not str(file_path).startswith("azure://"):
+                raise ValueError("Invalid Azure path format")
+
+            parts = str(file_path).split("/")
+            container_name = parts[2]
+            blob_name = "/".join(parts[3:])
+
+            if not blob_name.lower().endswith((".yaml", ".yml")):
+                raise ValueError("File must have .yaml or .yml extension")
+
+            container_client = self.client.get_container_client(container_name)
+            blob_client = container_client.get_blob_client(blob_name)
+
+            content = (
+                blob_client.download_blob().readall().decode(self.config["encoding"])
+            )
+            return yaml.safe_load(content)
+        except Exception as e:
+            raise StorageOperationError(f"Failed to load YAML from Azure: {e}") from e
+
+    def load_json(self, file_path: Union[str, Path], **kwargs) -> Any:
+        """Load JSON file from Azure Storage."""
+        try:
+            if not str(file_path).startswith("azure://"):
+                raise ValueError("Invalid Azure path format")
+
+            parts = str(file_path).split("/")
+            container_name = parts[2]
+            blob_name = "/".join(parts[3:])
+
+            if not blob_name.lower().endswith(".json"):
+                raise ValueError("File must have .json extension")
+
+            container_client = self.client.get_container_client(container_name)
+            blob_client = container_client.get_blob_client(blob_name)
+
+            content = (
+                blob_client.download_blob().readall().decode(self.config["encoding"])
+            )
+            return json.loads(content, **kwargs)
+        except Exception as e:
+            raise StorageOperationError(f"Failed to load JSON from Azure: {e}") from e

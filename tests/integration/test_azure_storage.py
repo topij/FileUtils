@@ -2,6 +2,8 @@
 
 import os
 from pathlib import Path
+import json
+import yaml
 import pytest
 import pandas as pd
 from unittest.mock import MagicMock, patch
@@ -169,6 +171,36 @@ def test_azure_large_file(azure_utils):
     pd.testing.assert_frame_equal(loaded_df, large_df)
 
 
+@pytest.mark.integration
+def test_azure_load_yaml(azure_utils):
+    """Test loading YAML file from Azure storage."""
+    # Create and upload test YAML
+    yaml_data = {"test": "data", "list": [1, 2, 3]}
+    container_client = azure_utils.storage._get_container_client("raw")
+    yaml_content = yaml.safe_dump(yaml_data)
+    blob_client = container_client.get_blob_client("test.yaml")
+    blob_client.upload_blob(yaml_content.encode("utf-8"), overwrite=True)
+
+    # Test loading
+    loaded_data = azure_utils.load_yaml("azure://raw/test.yaml")
+    assert loaded_data == yaml_data
+
+
+@pytest.mark.integration
+def test_azure_load_json(azure_utils):
+    """Test loading JSON file from Azure storage."""
+    # Create and upload test JSON
+    json_data = {"test": "data", "list": [1, 2, 3]}
+    container_client = azure_utils.storage._get_container_client("raw")
+    json_content = json.dumps(json_data)
+    blob_client = container_client.get_blob_client("test.json")
+    blob_client.upload_blob(json_content.encode("utf-8"), overwrite=True)
+
+    # Test loading
+    loaded_data = azure_utils.load_json("azure://raw/test.json")
+    assert loaded_data == json_data
+
+
 # Clean up test files after tests
 @pytest.fixture(autouse=True)
 def cleanup_azure(request, azure_utils):
@@ -188,3 +220,93 @@ def cleanup_azure(request, azure_utils):
                         container_client.delete_blob(blob.name)
         except Exception as e:
             print(f"Warning: Failed to clean up Azure test files: {e}")
+
+
+@pytest.mark.integration
+def test_load_yaml_dataframe_azure(azure_storage, temp_container):
+    """Test loading YAML file from Azure."""
+    # Create test data
+    data = [{"name": "Alice", "age": 25}, {"name": "Bob", "age": 30}]
+    blob_name = "test_df.yaml"
+
+    # Upload test data
+    blob_client = azure_storage.blob_service_client.get_blob_client(
+        container=temp_container, blob=blob_name
+    )
+    blob_client.upload_blob(yaml.safe_dump(data), overwrite=True)
+
+    # Load and verify
+    azure_path = f"azure://{temp_container}/{blob_name}"
+    df = azure_storage.load_dataframe(azure_path)
+
+    assert len(df) == 2
+    assert sorted(df.columns) == ["age", "name"]
+    assert df["name"].tolist() == ["Alice", "Bob"]
+    assert df["age"].tolist() == [25, 30]
+
+
+@pytest.mark.integration
+def test_load_json_dataframe_azure(azure_storage, temp_container):
+    """Test loading JSON file from Azure."""
+    # Create test data
+    data = [{"name": "Alice", "age": 25}, {"name": "Bob", "age": 30}]
+    blob_name = "test_df.json"
+
+    # Upload test data
+    blob_client = azure_storage.blob_service_client.get_blob_client(
+        container=temp_container, blob=blob_name
+    )
+    blob_client.upload_blob(json.dumps(data), overwrite=True)
+
+    # Load and verify
+    azure_path = f"azure://{temp_container}/{blob_name}"
+    df = azure_storage.load_dataframe(azure_path)
+
+    assert len(df) == 2
+    assert sorted(df.columns) == ["age", "name"]
+    assert df["name"].tolist() == ["Alice", "Bob"]
+    assert df["age"].tolist() == [25, 30]
+
+
+@pytest.mark.integration
+def test_save_json_dataframe_azure(azure_storage, temp_container):
+    """Test saving DataFrame as JSON to Azure."""
+    df = pd.DataFrame([{"name": "Alice", "age": 25}, {"name": "Bob", "age": 30}])
+
+    # Save to Azure
+    blob_name = "test_df.json"
+    azure_path = f"azure://{temp_container}/{blob_name}"
+    azure_storage.save_dataframe(df, azure_path)
+
+    # Verify saved data
+    blob_client = azure_storage.blob_service_client.get_blob_client(
+        container=temp_container, blob=blob_name
+    )
+    content = blob_client.download_blob().readall()
+    loaded_data = json.loads(content)
+
+    assert len(loaded_data) == 2
+    assert loaded_data[0]["name"] == "Alice"
+    assert loaded_data[1]["age"] == 30
+
+
+@pytest.mark.integration
+def test_save_yaml_dataframe_azure(azure_storage, temp_container):
+    """Test saving DataFrame as YAML to Azure."""
+    df = pd.DataFrame([{"name": "Alice", "age": 25}, {"name": "Bob", "age": 30}])
+
+    # Save to Azure
+    blob_name = "test_df.yaml"
+    azure_path = f"azure://{temp_container}/{blob_name}"
+    azure_storage.save_dataframe(df, azure_path)
+
+    # Verify saved data
+    blob_client = azure_storage.blob_service_client.get_blob_client(
+        container=temp_container, blob=blob_name
+    )
+    content = blob_client.download_blob().readall()
+    loaded_data = yaml.safe_load(content)
+
+    assert len(loaded_data) == 2
+    assert loaded_data[0]["name"] == "Alice"
+    assert loaded_data[1]["age"] == 30

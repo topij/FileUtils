@@ -1,4 +1,5 @@
 """Main FileUtils implementation."""
+
 import warnings
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -43,7 +44,9 @@ class FileUtils:
         validate_config(self.config)
 
         # Set project root
-        self.project_root = Path(project_root) if project_root else self._get_project_root()
+        self.project_root = (
+            Path(project_root) if project_root else self._get_project_root()
+        )
         self.logger.info(f"Project root: {self.project_root}")
 
         # Set up directory structure
@@ -135,26 +138,30 @@ class FileUtils:
         Returns:
             Tuple of (saved files dict, optional metadata path)
         """
-  
+
         if isinstance(output_filetype, str):
             output_filetype = OutputFileType(output_filetype.lower())
 
         # Convert single DataFrame to dict format
         if isinstance(data, pd.DataFrame):
             # Preserve sheet name if provided in kwargs, otherwise use default
-            sheet_name = kwargs.get('sheet_name', 'Sheet1')
+            sheet_name = kwargs.get("sheet_name", "Sheet1")
             data = {sheet_name: data}
 
         # For Excel files, ensure openpyxl engine
-        if output_filetype == OutputFileType.XLSX and 'engine' not in kwargs:
-            kwargs['engine'] = 'openpyxl'
+        if output_filetype == OutputFileType.XLSX and "engine" not in kwargs:
+            kwargs["engine"] = "openpyxl"
 
         # Generate output path
         base_path = format_file_path(
             self.get_data_path(output_type),
             file_name or "data",
             output_filetype.value,
-            include_timestamp if include_timestamp is not None else self.config.get("include_timestamp", True)
+            (
+                include_timestamp
+                if include_timestamp is not None
+                else self.config.get("include_timestamp", True)
+            ),
         )
 
         try:
@@ -249,7 +256,11 @@ class FileUtils:
             self.get_data_path(output_type),
             file_name or "data",
             output_filetype.value,
-            include_timestamp if include_timestamp is not None else self.config.get("include_timestamp", True)
+            (
+                include_timestamp
+                if include_timestamp is not None
+                else self.config.get("include_timestamp", True)
+            ),
         )
 
         return self.storage.save_with_metadata(
@@ -264,3 +275,53 @@ class FileUtils:
             metadata_path = self.get_data_path(input_type) / metadata_path
 
         return self.storage.load_from_metadata(metadata_path, **kwargs)
+
+    def load_yaml(
+        self, file_path: Union[str, Path], input_type: str = "raw", **kwargs
+    ) -> Any:
+        """Load a YAML file as a Python object.
+
+        Args:
+            file_path: Name of the YAML file to load
+            input_type: Type of input directory ("raw", "processed", etc.)
+            **kwargs: Additional arguments passed to yaml.safe_load
+
+        Returns:
+            Any: Loaded YAML content as Python object
+
+        Raises:
+            StorageError: If loading fails
+        """
+        try:
+            if not str(file_path).startswith("azure://"):
+                file_path = self.project_root / "data" / input_type / file_path
+
+            return self.storage.load_yaml(file_path, **kwargs)
+        except Exception as e:
+            self.logger.error(f"Failed to load YAML file {file_path}: {e}")
+            raise StorageError(f"Failed to load YAML file {file_path}: {e}") from e
+
+    def load_json(
+        self, file_path: Union[str, Path], input_type: str = "raw", **kwargs
+    ) -> Any:
+        """Load a JSON file as a Python object.
+
+        Args:
+            file_path: Name of the JSON file to load
+            input_type: Type of input directory ("raw", "processed", etc.)
+            **kwargs: Additional arguments passed to json.load
+
+        Returns:
+            Any: Loaded JSON content as Python object
+
+        Raises:
+            StorageError: If loading fails
+        """
+        try:
+            if not str(file_path).startswith("azure://"):
+                file_path = self.project_root / "data" / input_type / file_path
+
+            return self.storage.load_json(file_path, **kwargs)
+        except Exception as e:
+            self.logger.error(f"Failed to load JSON file {file_path}: {e}")
+            raise StorageError(f"Failed to load JSON file {file_path}: {e}") from e
