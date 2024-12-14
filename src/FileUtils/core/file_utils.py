@@ -25,22 +25,30 @@ class FileUtils:
         config_file: Optional[Union[str, Path]] = None,
         storage_type: Union[str, StorageType] = StorageType.LOCAL,
         log_level: Optional[str] = None,
+        directory_structure: Optional[Dict[str, Any]] = None,
+        config_override: Optional[Dict[str, Any]] = None,
         **kwargs,
     ):
-        """Initialize FileUtils.
+        """Initialize FileUtils with enhanced configuration support.
 
         Args:
             project_root: Root directory for project
             config_file: Path to configuration file
             storage_type: Type of storage backend
             log_level: Logging level
+            directory_structure: Optional directory structure override
+            config_override: Optional dictionary to override any config values
             **kwargs: Additional arguments for storage backend
         """
         # Set up logging
         self.logger = setup_logger(__name__, log_level)
 
-        # Load and validate configuration
-        self.config = load_config(config_file)
+        # Load base configuration
+        self.config = self._load_configuration(
+            config_file=config_file,
+            directory_structure=directory_structure,
+            config_override=config_override,
+        )
         validate_config(self.config)
 
         # Set project root
@@ -49,15 +57,81 @@ class FileUtils:
         )
         self.logger.info(f"Project root: {self.project_root}")
 
-        # Set up directory structure
-        self._setup_directory_structure()
+        # Set up directory structure (only if explicitly requested)
+        if kwargs.get("create_directories", False):
+            self._setup_directory_structure()
 
         # Initialize storage backend
         if isinstance(storage_type, str):
             storage_type = StorageType(storage_type.lower())
         self.storage = self._create_storage(storage_type, **kwargs)
-
         self.logger.info(f"FileUtils initialized with {storage_type.value} storage")
+
+    def _load_configuration(
+        self,
+        config_file: Optional[Union[str, Path]] = None,
+        directory_structure: Optional[Dict[str, Any]] = None,
+        config_override: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Load configuration with override support.
+
+        Args:
+            config_file: Optional path to configuration file
+            directory_structure: Optional directory structure override
+            config_override: Optional dictionary to override any config values
+
+        Returns:
+            Dict containing merged configuration
+        """
+        # Start with empty config
+        config = {}
+
+        # Load from file if provided
+        if config_file:
+            config = load_config(config_file)
+        else:
+            # Load default config if no file provided
+            config = self._get_default_config()
+
+        # Override directory structure if provided
+        if directory_structure:
+            config["directory_structure"] = directory_structure
+
+        # Apply any additional overrides
+        if config_override:
+            self._deep_merge(config, config_override)
+
+        return config
+
+    def _get_default_config(self) -> Dict[str, Any]:
+        """Get minimal default configuration."""
+        return {
+            "directory_structure": {"data": ["raw", "processed"]},
+            "csv_delimiter": ";",
+            "encoding": "utf-8",
+            "quoting": 0,
+            "include_timestamp": True,
+        }
+
+    def _deep_merge(self, dict1: Dict[str, Any], dict2: Dict[str, Any]) -> None:
+        """Recursively merge two dictionaries."""
+        for key, value in dict2.items():
+            if (
+                key in dict1
+                and isinstance(dict1[key], dict)
+                and isinstance(value, dict)
+            ):
+                self._deep_merge(dict1[key], value)
+            else:
+                dict1[key] = value
+
+    def get_directory_structure(self) -> Dict[str, Any]:
+        """Get current directory structure configuration."""
+        return self.config.get("directory_structure", {})
+
+    def get_config(self) -> Dict[str, Any]:
+        """Get current configuration."""
+        return self.config.copy()
 
     def _get_project_root(self) -> Path:
         """Determine project root directory."""
@@ -368,41 +442,41 @@ class FileUtils:
             self.logger.error(f"Failed to load JSON file {file_path}: {e}")
             raise StorageError(f"Failed to load JSON file {file_path}: {e}") from e
 
-    def get_directory_structure(self) -> Dict[str, List[str]]:
-        """Get the actual current directory structure by scanning the filesystem.
+    # def get_directory_structure(self) -> Dict[str, List[str]]:
+    #     """Get the actual current directory structure by scanning the filesystem.
 
-        Returns:
-            Dict[str, List[str]]: Dictionary mapping parent directories to their existing subdirectories
+    #     Returns:
+    #         Dict[str, List[str]]: Dictionary mapping parent directories to their existing subdirectories
 
-        Example:
-            >>> file_utils.get_directory_structure()
-            {
-                'data': ['raw', 'processed', 'interim', 'features'],
-                'reports': ['figures', 'monthly'],
-                'models': ['trained']
-            }
-        """
-        structure = {}
+    #     Example:
+    #         >>> file_utils.get_directory_structure()
+    #         {
+    #             'data': ['raw', 'processed', 'interim', 'features'],
+    #             'reports': ['figures', 'monthly'],
+    #             'models': ['trained']
+    #         }
+    #     """
+    #     structure = {}
 
-        # Scan through base directories defined in config
-        for parent_dir in self.config["directory_structure"].keys():
-            parent_path = self.project_root / parent_dir
+    #     # Scan through base directories defined in config
+    #     for parent_dir in self.config["directory_structure"].keys():
+    #         parent_path = self.project_root / parent_dir
 
-            # Skip if parent directory doesn't exist
-            if not parent_path.exists():
-                continue
+    #         # Skip if parent directory doesn't exist
+    #         if not parent_path.exists():
+    #             continue
 
-            # Get all existing subdirectories
-            subdirs = [
-                path.name
-                for path in parent_path.iterdir()
-                if path.is_dir()
-                and not path.name.startswith(".")  # Skip hidden directories
-            ]
+    #         # Get all existing subdirectories
+    #         subdirs = [
+    #             path.name
+    #             for path in parent_path.iterdir()
+    #             if path.is_dir()
+    #             and not path.name.startswith(".")  # Skip hidden directories
+    #         ]
 
-            structure[parent_dir] = sorted(subdirs)  # Sort for consistent order
+    #         structure[parent_dir] = sorted(subdirs)  # Sort for consistent order
 
-        return structure
+    #     return structure
 
     def set_logging_level(self, level: str) -> None:
         """Set the logging level after initialization.

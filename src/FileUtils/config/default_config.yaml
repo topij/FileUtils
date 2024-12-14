@@ -17,12 +17,9 @@ directory_structure:
     - figures
     - outputs
     - tables
-  models:
-    - trained
-    - evaluations
-  src:
-    - scripts
-    - notebooks
+  models: []
+  src: []
+
 
 logging:
   format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

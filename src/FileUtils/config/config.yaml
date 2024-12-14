@@ -15,13 +15,14 @@ directory_structure:
     - interim
     - processed
     - config
+    - done_by_file_utils
   reports:
     - figures
     - outputs
   models: []
-  src:
-    - scripts
-    - notebooks
+  src: []
+  scripts: []
+  notebooks: []
 
 # File format settings
 parquet_compression: "snappy"
