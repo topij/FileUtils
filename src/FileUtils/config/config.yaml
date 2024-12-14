@@ -14,7 +14,7 @@ directory_structure:
     - raw
     - interim
     - processed
-    - configurations
+    - config
   reports:
     - figures
     - outputs

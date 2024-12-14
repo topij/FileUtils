@@ -367,3 +367,70 @@ class FileUtils:
         except Exception as e:
             self.logger.error(f"Failed to load JSON file {file_path}: {e}")
             raise StorageError(f"Failed to load JSON file {file_path}: {e}") from e
+
+    def get_directory_structure(self) -> Dict[str, List[str]]:
+        """Get the actual current directory structure by scanning the filesystem.
+
+        Returns:
+            Dict[str, List[str]]: Dictionary mapping parent directories to their existing subdirectories
+
+        Example:
+            >>> file_utils.get_directory_structure()
+            {
+                'data': ['raw', 'processed', 'interim', 'features'],
+                'reports': ['figures', 'monthly'],
+                'models': ['trained']
+            }
+        """
+        structure = {}
+
+        # Scan through base directories defined in config
+        for parent_dir in self.config["directory_structure"].keys():
+            parent_path = self.project_root / parent_dir
+
+            # Skip if parent directory doesn't exist
+            if not parent_path.exists():
+                continue
+
+            # Get all existing subdirectories
+            subdirs = [
+                path.name
+                for path in parent_path.iterdir()
+                if path.is_dir()
+                and not path.name.startswith(".")  # Skip hidden directories
+            ]
+
+            structure[parent_dir] = sorted(subdirs)  # Sort for consistent order
+
+        return structure
+
+    def set_logging_level(self, level: str) -> None:
+        """Set the logging level after initialization.
+
+        Args:
+            level: Logging level (e.g., "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
+
+        Raises:
+            ValueError: If invalid logging level provided
+        """
+        try:
+            # Validate logging level
+            level = level.upper()
+            if level not in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
+                raise ValueError(
+                    f"Invalid logging level: {level}. "
+                    "Must be one of: DEBUG, INFO, WARNING, ERROR, CRITICAL"
+                )
+
+            # Update logger level
+            self.logger.setLevel(level)
+
+            # Update config
+            self.config["logging_level"] = level
+
+            self.logger.info(f"Logging level set to: {level}")
+
+        except Exception as e:
+            if isinstance(e, ValueError):
+                raise
+            raise ValueError(f"Failed to set logging level: {e}")
