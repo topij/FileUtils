@@ -116,6 +116,48 @@ class FileUtils:
         path.mkdir(parents=True, exist_ok=True)
         return path
 
+    def create_directory(self, directory_name: str, parent_dir: str = "data") -> Path:
+        """Create a new directory within the configured directory structure.
+
+        Args:
+            directory_name: Name of the new directory to create
+            parent_dir: Parent directory under project root (e.g., "data", "reports", "models")
+
+        Returns:
+            Path: Path to the created directory
+
+        Raises:
+            ValueError: If parent_dir is not in configured directory structure
+            StorageError: If directory creation fails
+        """
+        try:
+            # Validate parent directory exists in config
+            if parent_dir not in self.config["directory_structure"]:
+                valid_parents = list(self.config["directory_structure"].keys())
+                raise ValueError(
+                    f"Invalid parent directory: {parent_dir}. "
+                    f"Must be one of: {', '.join(valid_parents)}"
+                )
+
+            # Create new directory path
+            new_dir = self.project_root / parent_dir / directory_name
+
+            # Create directory
+            new_dir.mkdir(parents=True, exist_ok=True)
+
+            # Add to config structure if not exists
+            if directory_name not in self.config["directory_structure"][parent_dir]:
+                self.config["directory_structure"][parent_dir].append(directory_name)
+
+            self.logger.info(f"Created directory: {new_dir}")
+            return new_dir
+
+        except Exception as e:
+            if isinstance(e, ValueError):
+                raise
+            self.logger.error(f"Failed to create directory {directory_name}: {e}")
+            raise StorageError(f"Failed to create directory: {e}") from e
+
     def save_data_to_storage(
         self,
         data: Union[pd.DataFrame, Dict[str, pd.DataFrame]],

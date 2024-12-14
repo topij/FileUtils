@@ -22,29 +22,13 @@ file_utils.save_data_to_storage(
     output_type="processed",
     output_filetype=OutputFileType.XLSX
 )
+
+# Create new directory in the project structure
+features_dir = file_utils.create_directory("features")  # Creates under data/
+models_dir = file_utils.create_directory("trained", parent_dir="models")  # Creates under models/
 ```
 
-## Supported File Formats
-
-### Loading
-- CSV (.csv)
-- Excel (.xlsx, .xls)
-- Parquet (.parquet)
-- JSON (.json)
-  - List of records format
-  - Dictionary format
-- YAML (.yaml)
-  - List of records format
-  - Dictionary format
-
-### Saving
-- CSV (.csv)
-- Excel (.xlsx)
-- Parquet (.parquet)
-- JSON (.json)
-- YAML (.yaml)
-
-## Directory Structure
+## Directory Management
 
 FileUtils manages data in a structured directory layout:
 ```
@@ -55,6 +39,19 @@ project_root/
 │   └── interim/      # Intermediate data files
 └── reports/
     └── figures/      # Generated figures
+```
+
+You can create new directories within this structure using `create_directory()`:
+
+```python
+# Create new directory under data/
+features_dir = file_utils.create_directory("features")
+
+# Create directory under specific parent
+reports_dir = file_utils.create_directory("monthly", parent_dir="reports")
+
+# Directory is added to configuration structure
+print(file_utils.config["directory_structure"]["data"])  # Shows ['raw', 'processed', 'interim', 'features']
 ```
 
 ## Configuration

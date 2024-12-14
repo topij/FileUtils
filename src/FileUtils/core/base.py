@@ -30,7 +30,27 @@ class StorageOperationError(StorageError):
 
 
 class BaseStorage(ABC):
-    """Abstract base class for storage implementations."""
+    """Abstract base class for storage implementations.
+
+    Provides core storage operations for FileUtils including:
+    - Loading and saving DataFrames in various formats
+    - Handling multiple DataFrames
+    - Managing metadata
+    - Directory creation and management
+    - Cross-storage compatibility
+
+    Args:
+        config: Configuration dictionary
+
+    Main methods:
+        save_dataframe: Save single DataFrame
+        load_dataframe: Load single DataFrame
+        save_dataframes: Save multiple DataFrames
+        load_dataframes: Load multiple DataFrames
+        save_with_metadata: Save data with metadata
+        load_from_metadata: Load data using metadata
+        create_directory: Create new directory in structure
+    """
 
     def __init__(self, config: Dict[str, Any]):
         """Initialize storage.

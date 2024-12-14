@@ -212,3 +212,36 @@ def test_load_json_dataframe(file_utils, temp_dir):
     assert sorted(df.columns) == ["age", "name"]  # Check sorted column names
     assert df["name"].tolist() == ["Alice", "Bob"]
     assert df["age"].tolist() == [25, 30]
+
+
+def test_create_directory(file_utils):
+    """Test directory creation."""
+    # Create directory under data
+    new_dir = file_utils.create_directory("features")
+    assert new_dir.exists()
+    assert new_dir.is_dir()
+    assert new_dir == file_utils.project_root / "data" / "features"
+    assert "features" in file_utils.config["directory_structure"]["data"]
+
+    # Create directory under reports
+    reports_dir = file_utils.create_directory("monthly", parent_dir="reports")
+    assert reports_dir.exists()
+    assert reports_dir.is_dir()
+    assert reports_dir == file_utils.project_root / "reports" / "monthly"
+    assert "monthly" in file_utils.config["directory_structure"]["reports"]
+
+
+def test_create_directory_invalid_parent(file_utils):
+    """Test directory creation with invalid parent directory."""
+    with pytest.raises(ValueError) as exc_info:
+        file_utils.create_directory("test", parent_dir="invalid_parent")
+    assert "Invalid parent directory" in str(exc_info.value)
+
+
+def test_create_directory_exists(file_utils):
+    """Test creating directory that already exists."""
+    # Create directory twice should not raise error
+    dir1 = file_utils.create_directory("test_dir")
+    dir2 = file_utils.create_directory("test_dir")
+    assert dir1 == dir2
+    assert dir1.exists()
