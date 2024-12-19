@@ -5,7 +5,7 @@ csv_delimiter: ";"
 encoding: "utf-8"
 quoting: 0  # csv.QUOTE_MINIMAL
 include_timestamp: true
-logging_level: "INFO"
+logging_level: "ERROR"
 disable_logging: false
 
 # Directory structure
@@ -34,8 +34,9 @@ azure:
     raw: "raw-data"
     processed: "processed-data"
     interim: "interim-data"
+    logs: "logs"
     parameters: "parameters"
-    configurations: "configurations"
+    configurations: "config"
   retry_settings:
     max_retries: 3
     retry_delay: 1
