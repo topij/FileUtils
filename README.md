@@ -56,6 +56,13 @@ file_utils.save_data_to_storage(
 - Python 3.9+
 - Dependencies listed in pyproject.toml/environment.yaml
 
+## Notes from the Author
+This project was born out of everyday needs I encountered in data analysis and business development. Along the way, I used the development process as an opportunity to learn new concepts and explore different ways of handling data and files in various environments.
+Please note that I am not a professional software developer, and, for example, the code has not been heavily optimized. My focus was on functionality rather than fine-tuning or optimization.
+Active maintenance is not guaranteed, but I may occasionally revisit and update the code base when needed.
+Let me know if you find this useful :-)
+
+
 ## License
 
 MIT License

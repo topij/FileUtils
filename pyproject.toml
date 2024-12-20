@@ -7,7 +7,7 @@ name = "FileUtils"
 version = "0.5.8"
 description = "File utilities for data science projects with Azure support"
 readme = "README.md"
-authors = [{name = "Topi Järvinen"}]
+authors = [{name = "Topi Jarvinen"}]
 license = {text = "MIT"}
 classifiers = [
     "Development Status :: 4 - Beta",
