@@ -17,6 +17,12 @@ A Python utility package for consistent file operations across local and Azure s
 - Logging system with configurable levels
 - Azure Blob Storage integration
 
+## Background and Use Cases
+
+While doing data analysis to support my main job in business and product development, I ended up copying and pasting a lot of code related to file and directory handling. I wanted to have a clean interface that I can re-use in all of my more complex data science projects. 
+
+As an exmple, take a look my [semantic text analyzer](https://www.github.com/topij/text-analyzer). For that particular project, I also added support for Azure storage integration which allowed me to use the same code base regardless of the underlying storage (for ex., local Windows/bash or Azure blob).
+
 ## Installation
 
 See [INSTALLATION.md](docs/INSTALLATION.md) for detailed installation instructions.
