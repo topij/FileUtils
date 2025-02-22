@@ -28,6 +28,37 @@ A Python utility package for consistent file operations across local and Azure s
   - Detailed logging with configurable levels
   - Type hints throughout the codebase
 
+## Installation
+
+Choose the installation option that best suits your needs:
+
+```bash
+# Basic installation (local storage only)
+pip install FileUtils
+
+# Install with Azure support
+pip install 'FileUtils[azure]'
+
+# Install with Parquet support
+pip install 'FileUtils[parquet]'
+
+# Install with Excel support
+pip install 'FileUtils[excel]'
+
+# Install with all optional dependencies
+pip install 'FileUtils[all]'
+```
+
+You can also install directly from GitHub:
+```bash
+# Basic installation
+pip install git+https://github.com/topij/FileUtils.git
+
+# With specific features
+pip install 'git+https://github.com/topij/FileUtils.git#egg=FileUtils[azure]'
+pip install 'git+https://github.com/topij/FileUtils.git#egg=FileUtils[all]'
+```
+
 ## Quick Start
 
 ```python
@@ -83,13 +114,25 @@ For a practical example, check out my [semantic text analyzer](https://www.githu
 
 ## Requirements
 
+### Core Dependencies (automatically installed)
 - Python 3.9+
-- Core dependencies:
-  - pandas
-  - pyyaml
-  - azure-storage-blob (for Azure support)
-  - openpyxl (for Excel support)
-  - pyarrow (for Parquet support)
+- pandas
+- pyyaml
+- python-dotenv
+- jsonschema
+
+### Optional Dependencies
+Choose the dependencies you need based on your use case:
+
+- **Azure Storage** (`[azure]`):
+  - azure-storage-blob
+  - azure-identity
+- **Parquet Support** (`[parquet]`):
+  - pyarrow
+- **Excel Support** (`[excel]`):
+  - openpyxl
+
+Install optional dependencies using the corresponding extras tag (e.g., `pip install 'FileUtils[azure]'`).
 
 ## Notes from the Author
 

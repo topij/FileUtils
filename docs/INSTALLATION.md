@@ -1,79 +1,161 @@
-# Installation Guide for FileUtils
+# Installation Guide
 
-### Requirements
+This guide explains how to install FileUtils and its dependencies for different use cases.
 
-- Python 3.9+
-- pip or conda
+## Basic Installation
 
-## Installation Methods
-
-
-### Basic Installation
-
-1. Using pip
+For basic local storage operations:
 
 ```bash
-pip install "FileUtils @ git+https://github.com/topij/FileUtils.git"
+pip install FileUtils
 ```
 
-### Installation with Optional Features
+This installs the core package with support for:
+- Basic file operations
+- CSV file handling
+- JSON and YAML file handling
+- Directory management
+- Configuration system
+
+## Feature-Specific Installation
+
+FileUtils uses optional dependencies to keep the base installation light. Choose the features you need:
+
+### Azure Blob Storage Support
+
 ```bash
-# Azure support
-pip install "FileUtils[azure] @ git+https://github.com/topij/FileUtils.git"
-
-# Parquet support
-pip install "FileUtils[parquet] @ git+https://github.com/topij/FileUtils.git"
-
-# Excel support
-pip install "FileUtils[excel] @ git+https://github.com/topij/FileUtils.git"
-
-# All features
-pip install "FileUtils[all] @ git+https://github.com/topij/FileUtils.git"
+pip install 'FileUtils[azure]'
 ```
 
-### Development Installation
+This adds:
+- Azure Blob Storage operations
+- Azure authentication handling
+- Transparent fallback to local storage if connection fails
 
-1. Clone the repository:
+### Parquet Support
+
 ```bash
-git clone https://github.com/username/FileUtils.git
-cd FileUtils
+pip install 'FileUtils[parquet]'
 ```
 
-2. Create and activate conda environment:
+This adds:
+- Parquet file reading/writing
+- Compression options
+- Arrow-based optimizations
+
+### Excel Support
+
 ```bash
-conda env create -f environment.yaml
+pip install 'FileUtils[excel]'
+```
+
+This adds:
+- Excel file reading/writing
+- Multi-sheet support
+- OpenPyXL engine integration
+
+### All Features
+
+To install all optional dependencies:
+
+```bash
+pip install 'FileUtils[all]'
+```
+
+## Installation from GitHub
+
+For the latest development version:
+
+```bash
+# Basic installation
+pip install git+https://github.com/topij/FileUtils.git
+
+# With specific features
+pip install 'git+https://github.com/topij/FileUtils.git#egg=FileUtils[azure]'
+pip install 'git+https://github.com/topij/FileUtils.git#egg=FileUtils[all]'
+```
+
+## Conda Environment
+
+If you're using Conda, create a new environment first:
+
+```bash
+# Create new environment
+conda create -n fileutils python=3.9
+
+# Activate environment
 conda activate fileutils
+
+# Install FileUtils with pip
+pip install 'FileUtils[all]'  # or any other installation option
 ```
 
-3. Install in development mode:
+## Dependency Management
+
+### Core Dependencies
+These are installed automatically with the base package:
+- pandas
+- pyyaml
+- python-dotenv
+- jsonschema
+
+### Optional Dependencies
+Choose based on your needs:
+
+- Azure Storage (`[azure]`):
+  - azure-storage-blob
+  - azure-identity
+- Parquet Support (`[parquet]`):
+  - pyarrow
+- Excel Support (`[excel]`):
+  - openpyxl
+
+## Verifying Installation
+
+Test your installation:
+
+```python
+from FileUtils import FileUtils
+
+# Basic functionality (works with any installation)
+file_utils = FileUtils()
+
+# Azure functionality (requires [azure] extra)
+file_utils_azure = FileUtils(storage_type="azure", connection_string="your_connection_string")
+```
+
+## Troubleshooting
+
+### Missing Azure Dependencies
+If you see an error like:
+```
+ModuleNotFoundError: No module named 'azure'
+```
+Install Azure dependencies:
 ```bash
-pip install -e .
+pip install 'FileUtils[azure]'
 ```
 
-## Azure Support
-
-For Azure Blob Storage support, ensure the following dependencies are installed:
+### Missing Excel Support
+If you see an error about `openpyxl`:
 ```bash
-pip install azure-storage-blob azure-identity
+pip install 'FileUtils[excel]'
 ```
 
-See [AZURE_SETUP.md](AZURE_SETUP.md) for Azure configuration details.
+### Missing Parquet Support
+If you see an error about `pyarrow`:
+```bash
+pip install 'FileUtils[parquet]'
+```
 
-## Configuration
+### Conda Environment Issues
+If you encounter package conflicts in Conda:
+```bash
+# Try installing from conda-forge
+conda install -c conda-forge azure-storage-blob
+conda install -c conda-forge pyarrow
+conda install -c conda-forge openpyxl
 
-The package will look for a `config.yaml` file in your project root. Create one if needed:
-
-```yaml
-# config.yaml
-csv_delimiter: ","
-encoding: "utf-8"
-include_timestamp: false
-logging_level: "INFO"
-directory_structure:
-  data:
-    - raw
-    - processed
-    - interim
-  reports:
-    - figures
+# Then install FileUtils
+pip install FileUtils
 ```

@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "FileUtils"
-version = "0.6.0"
+version = "0.6.1"
 description = "File utilities for data science projects with Azure support"
 readme = "README.md"
-authors = [{name = "Topi Jarvinen"}]
+authors = [{name = "Topi Jarvinen", email = "topi.jarvinen@gmail.com"}]
 license = {text = "MIT"}
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 3 - Beta",
     "Intended Audience :: Science/Research",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",

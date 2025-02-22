@@ -159,7 +159,17 @@ class FileUtils:
         if storage_type == StorageType.AZURE:
             try:
                 from ..storage.azure import AzureStorage
+            except ImportError:
+                self.logger.warning(
+                    "Azure storage dependencies not installed. "
+                    "To use Azure storage, install the package with Azure dependencies: "
+                    "pip install 'FileUtils[azure]'"
+                )
+                if kwargs.get("connection_string"):
+                    self.logger.warning("Falling back to local storage despite connection string being provided.")
+                return LocalStorage(self.config)
 
+            try:
                 connection_string = kwargs.get("connection_string")
                 if not connection_string:
                     self.logger.warning(
@@ -167,10 +177,6 @@ class FileUtils:
                     )
                     return LocalStorage(self.config)
                 return AzureStorage(connection_string, self.config)
-            except ImportError:
-                self.logger.warning(
-                    "Azure storage dependencies not installed. Falling back to local storage."
-                )
             except Exception as e:
                 self.logger.error(f"Failed to initialize Azure storage: {e}")
                 self.logger.warning("Falling back to local storage.")
