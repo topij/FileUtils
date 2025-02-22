@@ -245,3 +245,223 @@ def test_create_directory_exists(file_utils):
     dir2 = file_utils.create_directory("test_dir")
     assert dir1 == dir2
     assert dir1.exists()
+
+
+def test_save_yaml_dataframe_records(file_utils, sample_df):
+    """Test saving DataFrame to YAML in records format."""
+    saved_files, _ = file_utils.save_data_to_storage(
+        data=sample_df,
+        output_filetype=OutputFileType.YAML,
+        output_type="processed",
+        file_name="test_yaml_records",
+        yaml_options={"default_flow_style": False, "sort_keys": True},
+        orient="records"
+    )
+
+    assert len(saved_files) == 1
+    saved_path = Path(next(iter(saved_files.values())))
+    assert saved_path.exists()
+
+    # Verify content
+    loaded_df = file_utils.load_single_file("test_yaml_records.yaml", input_type="processed")
+    pd.testing.assert_frame_equal(
+        loaded_df.reindex(sorted(loaded_df.columns), axis=1),
+        sample_df.reindex(sorted(sample_df.columns), axis=1)
+    )
+
+    # Verify YAML format
+    with open(saved_path, "r", encoding="utf-8") as f:
+        yaml_content = yaml.safe_load(f)
+        assert isinstance(yaml_content, list)  # Should be list of records
+        assert len(yaml_content) == len(sample_df)
+
+
+def test_save_yaml_dataframe_index(file_utils, sample_df):
+    """Test saving DataFrame to YAML in index format."""
+    saved_files, _ = file_utils.save_data_to_storage(
+        data=sample_df,
+        output_filetype=OutputFileType.YAML,
+        output_type="processed",
+        file_name="test_yaml_index",
+        yaml_options={"default_flow_style": False},
+        orient="index"
+    )
+
+    assert len(saved_files) == 1
+    saved_path = Path(next(iter(saved_files.values())))
+    assert saved_path.exists()
+
+    # Verify content
+    loaded_df = file_utils.load_single_file("test_yaml_index.yaml", input_type="processed")
+    pd.testing.assert_frame_equal(
+        loaded_df.reindex(sorted(loaded_df.columns), axis=1),
+        sample_df.reindex(sorted(sample_df.columns), axis=1),
+        check_index_type=False  # Index type may change for YAML
+    )
+
+    # Verify YAML format
+    with open(saved_path, "r", encoding="utf-8") as f:
+        yaml_content = yaml.safe_load(f)
+        assert isinstance(yaml_content, dict)  # Should be dictionary
+        assert len(yaml_content) == len(sample_df)
+
+
+def test_save_json_dataframe_records(file_utils, sample_df):
+    """Test saving DataFrame to JSON in records format."""
+    saved_files, _ = file_utils.save_data_to_storage(
+        data=sample_df,
+        output_filetype=OutputFileType.JSON,
+        output_type="processed",
+        file_name="test_json_records",
+        orient="records"
+    )
+
+    assert len(saved_files) == 1
+    saved_path = Path(next(iter(saved_files.values())))
+    assert saved_path.exists()
+
+    # Verify content
+    loaded_df = file_utils.load_single_file("test_json_records.json", input_type="processed")
+    pd.testing.assert_frame_equal(
+        loaded_df.reindex(sorted(loaded_df.columns), axis=1),
+        sample_df.reindex(sorted(sample_df.columns), axis=1)
+    )
+
+    # Verify JSON format
+    with open(saved_path, "r", encoding="utf-8") as f:
+        json_content = json.load(f)
+        assert isinstance(json_content, list)  # Should be list of records
+        assert len(json_content) == len(sample_df)
+
+
+def test_save_json_dataframe_index(file_utils, sample_df):
+    """Test saving DataFrame to JSON in index format."""
+    saved_files, _ = file_utils.save_data_to_storage(
+        data=sample_df,
+        output_filetype=OutputFileType.JSON,
+        output_type="processed",
+        file_name="test_json_index",
+        orient="index"
+    )
+
+    assert len(saved_files) == 1
+    saved_path = Path(next(iter(saved_files.values())))
+    assert saved_path.exists()
+
+    # Verify content
+    loaded_df = file_utils.load_single_file("test_json_index.json", input_type="processed")
+    
+    # Convert index to integers if possible
+    if loaded_df.index.dtype == 'O' and all(idx.isdigit() for idx in loaded_df.index):
+        loaded_df.index = loaded_df.index.astype(int)
+    
+    pd.testing.assert_frame_equal(
+        loaded_df.reindex(sorted(loaded_df.columns), axis=1),
+        sample_df.reindex(sorted(sample_df.columns), axis=1),
+        check_index_type=False  # Index type may change for JSON
+    )
+
+    # Verify JSON format
+    with open(saved_path, "r", encoding="utf-8") as f:
+        json_content = json.load(f)
+        assert isinstance(json_content, dict)  # Should be dictionary
+        assert len(json_content) == len(sample_df)
+
+
+def test_save_yaml_invalid_orient(file_utils, sample_df):
+    """Test saving DataFrame to YAML with invalid orientation."""
+    with pytest.raises(StorageError) as exc_info:
+        file_utils.save_data_to_storage(
+            data=sample_df,
+            output_filetype=OutputFileType.YAML,
+            output_type="processed",
+            file_name="test_yaml_invalid",
+            orient="invalid_orient"
+        )
+    assert "Unsupported YAML orientation" in str(exc_info.value)
+
+
+def test_save_json_invalid_orient(file_utils, sample_df):
+    """Test saving DataFrame to JSON with invalid orientation."""
+    with pytest.raises(StorageError) as exc_info:
+        file_utils.save_data_to_storage(
+            data=sample_df,
+            output_filetype=OutputFileType.JSON,
+            output_type="processed",
+            file_name="test_json_invalid",
+            orient="invalid_orient"
+        )
+    assert "Invalid value 'invalid_orient' for option 'orient'" in str(exc_info.value)
+
+
+def test_yaml_custom_options(file_utils, sample_df):
+    """Test saving DataFrame to YAML with custom options."""
+    yaml_options = {
+        "default_flow_style": True,
+        "sort_keys": True,
+        "width": 80,
+        "indent": 4
+    }
+    
+    saved_files, _ = file_utils.save_data_to_storage(
+        data=sample_df,
+        output_filetype=OutputFileType.YAML,
+        output_type="processed",
+        file_name="test_yaml_custom",
+        yaml_options=yaml_options
+    )
+
+    assert len(saved_files) == 1
+    saved_path = Path(next(iter(saved_files.values())))
+    assert saved_path.exists()
+
+    # Verify content
+    loaded_df = file_utils.load_single_file("test_yaml_custom.yaml", input_type="processed")
+    pd.testing.assert_frame_equal(
+        loaded_df.reindex(sorted(loaded_df.columns), axis=1),
+        sample_df.reindex(sorted(sample_df.columns), axis=1)
+    )
+
+
+def test_save_multiple_dataframes_yaml(file_utils, sample_df):
+    """Test saving multiple DataFrames to YAML files."""
+    data_dict = {"sheet1": sample_df, "sheet2": sample_df.copy()}
+    
+    saved_files, _ = file_utils.save_data_to_storage(
+        data=data_dict,
+        output_filetype=OutputFileType.YAML,
+        output_type="processed",
+        file_name="multi_yaml",
+        yaml_options={"default_flow_style": False}
+    )
+
+    assert len(saved_files) == len(data_dict)
+    for sheet_name, file_path in saved_files.items():
+        assert Path(file_path).exists()
+        loaded_df = file_utils.load_single_file(Path(file_path).name, input_type="processed")
+        pd.testing.assert_frame_equal(
+            loaded_df.reindex(sorted(loaded_df.columns), axis=1),
+            data_dict[sheet_name].reindex(sorted(data_dict[sheet_name].columns), axis=1)
+        )
+
+
+def test_save_multiple_dataframes_json(file_utils, sample_df):
+    """Test saving multiple DataFrames to JSON files."""
+    data_dict = {"sheet1": sample_df, "sheet2": sample_df.copy()}
+    
+    saved_files, _ = file_utils.save_data_to_storage(
+        data=data_dict,
+        output_filetype=OutputFileType.JSON,
+        output_type="processed",
+        file_name="multi_json",
+        orient="records"
+    )
+
+    assert len(saved_files) == len(data_dict)
+    for sheet_name, file_path in saved_files.items():
+        assert Path(file_path).exists()
+        loaded_df = file_utils.load_single_file(Path(file_path).name, input_type="processed")
+        pd.testing.assert_frame_equal(
+            loaded_df.reindex(sorted(loaded_df.columns), axis=1),
+            data_dict[sheet_name].reindex(sorted(data_dict[sheet_name].columns), axis=1)
+        )

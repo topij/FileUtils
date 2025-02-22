@@ -284,18 +284,18 @@ class FileUtils:
             if len(data) == 1 and output_filetype != OutputFileType.XLSX:
                 # For non-Excel single DataFrame
                 sheet_name = next(iter(data.keys()))
+                # Pass format info through kwargs instead of positional args
+                kwargs["sheet_name"] = sheet_name
                 saved_path = self.storage.save_dataframe(
                     next(iter(data.values())),
                     base_path,
-                    output_filetype.value,
-                    sheet_name=sheet_name,  # Pass sheet name through
                     **kwargs,
                 )
                 saved_files = {sheet_name: saved_path}
             else:
                 # For Excel or multiple DataFrames
                 saved_files = self.storage.save_dataframes(
-                    data, base_path, output_filetype.value, **kwargs
+                    data, base_path, **kwargs
                 )
 
             self.logger.info(f"Data saved successfully: {saved_files}")
