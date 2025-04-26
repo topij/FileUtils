@@ -107,8 +107,10 @@ For a practical example, check out my [semantic text analyzer](https://www.githu
 
 ## Documentation
 
-- [Installation Guide](docs/INSTALLATION.md)
-- [Usage Guide](docs/USAGE.md) - Comprehensive examples and API documentation
+- [Getting Started Guide](docs/GETTING_STARTED_GUIDE.md) - Quick introduction to key use cases
+- [Installation Guide](docs/INSTALLATION.md) - Detailed installation instructions
+- [Usage Guide](docs/USAGE.md) - Comprehensive examples and patterns
+- [API Reference](docs/API_REFERENCE.md) - Complete API documentation
 - [Azure Setup Guide](docs/AZURE_SETUP.md) - Azure Blob Storage configuration
 - [Development Guide](docs/DEVELOPMENT.md) - Setup, building, and contributing to the project
 
