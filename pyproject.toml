@@ -44,3 +44,8 @@ all = [
     "pyarrow>=7.0.0",
     "openpyxl>=3.0.9",
 ]
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: marks tests as integration tests that require external resources",
+]
