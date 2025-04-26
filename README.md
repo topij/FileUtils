@@ -113,6 +113,7 @@ For a practical example, check out my [semantic text analyzer](https://www.githu
 - [API Reference](docs/API_REFERENCE.md) - Complete API documentation
 - [Azure Setup Guide](docs/AZURE_SETUP.md) - Azure Blob Storage configuration
 - [Development Guide](docs/DEVELOPMENT.md) - Setup, building, and contributing to the project
+- [Future Features](docs/FUTURE_FEATURES.md) - Roadmap and planned enhancements
 
 ## Requirements
 
