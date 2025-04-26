@@ -23,6 +23,42 @@ FileUtils/
 
 ## Development Setup
 
+### Option 1: Using the provided environment.yaml (Recommended)
+
+The project includes an `environment.yaml` file that defines all required dependencies for development, testing, and building the package.
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/FileUtils.git
+   cd FileUtils
+   ```
+
+2. Create a Conda environment from the environment.yaml file:
+   ```bash
+   # Create and activate the environment from the yaml file
+   conda env create -f environment.yaml
+   conda activate fileutils
+   ```
+
+3. Install the package in development mode:
+   ```bash
+   # Install in editable mode
+   pip install -e .
+   ```
+
+4. Verify the installation:
+   ```bash
+   # Run a simple import test
+   python -c "from FileUtils import FileUtils"
+   
+   # Run the test suite
+   pytest tests/unit
+   ```
+
+### Option 2: Manual setup
+
+If you prefer to set up the environment manually:
+
 1. Clone the repository:
    ```bash
    git clone https://github.com/yourusername/FileUtils.git
@@ -182,6 +218,7 @@ The package uses optional dependency groups:
 - **Missing Dependencies**: Install all required dependencies
 - **Build Failures**: Check the build script output for details
 - **Test Failures**: Run tests with `-v` flag for verbose output
+- **License Metadata**: If experiencing build issues related to the license format, ensure the license is specified as a simple string in pyproject.toml (`license = "MIT"` rather than the table format)
 - **Conda Environment Issues**:
   - Use `conda list` to verify installed packages
   - If experiencing conflicts, try creating a fresh environment
