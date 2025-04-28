@@ -21,6 +21,8 @@ A Python utility package for consistent file operations across local and Azure s
   - Automatic format detection
   - Flexible data orientation options
   - Customizable save/load options per format
+  - `Dynamic Subdirectory Creation`: Specify nested subdirectories for saving files on the fly using the `sub_path` parameter.
+  - `File Format Handling`: Loads data based on file extension; includes CSV delimiter auto-detection during load.
 
 - **Robust Infrastructure**
   - YAML-based configuration system
@@ -90,6 +92,16 @@ file_utils.save_data_to_storage(
     output_type="processed",
     output_filetype=OutputFileType.XLSX
 )
+
+# Save to a dynamic subdirectory
+file_utils.save_data_to_storage(
+    data=df,
+    file_name="report_data",
+    output_type="processed",
+    output_filetype=OutputFileType.CSV,
+    sub_path="analysis_run_1/summaries" # New subdirectory
+)
+# File saved to: data/processed/analysis_run_1/summaries/report_data_<timestamp>.csv
 ```
 
 ## Key Benefits

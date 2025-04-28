@@ -30,6 +30,15 @@ file_utils.save_data_to_storage(
     output_type="processed",
     output_filetype=OutputFileType.XLSX
 )
+
+# Save to a specific subdirectory dynamically
+file_utils.save_data_to_storage(
+    data=df,
+    file_name="report_summary",
+    output_type="processed",
+    output_filetype=OutputFileType.CSV,
+    sub_path="run_1/results" # Creates data/processed/run_1/results/
+)
 ```
 
 ## File Format Support

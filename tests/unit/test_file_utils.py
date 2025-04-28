@@ -465,3 +465,119 @@ def test_save_multiple_dataframes_json(file_utils, sample_df):
             loaded_df.reindex(sorted(loaded_df.columns), axis=1),
             data_dict[sheet_name].reindex(sorted(data_dict[sheet_name].columns), axis=1)
         )
+
+
+# Tests for sub_path functionality
+def test_save_single_dataframe_with_subpath(file_utils, sample_df):
+    """Test saving single DataFrame with sub_path."""
+    sub_path = "level1/level2"
+    file_name = "subpath_test"
+    output_type = "processed"
+
+    saved_files, _ = file_utils.save_data_to_storage(
+        data=sample_df,
+        output_filetype=OutputFileType.CSV,
+        output_type=output_type,
+        file_name=file_name,
+        sub_path=sub_path,
+    )
+
+    assert len(saved_files) == 1
+    saved_path = Path(next(iter(saved_files.values())))
+    assert saved_path.exists()
+
+    # Verify path structure
+    expected_dir = file_utils.project_root / "data" / output_type / sub_path
+    assert saved_path.parent == expected_dir
+    assert saved_path.name == f"{file_name}.csv"
+
+    # Verify content
+    loaded_df = pd.read_csv(saved_path)
+    pd.testing.assert_frame_equal(loaded_df, sample_df)
+
+
+def test_save_excel_with_subpath(file_utils, sample_df):
+    """Test saving multi-sheet Excel file with sub_path."""
+    sub_path = "excel_reports"
+    file_name = "excel_subpath"
+    output_type = "processed"
+    data_dict = {"sheetA": sample_df, "sheetB": sample_df.copy()}
+
+    saved_files, _ = file_utils.save_data_to_storage(
+        data=data_dict,
+        output_filetype=OutputFileType.XLSX,
+        output_type=output_type,
+        file_name=file_name,
+        sub_path=sub_path,
+    )
+
+    assert len(saved_files) == 1 # Excel saves as one file
+    saved_path = Path(next(iter(saved_files.values())))
+    assert saved_path.exists()
+
+    # Verify path structure
+    expected_dir = file_utils.project_root / "data" / output_type / sub_path
+    assert saved_path.parent == expected_dir
+    assert saved_path.name == f"{file_name}.xlsx"
+
+    # Verify content
+    loaded_sheets = pd.read_excel(saved_path, sheet_name=None)
+    assert set(loaded_sheets.keys()) == set(data_dict.keys())
+    for name, df in data_dict.items():
+        pd.testing.assert_frame_equal(loaded_sheets[name], df)
+
+
+def test_save_multiple_csv_with_subpath(file_utils, sample_df):
+    """Test saving multiple DataFrames as separate CSVs with sub_path."""
+    sub_path = "csv_reports/run1"
+    file_name = "multi_csv"
+    output_type = "processed"
+    data_dict = {"data1": sample_df, "data2": sample_df.copy()}
+
+    saved_files, _ = file_utils.save_data_to_storage(
+        data=data_dict,
+        output_filetype=OutputFileType.CSV, # Non-Excel saves separate files
+        output_type=output_type,
+        file_name=file_name,
+        sub_path=sub_path,
+    )
+
+    assert len(saved_files) == 2
+    expected_dir = file_utils.project_root / "data" / output_type / sub_path
+
+    for sheet_name, saved_path_str in saved_files.items():
+        saved_path = Path(saved_path_str)
+        assert saved_path.exists()
+        assert saved_path.parent == expected_dir
+        # Check filename format: base_sheetname.ext
+        assert saved_path.name == f"{file_name}_{sheet_name}.csv"
+
+        # Verify content
+        loaded_df = pd.read_csv(saved_path)
+        pd.testing.assert_frame_equal(loaded_df, data_dict[sheet_name])
+
+
+def test_save_with_absolute_subpath(file_utils, sample_df):
+    """Test that an absolute sub_path is handled correctly (made relative)."""
+    # Create an absolute path unlikely to exist, but valid structure
+    abs_sub_path = Path("/abs/path/to/reports")
+    relative_equivalent = "abs/path/to/reports" # How it should be treated
+    file_name = "abs_subpath_test"
+    output_type = "processed"
+
+    saved_files, _ = file_utils.save_data_to_storage(
+        data=sample_df,
+        output_filetype=OutputFileType.CSV,
+        output_type=output_type,
+        file_name=file_name,
+        sub_path=abs_sub_path, # Pass the absolute path
+    )
+
+    assert len(saved_files) == 1
+    saved_path = Path(next(iter(saved_files.values())))
+    assert saved_path.exists()
+
+    # Verify path structure uses the relative equivalent
+    expected_dir = file_utils.project_root / "data" / output_type / relative_equivalent
+    assert saved_path.parent == expected_dir
+    assert saved_path.name == f"{file_name}.csv"

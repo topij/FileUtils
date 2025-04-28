@@ -58,6 +58,7 @@ save_data_to_storage(
     output_filetype: Union[OutputFileType, str] = OutputFileType.CSV,
     output_type: str = "processed",
     file_name: Optional[str] = None,
+    sub_path: Optional[Union[str, Path]] = None,
     include_timestamp: Optional[bool] = None,
     **kwargs
 ) -> Tuple[Dict[str, str], Optional[str]]
@@ -69,6 +70,7 @@ save_data_to_storage(
 - `output_filetype`: File format to save data in (e.g., CSV, XLSX, JSON).
 - `output_type`: Directory name to save in (e.g., "raw", "processed") - not the file format.
 - `file_name`: Base name for the file without extension.
+- `sub_path`: Optional relative path for subdirectory within `output_type` directory.
 - `include_timestamp`: Whether to include timestamp in filename.
 - `**kwargs`: Format-specific options:
   - CSV: `sep`, `encoding`, `index`, `quoting`

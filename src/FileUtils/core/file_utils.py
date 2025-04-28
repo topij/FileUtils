@@ -244,6 +244,7 @@ class FileUtils:
         output_filetype: Union[OutputFileType, str] = OutputFileType.CSV,
         output_type: str = "processed",
         file_name: Optional[str] = None,
+        sub_path: Optional[Union[str, Path]] = None,
         include_timestamp: Optional[bool] = None,
         **kwargs,
     ) -> Tuple[Dict[str, str], Optional[str]]:
@@ -254,13 +255,13 @@ class FileUtils:
             output_filetype: Type of output file
             output_type: Type of output (e.g., "processed", "raw")
             file_name: Base name for output file
+            sub_path: Optional subdirectory path relative to output_type directory
             include_timestamp: Whether to include timestamp in filename
             **kwargs: Additional arguments for storage backend
 
         Returns:
             Tuple of (saved files dict, optional metadata path)
         """
-
         if isinstance(output_filetype, str):
             output_filetype = OutputFileType(output_filetype.lower())
 
@@ -275,8 +276,9 @@ class FileUtils:
             kwargs["engine"] = "openpyxl"
 
         # Generate output path
-        base_path = format_file_path(
-            self.get_data_path(output_type),
+        base_dir = self.get_data_path(output_type)
+        full_file_path_str = format_file_path(
+            base_dir,
             file_name or "data",
             output_filetype.value,
             (
@@ -286,6 +288,14 @@ class FileUtils:
             ),
         )
 
+        # Insert sub_path if provided
+        full_file_path = Path(full_file_path_str)
+        if sub_path:
+            # Ensure sub_path is relative
+            safe_sub_path = Path(sub_path).relative_to(Path(sub_path).anchor) if Path(sub_path).is_absolute() else Path(sub_path)
+            # Construct the full path: base_dir / sub_path / filename
+            full_file_path = base_dir / safe_sub_path / full_file_path.name
+
         try:
             if len(data) == 1 and output_filetype != OutputFileType.XLSX:
                 # For non-Excel single DataFrame
@@ -294,14 +304,14 @@ class FileUtils:
                 kwargs["sheet_name"] = sheet_name
                 saved_path = self.storage.save_dataframe(
                     next(iter(data.values())),
-                    base_path,
+                    full_file_path,
                     **kwargs,
                 )
                 saved_files = {sheet_name: saved_path}
             else:
                 # For Excel or multiple DataFrames
                 saved_files = self.storage.save_dataframes(
-                    data, base_path, **kwargs
+                    data, full_file_path, **kwargs
                 )
 
             self.logger.info(f"Data saved successfully: {saved_files}")

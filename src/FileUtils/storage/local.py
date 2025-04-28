@@ -37,6 +37,9 @@ class LocalStorage(BaseStorage):
             path = ensure_path(file_path)
             suffix = path.suffix.lower()
 
+            # Ensure parent directory exists
+            path.parent.mkdir(parents=True, exist_ok=True)
+
             if suffix == ".csv":
                 df.to_csv(
                     path,
@@ -245,6 +248,9 @@ class LocalStorage(BaseStorage):
         try:
             path = ensure_path(file_path)
             suffix = path.suffix.lower()
+
+            # Ensure parent directory exists
+            path.parent.mkdir(parents=True, exist_ok=True)
 
             if suffix in (".xlsx", ".xls"):
                 # Save all DataFrames to a single Excel file
