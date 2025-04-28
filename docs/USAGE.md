@@ -39,6 +39,21 @@ file_utils.save_data_to_storage(
     output_filetype=OutputFileType.CSV,
     sub_path="run_1/results" # Creates data/processed/run_1/results/
 )
+
+# Load data from the specific subdirectory
+loaded_df = file_utils.load_single_file(
+    file_path="report_summary.csv", # Just the filename
+    input_type="processed",
+    sub_path="run_1/results" # Specify the sub_path
+)
+
+# Load multiple files from a subdirectory
+# Assume data_a.csv and data_b.csv exist in data/raw/source_x/files/
+multi_loaded = file_utils.load_multiple_files(
+    file_paths=["data_a.csv", "data_b.csv"], # Filenames only
+    input_type="raw",
+    sub_path="source_x/files"
+)
 ```
 
 ## File Format Support

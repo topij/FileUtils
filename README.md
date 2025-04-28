@@ -102,6 +102,13 @@ file_utils.save_data_to_storage(
     sub_path="analysis_run_1/summaries" # New subdirectory
 )
 # File saved to: data/processed/analysis_run_1/summaries/report_data_<timestamp>.csv
+
+# Load data from the dynamic subdirectory
+loaded_report = file_utils.load_single_file(
+    file_path="report_data.csv", # Just the filename
+    input_type="processed",
+    sub_path="analysis_run_1/summaries" # Specify the sub_path
+)
 ```
 
 ## Key Benefits

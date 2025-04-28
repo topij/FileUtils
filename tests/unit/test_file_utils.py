@@ -581,3 +581,195 @@ def test_save_with_absolute_subpath(file_utils, sample_df):
     expected_dir = file_utils.project_root / "data" / output_type / relative_equivalent
     assert saved_path.parent == expected_dir
     assert saved_path.name == f"{file_name}.csv"
+
+
+# --- Tests for loading with sub_path ---
+
+def test_load_single_file_with_subpath(file_utils, sample_df):
+    """Test loading single file with sub_path."""
+    sub_path = "load_level1/load_level2"
+    file_name = "load_subpath_test.csv"
+    output_type = "processed"
+
+    # First, save a file using sub_path
+    file_utils.save_data_to_storage(
+        data=sample_df,
+        output_filetype=OutputFileType.CSV,
+        output_type=output_type,
+        file_name=Path(file_name).stem,
+        sub_path=sub_path,
+        include_timestamp=False # Disable timestamp for predictable filename
+    )
+
+    # Now, load using sub_path
+    loaded_df = file_utils.load_single_file(
+        file_path=file_name, # Just the filename
+        input_type=output_type,
+        sub_path=sub_path # Specify the sub_path
+    )
+
+    pd.testing.assert_frame_equal(loaded_df, sample_df)
+
+
+def test_load_excel_sheets_with_subpath(file_utils, sample_df):
+    """Test loading Excel sheets with sub_path."""
+    sub_path = "load_excel_reports"
+    file_name = "load_excel_subpath.xlsx"
+    output_type = "processed"
+    data_dict = {"sheetA": sample_df, "sheetB": sample_df.copy()}
+
+    # Save the Excel file first
+    file_utils.save_data_to_storage(
+        data=data_dict,
+        output_filetype=OutputFileType.XLSX,
+        output_type=output_type,
+        file_name=Path(file_name).stem,
+        sub_path=sub_path,
+        include_timestamp=False
+    )
+
+    # Load using sub_path
+    loaded_sheets = file_utils.load_excel_sheets(
+        file_path=file_name, # Just the filename
+        input_type=output_type,
+        sub_path=sub_path
+    )
+
+    assert set(loaded_sheets.keys()) == set(data_dict.keys())
+    for name, df in data_dict.items():
+        pd.testing.assert_frame_equal(loaded_sheets[name], df)
+
+
+def test_load_yaml_with_subpath(file_utils, temp_dir):
+    """Test loading YAML file with sub_path."""
+    sub_path = "config_files/yaml"
+    file_name = "test_load.yaml"
+    input_type = "raw"
+    yaml_data = {"key": "value", "items": [1, 2]}
+
+    # Create test YAML file in the sub_path
+    full_dir = temp_dir / "data" / input_type / sub_path
+    full_dir.mkdir(parents=True, exist_ok=True)
+    with open(full_dir / file_name, "w") as f:
+        yaml.safe_dump(yaml_data, f)
+
+    # Load using sub_path
+    loaded_data = file_utils.load_yaml(
+        file_path=file_name,
+        input_type=input_type,
+        sub_path=sub_path
+    )
+    assert loaded_data == yaml_data
+
+
+def test_load_json_with_subpath(file_utils, temp_dir):
+    """Test loading JSON file with sub_path."""
+    sub_path = "config_files/json"
+    file_name = "test_load.json"
+    input_type = "raw"
+    json_data = {"key": "value", "items": [1, 2]}
+
+    # Create test JSON file in the sub_path
+    full_dir = temp_dir / "data" / input_type / sub_path
+    full_dir.mkdir(parents=True, exist_ok=True)
+    with open(full_dir / file_name, "w") as f:
+        json.dump(json_data, f)
+
+    # Load using sub_path
+    loaded_data = file_utils.load_json(
+        file_path=file_name,
+        input_type=input_type,
+        sub_path=sub_path
+    )
+    assert loaded_data == json_data
+
+
+def test_load_multiple_files_with_subpath(file_utils, sample_df):
+    """Test loading multiple files with sub_path."""
+    sub_path = "multi_load/runX"
+    output_type = "processed"
+    filenames = ["data_a.csv", "data_b.csv"]
+    data_dict = {Path(fn).stem: sample_df.assign(id=Path(fn).stem) for fn in filenames}
+
+    # Save the files first
+    for fn, df_to_save in data_dict.items():
+        file_utils.save_data_to_storage(
+            data=df_to_save,
+            output_filetype=OutputFileType.CSV,
+            output_type=output_type,
+            file_name=fn,
+            sub_path=sub_path,
+            include_timestamp=False
+        )
+
+    # Load using load_multiple_files with sub_path
+    loaded_data = file_utils.load_multiple_files(
+        file_paths=filenames, # List of filenames only
+        input_type=output_type,
+        sub_path=sub_path,
+        file_type=OutputFileType.CSV # Optional: enforce type
+    )
+
+    assert len(loaded_data) == len(filenames)
+    assert set(loaded_data.keys()) == set(data_dict.keys())
+    for name, loaded_df in loaded_data.items():
+        pd.testing.assert_frame_equal(loaded_df, data_dict[name])
+
+
+# --- Tests for validation and backward compatibility ---
+
+def test_load_single_file_subpath_validation(file_utils):
+    """Test ValueError when sub_path and nested file_path are mixed."""
+    with pytest.raises(ValueError) as exc_info:
+        file_utils.load_single_file(
+            file_path="some_dir/some_file.csv", # Nested file_path
+            input_type="processed",
+            sub_path="another_dir" # Also providing sub_path
+        )
+    assert "already contains directory separators" in str(exc_info.value)
+
+    # Also test with Azure path
+    with pytest.raises(ValueError) as exc_info:
+        file_utils.load_single_file(
+            file_path="azure://container/blob/path/file.csv", # Azure path
+            input_type="processed", # input_type is ignored for azure path
+            sub_path="a_sub_path" # sub_path is invalid here
+        )
+    assert "Cannot use sub_path with an absolute Azure path" in str(exc_info.value)
+
+
+def test_load_multiple_files_subpath_validation(file_utils):
+    """Test ValueError when sub_path and nested file_paths are mixed in list."""
+    with pytest.raises(ValueError) as exc_info:
+        file_utils.load_multiple_files(
+            file_paths=["file1.csv", "subdir/file2.csv"], # One path is nested
+            input_type="processed",
+            sub_path="target_dir" # Also providing sub_path
+        )
+    assert "already contains directory separators" in str(exc_info.value)
+
+
+def test_load_single_file_backward_compatibility(file_utils, sample_df):
+    """Test loading with nested file_path and NO sub_path works as before."""
+    sub_path = "bc_level1/bc_level2"
+    file_name = "bc_test.csv"
+    nested_file_path = f"{sub_path}/{file_name}" # Path provided in file_path arg
+    output_type = "processed"
+
+    # Save a file normally (using our new save feature)
+    file_utils.save_data_to_storage(
+        data=sample_df,
+        output_filetype=OutputFileType.CSV,
+        output_type=output_type,
+        file_name=Path(file_name).stem,
+        sub_path=sub_path,
+        include_timestamp=False
+    )
+
+    # Load using the OLD way: nested path in file_path, sub_path=None
+    loaded_df = file_utils.load_single_file(
+        file_path=nested_file_path,
+        input_type=output_type,
+        # sub_path=None # Default
+    )
+    pd.testing.assert_frame_equal(loaded_df, sample_df)

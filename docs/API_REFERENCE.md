@@ -91,14 +91,16 @@ Load a single file as a DataFrame. The file format is automatically detected fro
 load_single_file(
     file_path: Union[str, Path],
     input_type: str = "raw",
+    sub_path: Optional[Union[str, Path]] = None,
     **kwargs
 ) -> pd.DataFrame
 ```
 
 **Parameters:**
 
-- `file_path`: Path to file, relative to data directory. File format is auto-detected from extension.
+- `file_path`: Path to file. If `sub_path` is provided, this should be the filename only. If `sub_path` is None, this is the path relative to the `input_type` directory.
 - `input_type`: Directory name to load from (e.g., "raw", "processed") - not the file format.
+- `sub_path`: Optional subdirectory path relative to `input_type` directory.
 - `**kwargs`: Format-specific options for reading.
 
 **Returns:**
@@ -113,14 +115,16 @@ Load all sheets from an Excel file.
 load_excel_sheets(
     file_path: Union[str, Path],
     input_type: str = "raw",
+    sub_path: Optional[Union[str, Path]] = None,
     **kwargs
 ) -> Dict[str, pd.DataFrame]
 ```
 
 **Parameters:**
 
-- `file_path`: Path to Excel file. Format is auto-detected from extension (.xlsx, .xls).
+- `file_path`: Path to Excel file. If `sub_path` is provided, this should be the filename only. If `sub_path` is None, this is the path relative to the `input_type` directory.
 - `input_type`: Directory name to load from - not the file format.
+- `sub_path`: Optional subdirectory path relative to `input_type` directory.
 - `**kwargs`: Additional options for pd.read_excel.
 
 **Returns:**
@@ -135,15 +139,19 @@ Load multiple files into a dictionary of DataFrames. File formats are automatica
 load_multiple_files(
     file_paths: List[Union[str, Path]],
     input_type: str = "raw",
-    file_type: Optional[OutputFileType] = None
+    sub_path: Optional[Union[str, Path]] = None,
+    file_type: Optional[OutputFileType] = None,
+    **kwargs
 ) -> Dict[str, pd.DataFrame]
 ```
 
 **Parameters:**
 
-- `file_paths`: List of file paths. Formats are auto-detected from extensions.
+- `file_paths`: List of file paths. If `sub_path` is provided, these should be filenames only. If `sub_path` is None, these are paths relative to the `input_type` directory.
 - `input_type`: Directory name to load from - not the file format.
+- `sub_path`: Optional subdirectory path relative to `input_type` directory.
 - `file_type`: Optional file type override if auto-detection should be bypassed.
+- `**kwargs`: Additional options passed to the underlying `load_single_file` calls.
 
 **Returns:**
 
@@ -202,15 +210,17 @@ Load YAML file content.
 load_yaml(
     file_path: Union[str, Path],
     input_type: str = "raw",
+    sub_path: Optional[Union[str, Path]] = None,
     **kwargs
 ) -> Any
 ```
 
 **Parameters:**
 
-- `file_path`: Path to YAML file. Format is auto-detected from extension.
+- `file_path`: Path to YAML file. If `sub_path` is provided, this should be the filename only. If `sub_path` is None, this is the path relative to the `input_type` directory.
 - `input_type`: Directory name to load from - not the file format.
-- `**kwargs`: Additional options.
+- `sub_path`: Optional subdirectory path relative to `input_type` directory.
+- `**kwargs`: Additional options passed to `yaml.safe_load` or the storage backend.
 
 **Returns:**
 
@@ -224,15 +234,17 @@ Load JSON file content.
 load_json(
     file_path: Union[str, Path],
     input_type: str = "raw",
+    sub_path: Optional[Union[str, Path]] = None,
     **kwargs
 ) -> Any
 ```
 
 **Parameters:**
 
-- `file_path`: Path to JSON file. Format is auto-detected from extension.
+- `file_path`: Path to JSON file. If `sub_path` is provided, this should be the filename only. If `sub_path` is None, this is the path relative to the `input_type` directory.
 - `input_type`: Directory name to load from - not the file format.
-- `**kwargs`: Additional options.
+- `sub_path`: Optional subdirectory path relative to `input_type` directory.
+- `**kwargs`: Additional options passed to `json.load` or the storage backend.
 
 **Returns:**
 

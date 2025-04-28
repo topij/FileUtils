@@ -331,28 +331,115 @@ class FileUtils:
         return self.save_data_to_storage(*args, **kwargs)
 
     def load_single_file(
-        self, file_path: Union[str, Path], input_type: str = "raw", **kwargs
+        self,
+        file_path: Union[str, Path],
+        input_type: str = "raw",
+        sub_path: Optional[Union[str, Path]] = None,
+        **kwargs,
     ) -> pd.DataFrame:
-        """Load a single file from storage."""
-        try:
-            if not str(file_path).startswith("azure://"):
-                file_path = self.project_root / "data" / input_type / file_path
+        """Load a single file from storage.
 
-            return self.storage.load_dataframe(file_path, **kwargs)
+        Args:
+            file_path: Path to file, relative to input_type/sub_path directory
+                       OR relative to input_type directory if sub_path is None.
+            input_type: Type of input directory (e.g., "raw", "processed")
+            sub_path: Optional subdirectory path relative to input_type directory
+            **kwargs: Additional arguments passed to storage backend
+
+        Returns:
+            pd.DataFrame: Loaded data
+
+        Raises:
+            StorageError: If loading fails
+            ValueError: If sub_path is provided and file_path also contains path separators
+        """
+        try:
+            # Handle potential Azure paths (which should not be combined with input_type/sub_path)
+            if str(file_path).startswith("azure://"):
+                if sub_path:
+                     raise ValueError("Cannot use sub_path with an absolute Azure path in file_path.")
+                # Azure path is handled directly by storage backend
+                full_path = file_path
+            else:
+                # Construct local path
+                base_dir = self.project_root / "data" / input_type
+                file_path_obj = Path(file_path)
+
+                if sub_path:
+                    # Ensure sub_path is relative
+                    safe_sub_path = Path(sub_path).relative_to(Path(sub_path).anchor) if Path(sub_path).is_absolute() else Path(sub_path)
+
+                    # Check if file_path also contains directory structure
+                    if file_path_obj.parent != Path('.'):
+                        raise ValueError(
+                            f"Cannot provide sub_path ('{sub_path}') when file_path "
+                            f"('{file_path}') already contains directory separators."
+                        )
+                    full_path = base_dir / safe_sub_path / file_path_obj
+                else:
+                    # No sub_path, use file_path relative to base_dir (allows subdir in file_path)
+                    full_path = base_dir / file_path_obj
+
+            return self.storage.load_dataframe(full_path, **kwargs)
         except Exception as e:
+            if isinstance(e, (ValueError, StorageError)):
+                raise
             self.logger.error(f"Failed to load file {file_path}: {e}")
             raise StorageError(f"Failed to load file {file_path}: {e}") from e
 
     def load_excel_sheets(
-        self, file_path: Union[str, Path], input_type: str = "raw", **kwargs
+        self,
+        file_path: Union[str, Path],
+        input_type: str = "raw",
+        sub_path: Optional[Union[str, Path]] = None,
+        **kwargs,
     ) -> Dict[str, pd.DataFrame]:
-        """Load all sheets from an Excel file."""
-        try:
-            if not str(file_path).startswith("azure://"):
-                file_path = self.project_root / "data" / input_type / file_path
+        """Load all sheets from an Excel file.
 
-            return self.storage.load_dataframes(file_path, **kwargs)
+        Args:
+            file_path: Path to Excel file, relative to input_type/sub_path directory
+                       OR relative to input_type directory if sub_path is None.
+            input_type: Type of input directory (e.g., "raw", "processed")
+            sub_path: Optional subdirectory path relative to input_type directory
+            **kwargs: Additional arguments passed to storage backend
+
+        Returns:
+            Dict[str, pd.DataFrame]: Dictionary mapping sheet names to DataFrames
+
+        Raises:
+            StorageError: If loading fails
+            ValueError: If sub_path is provided and file_path also contains path separators
+        """
+        try:
+            # Handle potential Azure paths
+            if str(file_path).startswith("azure://"):
+                 if sub_path:
+                     raise ValueError("Cannot use sub_path with an absolute Azure path in file_path.")
+                 full_path = file_path
+            else:
+                # Construct local path
+                base_dir = self.project_root / "data" / input_type
+                file_path_obj = Path(file_path)
+
+                if sub_path:
+                    # Ensure sub_path is relative
+                    safe_sub_path = Path(sub_path).relative_to(Path(sub_path).anchor) if Path(sub_path).is_absolute() else Path(sub_path)
+
+                    # Check if file_path also contains directory structure
+                    if file_path_obj.parent != Path('.'):
+                         raise ValueError(
+                            f"Cannot provide sub_path ('{sub_path}') when file_path "
+                            f"('{file_path}') already contains directory separators."
+                         )
+                    full_path = base_dir / safe_sub_path / file_path_obj
+                else:
+                    # No sub_path, use file_path relative to base_dir
+                    full_path = base_dir / file_path_obj
+
+            return self.storage.load_dataframes(full_path, **kwargs)
         except Exception as e:
+            if isinstance(e, (ValueError, StorageError)):
+                raise
             self.logger.error(f"Failed to load Excel sheets from {file_path}: {e}")
             raise StorageError(f"Failed to load Excel sheets: {e}") from e
 
@@ -360,17 +447,71 @@ class FileUtils:
         self,
         file_paths: List[Union[str, Path]],
         input_type: str = "raw",
+        sub_path: Optional[Union[str, Path]] = None,
         file_type: Optional[OutputFileType] = None,
+        **kwargs,
     ) -> Dict[str, pd.DataFrame]:
-        """Load multiple files of the same type."""
+        """Load multiple files of the same type from storage.
+
+        Args:
+            file_paths: List of file paths, relative to input_type/sub_path directory
+                        OR relative to input_type directory if sub_path is None.
+                        If sub_path is used, these should be filenames only.
+            input_type: Type of input directory (e.g., "raw", "processed")
+            sub_path: Optional subdirectory path relative to input_type directory
+            file_type: Optional OutputFileType to enforce specific type checking
+            **kwargs: Additional arguments passed to load_single_file
+
+        Returns:
+            Dict[str, pd.DataFrame]: Dictionary mapping file stems to loaded DataFrames
+
+        Raises:
+            StorageError: If loading fails for any file
+            ValueError: If sub_path is provided and any file_path in the list
+                        also contains path separators.
+        """
         loaded_data = {}
-        for file_path in file_paths:
-            path = self.get_data_path(input_type) / Path(file_path)
+        base_dir = self.get_data_path(input_type) # Base path for the input type
 
-            if file_type and path.suffix.lstrip(".") != file_type.value:
-                raise ValueError(f"File {path} does not match type: {file_type.value}")
+        # Prepare safe_sub_path once if provided
+        safe_sub_path = None
+        if sub_path:
+            safe_sub_path = Path(sub_path).relative_to(Path(sub_path).anchor) if Path(sub_path).is_absolute() else Path(sub_path)
+            # --- Pre-validation loop ---
+            for file_path_item in file_paths:
+                file_path_obj = Path(file_path_item)
+                if file_path_obj.parent != Path('.'):
+                    raise ValueError(
+                        f"Cannot provide sub_path ('{sub_path}') when a file_path in the list "
+                        f"('{file_path_item}') already contains directory separators."
+                    )
+            # --- End Pre-validation loop ---
 
-            loaded_data[path.stem] = self.load_single_file(path)
+        for file_path_item in file_paths:
+            file_path_obj = Path(file_path_item)
+
+            if safe_sub_path:
+                # If sub_path is used, file_path_item should be a filename only
+                # Validation is now done above, so we just construct the path here
+                load_path_arg = safe_sub_path / file_path_obj
+            else:
+                # No sub_path, file_path_item is relative to base_dir
+                load_path_arg = file_path_obj # Pass the relative path as is
+
+            # Validate file type suffix if needed (using the constructed or original relative path)
+            current_full_path_for_check = base_dir / load_path_arg
+            if file_type and current_full_path_for_check.suffix.lstrip(".") != file_type.value:
+                raise ValueError(f"File {current_full_path_for_check} does not match type: {file_type.value}")
+
+            # Call load_single_file - it will handle combining base_dir and load_path_arg correctly now
+            # Pass down any extra kwargs
+            loaded_data[file_path_obj.stem] = self.load_single_file(
+                file_path=load_path_arg, # Pass the path relative to input_type
+                input_type=input_type,
+                sub_path=None, # sub_path logic is handled above for the list context
+                **kwargs
+            )
+
 
         return loaded_data
 
@@ -409,52 +550,114 @@ class FileUtils:
         return self.storage.load_from_metadata(metadata_path, **kwargs)
 
     def load_yaml(
-        self, file_path: Union[str, Path], input_type: str = "raw", **kwargs
+        self,
+        file_path: Union[str, Path],
+        input_type: str = "raw",
+        sub_path: Optional[Union[str, Path]] = None,
+        **kwargs,
     ) -> Any:
         """Load a YAML file as a Python object.
 
         Args:
-            file_path: Name of the YAML file to load
+            file_path: Path to YAML file, relative to input_type/sub_path directory
+                       OR relative to input_type directory if sub_path is None.
             input_type: Type of input directory ("raw", "processed", etc.)
-            **kwargs: Additional arguments passed to yaml.safe_load
+            sub_path: Optional subdirectory path relative to input_type directory
+            **kwargs: Additional arguments passed to yaml.safe_load or storage backend
 
         Returns:
             Any: Loaded YAML content as Python object
 
         Raises:
             StorageError: If loading fails
+            ValueError: If sub_path is provided and file_path also contains path separators
         """
         try:
-            if not str(file_path).startswith("azure://"):
-                file_path = self.project_root / "data" / input_type / file_path
+            # Handle potential Azure paths
+            if str(file_path).startswith("azure://"):
+                if sub_path:
+                     raise ValueError("Cannot use sub_path with an absolute Azure path in file_path.")
+                full_path = file_path
+            else:
+                # Construct local path
+                base_dir = self.project_root / "data" / input_type
+                file_path_obj = Path(file_path)
 
-            return self.storage.load_yaml(file_path, **kwargs)
+                if sub_path:
+                     # Ensure sub_path is relative
+                    safe_sub_path = Path(sub_path).relative_to(Path(sub_path).anchor) if Path(sub_path).is_absolute() else Path(sub_path)
+
+                    # Check if file_path also contains directory structure
+                    if file_path_obj.parent != Path('.'):
+                        raise ValueError(
+                            f"Cannot provide sub_path ('{sub_path}') when file_path "
+                            f"('{file_path}') already contains directory separators."
+                        )
+                    full_path = base_dir / safe_sub_path / file_path_obj
+                else:
+                     # No sub_path, use file_path relative to base_dir
+                    full_path = base_dir / file_path_obj
+
+            return self.storage.load_yaml(full_path, **kwargs)
         except Exception as e:
+            if isinstance(e, (ValueError, StorageError)):
+                raise
             self.logger.error(f"Failed to load YAML file {file_path}: {e}")
             raise StorageError(f"Failed to load YAML file {file_path}: {e}") from e
 
     def load_json(
-        self, file_path: Union[str, Path], input_type: str = "raw", **kwargs
+        self,
+        file_path: Union[str, Path],
+        input_type: str = "raw",
+        sub_path: Optional[Union[str, Path]] = None,
+        **kwargs,
     ) -> Any:
         """Load a JSON file as a Python object.
 
         Args:
-            file_path: Name of the JSON file to load
+            file_path: Path to JSON file, relative to input_type/sub_path directory
+                       OR relative to input_type directory if sub_path is None.
             input_type: Type of input directory ("raw", "processed", etc.)
-            **kwargs: Additional arguments passed to json.load
+            sub_path: Optional subdirectory path relative to input_type directory
+            **kwargs: Additional arguments passed to json.load or storage backend
 
         Returns:
             Any: Loaded JSON content as Python object
 
         Raises:
             StorageError: If loading fails
+            ValueError: If sub_path is provided and file_path also contains path separators
         """
         try:
-            if not str(file_path).startswith("azure://"):
-                file_path = self.project_root / "data" / input_type / file_path
+             # Handle potential Azure paths
+            if str(file_path).startswith("azure://"):
+                if sub_path:
+                     raise ValueError("Cannot use sub_path with an absolute Azure path in file_path.")
+                full_path = file_path
+            else:
+                # Construct local path
+                base_dir = self.project_root / "data" / input_type
+                file_path_obj = Path(file_path)
 
-            return self.storage.load_json(file_path, **kwargs)
+                if sub_path:
+                    # Ensure sub_path is relative
+                    safe_sub_path = Path(sub_path).relative_to(Path(sub_path).anchor) if Path(sub_path).is_absolute() else Path(sub_path)
+
+                    # Check if file_path also contains directory structure
+                    if file_path_obj.parent != Path('.'):
+                         raise ValueError(
+                            f"Cannot provide sub_path ('{sub_path}') when file_path "
+                            f"('{file_path}') already contains directory separators."
+                         )
+                    full_path = base_dir / safe_sub_path / file_path_obj
+                else:
+                    # No sub_path, use file_path relative to base_dir
+                    full_path = base_dir / file_path_obj
+
+            return self.storage.load_json(full_path, **kwargs)
         except Exception as e:
+            if isinstance(e, (ValueError, StorageError)):
+                raise
             self.logger.error(f"Failed to load JSON file {file_path}: {e}")
             raise StorageError(f"Failed to load JSON file {file_path}: {e}") from e
 
