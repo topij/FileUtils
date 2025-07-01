@@ -32,7 +32,7 @@ A Python utility package for consistent file operations across local and Azure s
 
 ## Installation
 
-Choose the installation option that best suits your needs:
+<!-- Choose the installation option that best suits your needs:
 
 ```bash
 # Basic installation (local storage only)
@@ -49,7 +49,7 @@ pip install 'FileUtils[excel]'
 
 # Install with all optional dependencies
 pip install 'FileUtils[all]'
-```
+```-->
 
 You can also install directly from GitHub:
 ```bash
