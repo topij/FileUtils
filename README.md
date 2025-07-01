@@ -51,7 +51,7 @@ pip install 'FileUtils[excel]'
 pip install 'FileUtils[all]'
 ```-->
 
-You can also install directly from GitHub:
+You can install directly from GitHub and choose the installation option that best suits your needs:
 ```bash
 # Basic installation
 pip install git+https://github.com/topij/FileUtils.git
