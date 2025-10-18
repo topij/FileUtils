@@ -312,7 +312,7 @@ set_logging_level(level: str) -> None
 
 ##### `save_document_to_storage`
 
-Save document content using configured storage backend.
+Save document content using configured storage backend. Supports rich document formats including DOCX, Markdown, PDF, JSON, and YAML.
 
 ```python
 save_document_to_storage(
@@ -328,8 +328,8 @@ save_document_to_storage(
 
 **Parameters:**
 
-- `content`: Document content (string or dict with structured content).
-- `output_filetype`: Type of output file (DOCX, MARKDOWN, PDF).
+- `content`: Document content (string, dict, or structured content).
+- `output_filetype`: Type of output file (DOCX, MARKDOWN, PDF, JSON, YAML).
 - `output_type`: Directory name to save in (e.g., "raw", "processed").
 - `file_name`: Base name for the file without extension.
 - `sub_path`: Optional relative path for subdirectory within `output_type` directory.
@@ -345,9 +345,15 @@ save_document_to_storage(
 - `ValueError`: If output_filetype is not a document format.
 - `StorageError`: If saving fails.
 
+**Enhanced Features:**
+
+- **Automatic Type Conversion**: For JSON files, pandas Timestamps, NumPy types, and datetime objects are automatically converted to JSON-serializable formats.
+- **Structured Content Support**: Supports both simple strings and complex structured content for DOCX and PDF files.
+- **YAML Frontmatter**: Markdown files support structured metadata in YAML frontmatter format.
+
 ##### `load_document_from_storage`
 
-Load document content from storage.
+Load document content from storage with intelligent timestamp handling.
 
 ```python
 load_document_from_storage(
@@ -374,6 +380,12 @@ load_document_from_storage(
 - `StorageError`: If loading fails.
 - `ValueError`: If sub_path is provided and file_path also contains path separators.
 
+**Enhanced Features:**
+
+- **Intelligent Timestamp Handling**: If the exact file doesn't exist, automatically searches for files with timestamps matching the base name pattern.
+- **Format-Specific Parsing**: Returns appropriate data types based on file format (string for Markdown/PDF, dict for structured content).
+- **YAML Frontmatter Parsing**: Markdown files with frontmatter return structured dictionaries with separate `frontmatter` and `body` keys.
+
 ## Enums
 
 ### `OutputFileType`
@@ -386,15 +398,25 @@ class OutputFileType(Enum):
     CSV = "csv"
     XLSX = "xlsx"
     XLS = "xls"
-    JSON = "json"
     PARQUET = "parquet"
-    YAML = "yaml"
+    
+    # Multi-purpose formats (both tabular and document)
+    JSON = "json"      # Can be used for DataFrames or structured documents
+    YAML = "yaml"      # Can be used for DataFrames or structured documents
     
     # Document formats
     DOCX = "docx"
     MARKDOWN = "md"
     PDF = "pdf"
 ```
+
+**Format Usage Guidelines:**
+
+- **Tabular Data**: Use `save_data_to_storage()` for CSV, XLSX, XLS, PARQUET
+- **Document Data**: Use `save_document_to_storage()` for DOCX, MARKDOWN, PDF
+- **Flexible Formats**: JSON and YAML can be used with either method:
+  - Use `save_data_to_storage()` for DataFrame content
+  - Use `save_document_to_storage()` for structured documents/configurations
 
 ### `StorageType`
 
@@ -463,4 +485,95 @@ Implementation for Azure Blob Storage operations.
 #### YAML Options
 
 - `yaml_options`: Dictionary of options for yaml.dump
-- `orient`: Orientation of the data ("records", "index", etc.) 
+- `orient`: Orientation of the data ("records", "index", etc.)
+
+## Enhanced Features
+
+### Automatic Type Conversion
+
+FileUtils includes an enhanced JSON encoder (`PandasJSONEncoder`) that automatically handles common data science data types:
+
+#### Supported Conversions
+
+- **Pandas Timestamps**: Converted to ISO format strings (`2024-01-01T00:00:00`)
+- **NumPy Types**: Converted using `.item()` method
+- **NumPy Arrays**: Converted using `.tolist()` method  
+- **Datetime Objects**: Converted using `.isoformat()` method
+
+#### Usage
+
+The automatic conversion is applied when using `save_document_to_storage()` with JSON format:
+
+```python
+import pandas as pd
+import numpy as np
+
+# Create data with pandas types
+df = pd.DataFrame({
+    'date': pd.date_range('2024-01-01', periods=5),
+    'value': np.random.randn(5),
+    'category': ['A', 'B', 'C', 'D', 'E']
+})
+
+# This works without manual conversion!
+json_data = {
+    'metadata': {'created': pd.Timestamp.now()},
+    'data': df.to_dict('records')
+}
+
+saved_path, _ = file_utils.save_document_to_storage(
+    content=json_data,
+    output_filetype=OutputFileType.JSON,
+    output_type="processed",
+    file_name="data_with_types"
+)
+```
+
+#### Manual Override
+
+If you need custom JSON serialization, you can still use the standard `json` module with custom encoders:
+
+```python
+import json
+from datetime import datetime
+
+class CustomEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.strftime('%Y-%m-%d %H:%M:%S')
+        return super().default(obj)
+
+# Use with standard json module
+json_string = json.dumps(data, cls=CustomEncoder)
+```
+
+### Intelligent Timestamp Handling
+
+FileUtils automatically handles timestamped files when loading:
+
+#### Automatic File Discovery
+
+When loading files, if the exact filename doesn't exist, FileUtils searches for files matching the pattern `{base_name}_*{extension}` and loads the most recent one:
+
+```python
+# Save with timestamp
+saved_path, _ = file_utils.save_document_to_storage(
+    content=content,
+    output_filetype=OutputFileType.JSON,
+    file_name="report"  # Creates: report_20241018_143022.json
+)
+
+# Load by base name (finds the timestamped file automatically)
+loaded_data = file_utils.load_json(
+    file_path="report.json",  # Loads: report_20241018_143022.json
+    input_type="processed"
+)
+```
+
+#### Supported Methods
+
+Timestamp handling is available for:
+- `load_document_from_storage()`
+- `load_single_file()`
+- `load_json()`
+- `load_yaml()` 

@@ -91,6 +91,10 @@ sheets_dict = file_utils.load_excel_sheets("multi_sheet.xlsx")
 ```
 
 ### JSON Files
+
+JSON files can be used in two ways: as DataFrame storage or as structured documents.
+
+#### JSON as DataFrame Storage
 ```python
 # Save JSON in different formats
 file_utils.save_data_to_storage(
@@ -109,12 +113,88 @@ file_utils.save_data_to_storage(
 
 # Load JSON (format is auto-detected)
 df = file_utils.load_single_file("data.json")
+```
 
-# Load raw JSON data
-data = file_utils.load_json("config.json")
+#### JSON as Structured Documents
+```python
+# Save structured configuration as JSON document
+config_data = {
+    "database": {
+        "host": "localhost",
+        "port": 5432,
+        "name": "analytics"
+    },
+    "api": {
+        "timeout": 30,
+        "retries": 3,
+        "base_url": "https://api.example.com"
+    },
+    "features": {
+        "enable_caching": True,
+        "cache_ttl": 3600,
+        "max_connections": 100
+    }
+}
+
+saved_path, _ = file_utils.save_document_to_storage(
+    content=config_data,
+    output_filetype=OutputFileType.JSON,
+    output_type="processed",
+    file_name="app_config"
+)
+
+# Load configuration
+loaded_config = file_utils.load_json(
+    file_path="app_config.json",
+    input_type="processed"
+)
+
+print(f"Database host: {loaded_config['database']['host']}")
+```
+
+#### Automatic Type Conversion
+```python
+import pandas as pd
+import numpy as np
+
+# Create data with pandas types
+df = pd.DataFrame({
+    'date': pd.date_range('2024-01-01', periods=5),
+    'value': np.random.randn(5),
+    'category': ['A', 'B', 'C', 'D', 'E']
+})
+
+# This works without manual conversion!
+json_data = {
+    'metadata': {
+        'created': pd.Timestamp.now(),
+        'version': '1.0',
+        'total_records': len(df)
+    },
+    'data': df.to_dict('records')  # Pandas Timestamps automatically converted
+}
+
+saved_path, _ = file_utils.save_document_to_storage(
+    content=json_data,
+    output_filetype=OutputFileType.JSON,
+    output_type="processed",
+    file_name="data_with_types"
+)
+
+# Load the data
+loaded_data = file_utils.load_json(
+    file_path="data_with_types.json",
+    input_type="processed"
+)
+
+print(f"Created: {loaded_data['metadata']['created']}")  # ISO format string
 ```
 
 ### YAML Files
+
+YAML files can be used in two ways: as DataFrame storage or as structured documents.
+
+#### YAML as DataFrame Storage
 ```python
 # Save YAML with custom options
 file_utils.save_data_to_storage(
@@ -131,9 +211,96 @@ file_utils.save_data_to_storage(
 
 # Load YAML as DataFrame
 df = file_utils.load_single_file("data.yaml")
+```
 
-# Load raw YAML data
-data = file_utils.load_yaml("config.yaml")
+#### YAML as Structured Documents
+```python
+# Save structured configuration as YAML document
+pipeline_config = {
+    "project": {
+        "name": "Data Analysis Pipeline",
+        "version": "2.1.0",
+        "description": "Automated data processing and analysis"
+    },
+    "data_sources": {
+        "primary": {
+            "type": "database",
+            "connection": "postgresql://localhost:5432/analytics",
+            "tables": ["users", "transactions", "products"]
+        },
+        "secondary": {
+            "type": "api",
+            "url": "https://api.external-service.com",
+            "auth": {"type": "bearer", "token": "your-token"}
+        }
+    },
+    "processing": {
+        "batch_size": 1000,
+        "parallel_workers": 4,
+        "retry_attempts": 3,
+        "timeout": 300
+    },
+    "output": {
+        "formats": ["csv", "parquet"],
+        "compression": "gzip",
+        "include_metadata": True
+    }
+}
+
+saved_path, _ = file_utils.save_document_to_storage(
+    content=pipeline_config,
+    output_filetype=OutputFileType.YAML,
+    output_type="processed",
+    file_name="pipeline_config"
+)
+
+# Load configuration
+loaded_config = file_utils.load_yaml(
+    file_path="pipeline_config.yaml",
+    input_type="processed"
+)
+
+print(f"Project: {loaded_config['project']['name']}")
+print(f"Batch size: {loaded_config['processing']['batch_size']}")
+```
+
+#### YAML with Automatic Type Conversion
+```python
+import pandas as pd
+from datetime import datetime
+
+# Create configuration with pandas types
+config_with_types = {
+    "metadata": {
+        "created": pd.Timestamp.now(),
+        "last_updated": datetime.now(),
+        "version": "1.0"
+    },
+    "data_ranges": {
+        "start_date": pd.Timestamp('2024-01-01'),
+        "end_date": pd.Timestamp('2024-12-31'),
+        "frequency": "daily"
+    },
+    "settings": {
+        "debug": True,
+        "log_level": "INFO"
+    }
+}
+
+saved_path, _ = file_utils.save_document_to_storage(
+    content=config_with_types,
+    output_filetype=OutputFileType.YAML,
+    output_type="processed",
+    file_name="config_with_dates"
+)
+
+# Load the configuration
+loaded_config = file_utils.load_yaml(
+    file_path="config_with_dates.yaml",
+    input_type="processed"
+)
+
+print(f"Created: {loaded_config['metadata']['created']}")  # Properly formatted
 ```
 
 ### Parquet Files
@@ -386,21 +553,156 @@ except StorageError as e:
     print(f"Failed to load file: {e}")
 ```
 
-## Logging
+## Troubleshooting
 
-Logging is configurable through the config file or at runtime:
-```yaml
-# In config.yaml
-logging_level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
-```
+### Common Issues and Solutions
+
+#### JSON Serialization Errors
+
+**Problem**: `TypeError: Object of type Timestamp is not JSON serializable`
+
+**Solution**: Use `save_document_to_storage()` instead of manual JSON serialization:
 
 ```python
-# At runtime
-file_utils.set_logging_level("DEBUG")
+# ❌ This will fail
+import json
+data = {'date': pd.Timestamp.now()}
+json.dumps(data)  # TypeError
+
+# ✅ This works automatically
+saved_path, _ = file_utils.save_document_to_storage(
+    content=data,
+    output_filetype=OutputFileType.JSON,
+    output_type="processed",
+    file_name="data"
+)
 ```
 
-The logger provides information about:
-- File operations (save/load)
-- Directory creation
-- Configuration changes
-- Error details
+#### Missing Document Dependencies
+
+**Problem**: `ModuleNotFoundError: No module named 'docx'` or `ModuleNotFoundError: No module named 'fitz'`
+
+**Solution**: Install document dependencies:
+
+```bash
+# Install all document support
+pip install 'FileUtils[documents]'
+
+# Or install specific dependencies
+pip install python-docx markdown PyMuPDF
+```
+
+#### File Not Found with Timestamps
+
+**Problem**: `FileNotFoundError` when loading files saved with timestamps
+
+**Solution**: Use base filename - FileUtils automatically finds timestamped files:
+
+```python
+# Save with timestamp (creates: report_20241018_143022.json)
+saved_path, _ = file_utils.save_document_to_storage(
+    content=content,
+    output_filetype=OutputFileType.JSON,
+    file_name="report"
+)
+
+# Load by base name (automatically finds the timestamped file)
+loaded_data = file_utils.load_json(
+    file_path="report.json",  # Not "report_20241018_143022.json"
+    input_type="processed"
+)
+```
+
+#### MultiIndex DataFrame Issues
+
+**Problem**: `NotImplementedError: Writing to Excel with MultiIndex columns and no index`
+
+**Solution**: FileUtils automatically handles MultiIndex columns by flattening them:
+
+```python
+# FileUtils automatically flattens MultiIndex columns
+df_with_multiindex = pd.DataFrame({
+    ('A', 'x'): [1, 2, 3],
+    ('A', 'y'): [4, 5, 6],
+    ('B', 'z'): [7, 8, 9]
+})
+
+# This works automatically
+saved_files, metadata = file_utils.save_data_to_storage(
+    data={'data': df_with_multiindex},
+    output_filetype=OutputFileType.XLSX,
+    output_type="processed",
+    file_name="multiindex_data"
+)
+```
+
+#### Azure Storage Connection Issues
+
+**Problem**: `StorageConnectionError` when using Azure storage
+
+**Solution**: Check your connection string and credentials:
+
+```python
+from FileUtils.core.base import StorageConnectionError
+
+try:
+    azure_utils = FileUtils(
+        storage_type="azure",
+        connection_string="your_connection_string"
+    )
+except StorageConnectionError as e:
+    print(f"Azure connection failed: {e}")
+    # Fall back to local storage
+    file_utils = FileUtils(storage_type="local")
+```
+
+#### Configuration Issues
+
+**Problem**: Configuration not loading or validation errors
+
+**Solution**: Check your configuration file format:
+
+```python
+# Validate configuration
+try:
+    file_utils = FileUtils(config_file="config.yaml")
+except Exception as e:
+    print(f"Configuration error: {e}")
+    # Use default configuration
+    file_utils = FileUtils()
+```
+
+### Performance Tips
+
+#### Large File Handling
+
+For large files, consider these optimizations:
+
+```python
+# Use Parquet for large datasets
+file_utils.save_data_to_storage(
+    data=large_df,
+    output_filetype=OutputFileType.PARQUET,
+    compression="snappy"  # Fast compression
+)
+
+# Use chunked processing for very large files
+chunk_size = 10000
+for i, chunk in enumerate(pd.read_csv("large_file.csv", chunksize=chunk_size)):
+    file_utils.save_data_to_storage(
+        data={'chunk': chunk},
+        output_filetype=OutputFileType.PARQUET,
+        file_name=f"chunk_{i:04d}"
+    )
+```
+
+#### Memory Optimization
+
+```python
+# For large DataFrames, use appropriate data types
+df = df.astype({
+    'category': 'category',  # Reduces memory usage
+    'id': 'int32',           # Instead of int64
+    'price': 'float32'       # Instead of float64
+})
+```

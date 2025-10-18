@@ -184,6 +184,124 @@ loaded_content = file_utils.load_document_from_storage(
 
 **Note**: Document functionality requires optional dependencies. Install with `pip install 'FileUtils[documents]'`. Markdown works without additional dependencies.
 
+### 8. Document Handling with JSON/YAML
+
+FileUtils supports JSON and YAML as both DataFrame storage and structured document formats:
+
+#### JSON as Structured Documents
+
+```python
+# Save application configuration
+app_config = {
+    "database": {
+        "host": "localhost",
+        "port": 5432,
+        "name": "myapp"
+    },
+    "api": {
+        "timeout": 30,
+        "retries": 3,
+        "base_url": "https://api.example.com"
+    },
+    "features": {
+        "enable_caching": True,
+        "cache_ttl": 3600
+    }
+}
+
+saved_path, _ = file_utils.save_document_to_storage(
+    content=app_config,
+    output_filetype=OutputFileType.JSON,
+    output_type="processed",
+    file_name="app_config"
+)
+
+# Load configuration
+loaded_config = file_utils.load_json(
+    file_path="app_config.json",
+    input_type="processed"
+)
+
+print(f"Database: {loaded_config['database']['host']}")
+```
+
+#### YAML as Structured Documents
+
+```python
+# Save pipeline configuration
+pipeline_config = {
+    "project": {
+        "name": "Data Pipeline",
+        "version": "1.0.0"
+    },
+    "data_sources": {
+        "primary": {
+            "type": "database",
+            "connection": "postgresql://localhost:5432/data"
+        }
+    },
+    "processing": {
+        "batch_size": 1000,
+        "parallel_workers": 4
+    }
+}
+
+saved_path, _ = file_utils.save_document_to_storage(
+    content=pipeline_config,
+    output_filetype=OutputFileType.YAML,
+    output_type="processed",
+    file_name="pipeline_config"
+)
+
+# Load configuration
+loaded_config = file_utils.load_yaml(
+    file_path="pipeline_config.yaml",
+    input_type="processed"
+)
+
+print(f"Project: {loaded_config['project']['name']}")
+```
+
+#### Automatic Type Conversion
+
+FileUtils automatically handles pandas types when saving to JSON/YAML:
+
+```python
+import pandas as pd
+import numpy as np
+
+# Create data with pandas types
+df = pd.DataFrame({
+    'date': pd.date_range('2024-01-01', periods=5),
+    'value': np.random.randn(5),
+    'category': ['A', 'B', 'C', 'D', 'E']
+})
+
+# This works without manual conversion!
+json_data = {
+    'metadata': {
+        'created': pd.Timestamp.now(),
+        'total_records': len(df)
+    },
+    'data': df.to_dict('records')  # Pandas Timestamps automatically converted
+}
+
+saved_path, _ = file_utils.save_document_to_storage(
+    content=json_data,
+    output_filetype=OutputFileType.JSON,
+    output_type="processed",
+    file_name="data_with_types"
+)
+
+# Load the data
+loaded_data = file_utils.load_json(
+    file_path="data_with_types.json",
+    input_type="processed"
+)
+
+print(f"Created: {loaded_data['metadata']['created']}")  # ISO format string
+```
+
 ## Common Patterns and Best Practices
 
 ### Organizing Data Files
@@ -222,6 +340,55 @@ try:
 except StorageError as e:
     print(f"Failed to load file: {e}")
     # Take appropriate action
+```
+
+### Common Issues
+
+#### JSON Serialization Errors
+
+If you get `TypeError: Object of type Timestamp is not JSON serializable`:
+
+```python
+# ❌ This will fail
+import json
+data = {'date': pd.Timestamp.now()}
+json.dumps(data)  # TypeError
+
+# ✅ Use FileUtils instead
+saved_path, _ = file_utils.save_document_to_storage(
+    content=data,
+    output_filetype=OutputFileType.JSON,
+    output_type="processed",
+    file_name="data"
+)
+```
+
+#### Missing Dependencies
+
+If you get import errors for document formats:
+
+```bash
+# Install document support
+pip install 'FileUtils[documents]'
+```
+
+#### File Not Found with Timestamps
+
+FileUtils automatically finds timestamped files:
+
+```python
+# Save creates: report_20241018_143022.json
+saved_path, _ = file_utils.save_document_to_storage(
+    content=content,
+    output_filetype=OutputFileType.JSON,
+    file_name="report"
+)
+
+# Load by base name (finds timestamped file automatically)
+loaded_data = file_utils.load_json(
+    file_path="report.json",  # Not the full timestamped name
+    input_type="processed"
+)
 ```
 
 ## Next Steps

@@ -10,8 +10,9 @@ A Python utility package for consistent file operations across local and Azure s
   - Automatic directory structure management
 
 - **Comprehensive File Format Support**
-  - **Tabular Data**: CSV (with delimiter auto-detection), Excel (.xlsx, .xls) with multi-sheet support, Parquet (with compression options), JSON (records and index formats), YAML (with customizable formatting)
+  - **Tabular Data**: CSV (with delimiter auto-detection), Excel (.xlsx, .xls) with multi-sheet support, Parquet (with compression options)
   - **Document Formats**: Microsoft Word (.docx), Markdown (.md) with YAML frontmatter, PDF (read-only text extraction)
+  - **Multi-Purpose Formats**: JSON and YAML support both DataFrame storage and structured document handling with automatic pandas type conversion
 
 - **Advanced Data Handling**
   - Single and multi-DataFrame operations
@@ -181,6 +182,63 @@ loaded_content = file_utils.load_document_from_storage(
     input_type="processed",
     sub_path="reports/2024"
 )
+
+# Save structured JSON configuration
+config_data = {
+    "database": {
+        "host": "localhost",
+        "port": 5432,
+        "name": "analytics"
+    },
+    "api": {
+        "timeout": 30,
+        "retries": 3,
+        "base_url": "https://api.example.com"
+    },
+    "features": {
+        "enable_caching": True,
+        "cache_ttl": 3600
+    }
+}
+
+saved_path, _ = file_utils.save_document_to_storage(
+    content=config_data,
+    output_filetype=OutputFileType.JSON,
+    output_type="processed",
+    file_name="app_config"
+)
+
+# Load configuration
+loaded_config = file_utils.load_json(
+    file_path="app_config.json",
+    input_type="processed"
+)
+
+# Automatic type conversion for pandas data
+import pandas as pd
+import numpy as np
+
+df = pd.DataFrame({
+    'date': pd.date_range('2024-01-01', periods=5),
+    'value': np.random.randn(5),
+    'category': ['A', 'B', 'C', 'D', 'E']
+})
+
+# This works without manual conversion!
+json_data = {
+    'metadata': {
+        'created': pd.Timestamp.now(),
+        'total_records': len(df)
+    },
+    'data': df.to_dict('records')  # Pandas Timestamps automatically converted
+}
+
+saved_path, _ = file_utils.save_document_to_storage(
+    content=json_data,
+    output_filetype=OutputFileType.JSON,
+    output_type="processed",
+    file_name="data_with_types"
+)
 ```
 
 ## Key Benefits
@@ -189,6 +247,8 @@ loaded_content = file_utils.load_document_from_storage(
 - **Flexibility**: Extensive options for each file format
 - **Reliability**: Robust error handling and logging
 - **Simplicity**: Intuitive API with sensible defaults
+- **Smart Type Handling**: Automatic conversion of pandas types for JSON/YAML documents
+- **Intelligent File Discovery**: Automatic handling of timestamped files when loading
 
 ## Background
 

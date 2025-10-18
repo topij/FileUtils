@@ -178,6 +178,66 @@ pip install python-docx markdown PyMuPDF
 
 **Note**: Markdown functionality works without additional dependencies. Only DOCX and PDF require optional packages.
 
+### JSON Serialization Issues
+If you encounter `TypeError: Object of type Timestamp is not JSON serializable`:
+
+```python
+# ❌ This will fail
+import json
+data = {'date': pd.Timestamp.now()}
+json.dumps(data)  # TypeError
+
+# ✅ Use FileUtils instead
+from FileUtils import FileUtils, OutputFileType
+file_utils = FileUtils()
+
+saved_path, _ = file_utils.save_document_to_storage(
+    content=data,
+    output_filetype=OutputFileType.JSON,
+    output_type="processed",
+    file_name="data"
+)
+```
+
+### File Not Found with Timestamps
+If you get `FileNotFoundError` when loading timestamped files:
+
+```python
+# FileUtils automatically finds timestamped files
+# Save creates: report_20241018_143022.json
+saved_path, _ = file_utils.save_document_to_storage(
+    content=content,
+    output_filetype=OutputFileType.JSON,
+    file_name="report"
+)
+
+# Load by base name (finds timestamped file automatically)
+loaded_data = file_utils.load_json(
+    file_path="report.json",  # Not "report_20241018_143022.json"
+    input_type="processed"
+)
+```
+
+### MultiIndex DataFrame Issues
+If you get `NotImplementedError: Writing to Excel with MultiIndex columns`:
+
+```python
+# FileUtils automatically handles MultiIndex columns
+df_with_multiindex = pd.DataFrame({
+    ('A', 'x'): [1, 2, 3],
+    ('A', 'y'): [4, 5, 6],
+    ('B', 'z'): [7, 8, 9]
+})
+
+# This works automatically
+saved_files, metadata = file_utils.save_data_to_storage(
+    data={'data': df_with_multiindex},
+    output_filetype=OutputFileType.XLSX,
+    output_type="processed",
+    file_name="multiindex_data"
+)
+```
+
 ### Conda Environment Issues
 If you encounter package conflicts in Conda:
 ```bash
