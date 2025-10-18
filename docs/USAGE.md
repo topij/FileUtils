@@ -150,6 +150,169 @@ file_utils.save_data_to_storage(
 df = file_utils.load_single_file("data.parquet")
 ```
 
+## Document Handling
+
+FileUtils now supports rich document formats perfect for AI/agentic workflows:
+
+### Markdown Files
+```python
+# Save simple markdown
+markdown_content = """# Analysis Report
+
+## Key Findings
+- Model accuracy: 95.2%
+- Processing time: 2.3 seconds
+
+## Recommendations
+1. Implement additional training data
+2. Optimize inference pipeline
+"""
+
+saved_path, _ = file_utils.save_document_to_storage(
+    content=markdown_content,
+    output_filetype=OutputFileType.MARKDOWN,
+    output_type="processed",
+    file_name="analysis_report"
+)
+
+# Save markdown with YAML frontmatter
+structured_content = {
+    "frontmatter": {
+        "title": "AI Analysis Report",
+        "author": "AI Agent",
+        "confidence": 0.95,
+        "timestamp": "2024-01-15T10:30:00Z"
+    },
+    "body": """# Analysis Results
+
+## Summary
+The analysis identified 3 key insights.
+
+## Key Findings
+- Pattern detected with 94.2% confidence
+- 3 anomalies identified
+- Recommended actions: Update model, retrain
+"""
+}
+
+saved_path, _ = file_utils.save_document_to_storage(
+    content=structured_content,
+    output_filetype=OutputFileType.MARKDOWN,
+    output_type="processed",
+    file_name="structured_report",
+    sub_path="reports/2024"
+)
+
+# Load markdown
+loaded_content = file_utils.load_document_from_storage(
+    file_path="analysis_report.md",
+    input_type="processed"
+)
+```
+
+### DOCX Files
+```python
+# Save simple DOCX document
+docx_content = "This is a test document for DOCX format."
+
+saved_path, _ = file_utils.save_document_to_storage(
+    content=docx_content,
+    output_filetype=OutputFileType.DOCX,
+    output_type="processed",
+    file_name="simple_document"
+)
+
+# Save structured DOCX with headings and tables
+structured_docx = {
+    "title": "Project Report",
+    "sections": [
+        {
+            "heading": "Executive Summary",
+            "level": 1,
+            "text": "Project completed successfully."
+        },
+        {
+            "heading": "Results",
+            "level": 2,
+            "table": [
+                ["Metric", "Value", "Unit"],
+                ["Accuracy", "95.2", "%"],
+                ["Speed", "2.3", "seconds"],
+                ["Memory", "512", "MB"]
+            ]
+        }
+    ]
+}
+
+saved_path, _ = file_utils.save_document_to_storage(
+    content=structured_docx,
+    output_filetype=OutputFileType.DOCX,
+    output_type="processed",
+    file_name="project_report"
+)
+
+# Load DOCX (extracts text content)
+loaded_content = file_utils.load_document_from_storage(
+    file_path="simple_document.docx",
+    input_type="processed"
+)
+```
+
+### PDF Files
+```python
+# Save simple PDF
+pdf_content = "This is a test document for PDF format."
+
+saved_path, _ = file_utils.save_document_to_storage(
+    content=pdf_content,
+    output_filetype=OutputFileType.PDF,
+    output_type="processed",
+    file_name="simple_pdf"
+)
+
+# Save structured PDF
+structured_pdf = {
+    "title": "Technical Documentation",
+    "sections": [
+        {
+            "heading": "Introduction",
+            "text": "This document provides technical specifications."
+        },
+        {
+            "heading": "Architecture",
+            "text": "The system follows a microservices architecture."
+        }
+    ]
+}
+
+saved_path, _ = file_utils.save_document_to_storage(
+    content=structured_pdf,
+    output_filetype=OutputFileType.PDF,
+    output_type="processed",
+    file_name="technical_doc"
+)
+
+# Load PDF (extracts text content)
+loaded_content = file_utils.load_document_from_storage(
+    file_path="simple_pdf.pdf",
+    input_type="processed"
+)
+```
+
+### Document Dependencies
+
+Document functionality requires optional dependencies:
+
+```bash
+# Install document support
+pip install 'FileUtils[documents]'
+
+# Or install specific dependencies
+pip install python-docx markdown PyMuPDF
+```
+
+**Note**: Markdown functionality works without additional dependencies. DOCX and PDF require the optional packages.
+
 ## Directory Management
 
 FileUtils manages data in a structured directory layout:

@@ -727,3 +727,143 @@ class FileUtils:
             if isinstance(e, ValueError):
                 raise
             raise ValueError(f"Failed to set logging level: {e}")
+
+    def save_document_to_storage(
+        self,
+        content: Union[str, Dict[str, Any]],
+        output_filetype: Union[OutputFileType, str],
+        output_type: str = "processed",
+        file_name: Optional[str] = None,
+        sub_path: Optional[Union[str, Path]] = None,
+        include_timestamp: Optional[bool] = None,
+        **kwargs,
+    ) -> Tuple[str, Optional[str]]:
+        """Save document content using configured storage backend.
+
+        Args:
+            content: Document content (string, dict, or rich content)
+            output_filetype: Type of output file (DOCX, MARKDOWN, PDF)
+            output_type: Type of output (e.g., "processed", "raw")
+            file_name: Base name for output file
+            sub_path: Optional subdirectory path relative to output_type directory
+            include_timestamp: Whether to include timestamp in filename
+            **kwargs: Additional arguments for storage backend
+
+        Returns:
+            Tuple of (saved file path, optional metadata path)
+
+        Raises:
+            ValueError: If output_filetype is not a document format
+            StorageError: If saving fails
+        """
+        if isinstance(output_filetype, str):
+            output_filetype = OutputFileType(output_filetype.lower())
+
+        # Validate document format
+        document_formats = {OutputFileType.DOCX, OutputFileType.MARKDOWN, OutputFileType.PDF}
+        if output_filetype not in document_formats:
+            raise ValueError(
+                f"Invalid document format: {output_filetype}. "
+                f"Must be one of: {', '.join(fmt.value for fmt in document_formats)}"
+            )
+
+        # Generate output path
+        base_dir = self.get_data_path(output_type)
+        full_file_path_str = format_file_path(
+            base_dir,
+            file_name or "document",
+            output_filetype.value,
+            (
+                include_timestamp
+                if include_timestamp is not None
+                else self.config.get("include_timestamp", True)
+            ),
+        )
+
+        # Insert sub_path if provided
+        full_file_path = Path(full_file_path_str)
+        if sub_path:
+            # Ensure sub_path is relative
+            safe_sub_path = Path(sub_path).relative_to(Path(sub_path).anchor) if Path(sub_path).is_absolute() else Path(sub_path)
+            # Construct the full path: base_dir / sub_path / filename
+            full_file_path = base_dir / safe_sub_path / full_file_path.name
+
+        try:
+            saved_path = self.storage.save_document(content, full_file_path, output_filetype.value, **kwargs)
+            self.logger.info(f"Document saved successfully: {saved_path}")
+            return saved_path, None
+
+        except Exception as e:
+            self.logger.error(f"Failed to save document: {e}")
+            raise StorageError(f"Failed to save document: {e}") from e
+
+    def load_document_from_storage(
+        self,
+        file_path: Union[str, Path],
+        input_type: str = "raw",
+        sub_path: Optional[Union[str, Path]] = None,
+        **kwargs,
+    ) -> Union[str, Dict[str, Any]]:
+        """Load document content from storage.
+
+        Args:
+            file_path: Path to file, relative to input_type/sub_path directory
+                       OR relative to input_type directory if sub_path is None.
+            input_type: Type of input directory (e.g., "raw", "processed")
+            sub_path: Optional subdirectory path relative to input_type directory
+            **kwargs: Additional arguments passed to storage backend
+
+        Returns:
+            Document content (string or dict depending on file type)
+
+        Raises:
+            StorageError: If loading fails
+            ValueError: If sub_path is provided and file_path also contains path separators
+        """
+        try:
+            # Handle potential Azure paths
+            if str(file_path).startswith("azure://"):
+                if sub_path:
+                    raise ValueError("Cannot use sub_path with an absolute Azure path in file_path.")
+                full_path = file_path
+            else:
+                # Construct local path
+                base_dir = self.project_root / "data" / input_type
+                file_path_obj = Path(file_path)
+
+                if sub_path:
+                    # Ensure sub_path is relative
+                    safe_sub_path = Path(sub_path).relative_to(Path(sub_path).anchor) if Path(sub_path).is_absolute() else Path(sub_path)
+
+                    # Check if file_path also contains directory structure
+                    if file_path_obj.parent != Path('.'):
+                        raise ValueError(
+                            f"Cannot provide sub_path ('{sub_path}') when file_path "
+                            f"('{file_path}') already contains directory separators."
+                        )
+                    search_dir = base_dir / safe_sub_path
+                    full_path = search_dir / file_path_obj
+                else:
+                    # No sub_path, use file_path relative to base_dir
+                    search_dir = base_dir
+                    full_path = search_dir / file_path_obj
+
+                # If the exact file doesn't exist, try to find a file with timestamp
+                if not full_path.exists():
+                    # Look for files matching the pattern (with timestamp)
+                    pattern = f"{file_path_obj.stem}_*{file_path_obj.suffix}"
+                    matching_files = list(search_dir.glob(pattern))
+                    
+                    if matching_files:
+                        # Use the most recent file (by modification time)
+                        full_path = max(matching_files, key=lambda f: f.stat().st_mtime)
+                    else:
+                        # If no timestamped file found, try the original path
+                        pass
+
+            return self.storage.load_document(full_path, **kwargs)
+        except Exception as e:
+            if isinstance(e, (ValueError, StorageError)):
+                raise
+            self.logger.error(f"Failed to load document {file_path}: {e}")
+            raise StorageError(f"Failed to load document {file_path}: {e}") from e

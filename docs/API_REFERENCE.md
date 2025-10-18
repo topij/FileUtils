@@ -310,6 +310,70 @@ set_logging_level(level: str) -> None
 
 - `level`: Logging level (e.g., "DEBUG", "INFO", "WARNING").
 
+##### `save_document_to_storage`
+
+Save document content using configured storage backend.
+
+```python
+save_document_to_storage(
+    content: Union[str, Dict[str, Any]],
+    output_filetype: Union[OutputFileType, str],
+    output_type: str = "processed",
+    file_name: Optional[str] = None,
+    sub_path: Optional[Union[str, Path]] = None,
+    include_timestamp: Optional[bool] = None,
+    **kwargs
+) -> Tuple[str, Optional[str]]
+```
+
+**Parameters:**
+
+- `content`: Document content (string or dict with structured content).
+- `output_filetype`: Type of output file (DOCX, MARKDOWN, PDF).
+- `output_type`: Directory name to save in (e.g., "raw", "processed").
+- `file_name`: Base name for the file without extension.
+- `sub_path`: Optional relative path for subdirectory within `output_type` directory.
+- `include_timestamp`: Whether to include timestamp in filename.
+- `**kwargs`: Additional arguments for storage backend.
+
+**Returns:**
+
+- Tuple with saved file path and optional metadata path.
+
+**Raises:**
+
+- `ValueError`: If output_filetype is not a document format.
+- `StorageError`: If saving fails.
+
+##### `load_document_from_storage`
+
+Load document content from storage.
+
+```python
+load_document_from_storage(
+    file_path: Union[str, Path],
+    input_type: str = "raw",
+    sub_path: Optional[Union[str, Path]] = None,
+    **kwargs
+) -> Union[str, Dict[str, Any]]
+```
+
+**Parameters:**
+
+- `file_path`: Path to file. If `sub_path` is provided, this should be the filename only.
+- `input_type`: Directory name to load from (e.g., "raw", "processed").
+- `sub_path`: Optional subdirectory path relative to `input_type` directory.
+- `**kwargs`: Additional arguments passed to storage backend.
+
+**Returns:**
+
+- Document content (string or dict depending on file type).
+
+**Raises:**
+
+- `StorageError`: If loading fails.
+- `ValueError`: If sub_path is provided and file_path also contains path separators.
+
 ## Enums
 
 ### `OutputFileType`
@@ -318,12 +382,18 @@ Enumeration of supported file types.
 
 ```python
 class OutputFileType(Enum):
+    # Tabular data formats
     CSV = "csv"
     XLSX = "xlsx"
     XLS = "xls"
     JSON = "json"
     PARQUET = "parquet"
     YAML = "yaml"
+    
+    # Document formats
+    DOCX = "docx"
+    MARKDOWN = "md"
+    PDF = "pdf"
 ```
 
 ### `StorageType`

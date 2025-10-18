@@ -54,6 +54,20 @@ This adds:
 - Multi-sheet support
 - OpenPyXL engine integration
 
+### Document Support
+
+```bash
+pip install 'FileUtils[documents]'
+```
+
+This adds:
+- Microsoft Word (.docx) file support
+- Markdown (.md) file support with YAML frontmatter
+- PDF file support (read-only text extraction)
+- Rich document content handling
+
+**Note**: Markdown functionality works without additional dependencies. DOCX and PDF require the optional packages.
+
 ### All Features
 
 To install all optional dependencies:
@@ -109,6 +123,10 @@ Choose based on your needs:
   - pyarrow
 - Excel Support (`[excel]`):
   - openpyxl
+- Document Support (`[documents]`):
+  - python-docx (Microsoft Word documents)
+  - markdown (Markdown processing)
+  - PyMuPDF (PDF read/write, supports multiple formats)
 
 ## Verifying Installation
 
@@ -147,6 +165,18 @@ If you see an error about `pyarrow`:
 ```bash
 pip install 'FileUtils[parquet]'
 ```
+
+### Missing Document Support
+If you see errors about document dependencies:
+```bash
+# Install all document support
+pip install 'FileUtils[documents]'
+
+# Or install specific dependencies
+pip install python-docx markdown PyMuPDF
+```
+
+**Note**: Markdown functionality works without additional dependencies. Only DOCX and PDF require optional packages.
 
 ### Conda Environment Issues
 If you encounter package conflicts in Conda:

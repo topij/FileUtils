@@ -232,13 +232,14 @@ class LocalStorage(BaseStorage):
             raise StorageOperationError(f"Failed to load JSON file: {e}") from e
 
     def save_dataframes(
-        self, data: Dict[str, pd.DataFrame], file_path: Union[str, Path], **kwargs
+        self, data: Dict[str, pd.DataFrame], file_path: Union[str, Path], file_format: str, **kwargs
     ) -> Dict[str, str]:
         """Save multiple DataFrames to local filesystem.
         
         Args:
             data: Dictionary of DataFrames to save
             file_path: Path to save to
+            file_format: File format to save as
             **kwargs: Additional arguments for saving (e.g., engine for Excel)
             
         Returns:
@@ -247,27 +248,266 @@ class LocalStorage(BaseStorage):
         """
         try:
             path = ensure_path(file_path)
-            suffix = path.suffix.lower()
 
             # Ensure parent directory exists
             path.parent.mkdir(parents=True, exist_ok=True)
 
-            if suffix in (".xlsx", ".xls"):
+            if file_format.lower() in ("xlsx", "xls"):
                 # Save all DataFrames to a single Excel file
                 with pd.ExcelWriter(path, engine=kwargs.get("engine", "openpyxl")) as writer:
                     for sheet_name, df in data.items():
-                        df.to_excel(writer, sheet_name=sheet_name, index=False)
-                # For Excel files, return a single file path
-                return {"Sheet1": str(path)}
+                        # Handle MultiIndex columns by flattening them
+                        if isinstance(df.columns, pd.MultiIndex):
+                            df_to_save = df.copy()
+                            df_to_save.columns = ['_'.join(col).strip() if isinstance(col, tuple) else col for col in df_to_save.columns]
+                        else:
+                            df_to_save = df
+                        
+                        # Use index=True for MultiIndex columns, otherwise use index=False
+                        include_index = isinstance(df.columns, pd.MultiIndex) or isinstance(df.index, pd.MultiIndex)
+                        df_to_save.to_excel(writer, sheet_name=sheet_name, index=include_index)
+                # For Excel files, return mapping of sheet names to file path
+                return {sheet_name: str(path) for sheet_name in data.keys()}
             else:
                 # Save each DataFrame to a separate file
                 saved_files = {}
                 for sheet_name, df in data.items():
                     # Create unique file name for each sheet
-                    sheet_path = path.parent / f"{path.stem}_{sheet_name}{path.suffix}"
+                    sheet_path = path.parent / f"{path.stem}_{sheet_name}.{file_format}"
                     saved_path = self.save_dataframe(df, sheet_path, **kwargs)
                     saved_files[sheet_name] = saved_path
                 return saved_files
 
         except Exception as e:
             raise StorageOperationError(f"Failed to save DataFrames: {e}") from e
+
+    def save_document(
+        self, content: Union[str, Dict[str, Any]], file_path: Union[str, Path], file_type: str, **kwargs
+    ) -> str:
+        """Save document content to local filesystem.
+        
+        Args:
+            content: Document content (string or dict)
+            file_path: Path to save to
+            file_type: Type of document (docx, md, pdf)
+            **kwargs: Additional arguments for saving
+            
+        Returns:
+            String path where the file was saved
+        """
+        try:
+            path = ensure_path(file_path)
+            suffix = path.suffix.lower()
+
+            # Ensure parent directory exists
+            path.parent.mkdir(parents=True, exist_ok=True)
+
+            if suffix == ".docx":
+                return self._save_docx(content, path, **kwargs)
+            elif suffix == ".md":
+                return self._save_markdown(content, path, **kwargs)
+            elif suffix == ".pdf":
+                return self._save_pdf(content, path, **kwargs)
+            else:
+                raise ValueError(f"Unsupported document format: {suffix}")
+
+        except Exception as e:
+            raise StorageOperationError(f"Failed to save document: {e}") from e
+
+    def load_document(self, file_path: Union[str, Path], **kwargs) -> Union[str, Dict[str, Any]]:
+        """Load document content from local filesystem.
+        
+        Args:
+            file_path: Path to file
+            **kwargs: Additional arguments for loading
+            
+        Returns:
+            Document content (string or dict depending on file type)
+        """
+        try:
+            path = ensure_path(file_path)
+            suffix = path.suffix.lower()
+
+            if suffix == ".docx":
+                return self._load_docx(path, **kwargs)
+            elif suffix == ".md":
+                return self._load_markdown(path, **kwargs)
+            elif suffix == ".pdf":
+                return self._load_pdf(path, **kwargs)
+            else:
+                raise ValueError(f"Unsupported document format: {suffix}")
+
+        except Exception as e:
+            raise StorageOperationError(f"Failed to load document: {e}") from e
+
+    def _save_docx(self, content: Union[str, Dict[str, Any]], path: Path, **kwargs) -> str:
+        """Save content to DOCX format using python-docx."""
+        try:
+            from docx import Document
+            from docx.shared import Inches
+        except ImportError:
+            raise StorageOperationError(
+                "python-docx not installed. Install with: pip install 'FileUtils[documents]'"
+            )
+
+        doc = Document()
+        
+        if isinstance(content, str):
+            # Simple text content
+            doc.add_paragraph(content)
+        elif isinstance(content, dict):
+            # Structured content
+            if "title" in content:
+                doc.add_heading(content["title"], 0)
+            
+            if "sections" in content:
+                for section in content["sections"]:
+                    if "heading" in section:
+                        doc.add_heading(section["heading"], level=section.get("level", 1))
+                    if "text" in section:
+                        doc.add_paragraph(section["text"])
+                    if "table" in section and isinstance(section["table"], list):
+                        # Add table
+                        table = doc.add_table(rows=len(section["table"]), cols=len(section["table"][0]))
+                        for i, row in enumerate(section["table"]):
+                            for j, cell in enumerate(row):
+                                table.cell(i, j).text = str(cell)
+        else:
+            # Fallback: convert to string
+            doc.add_paragraph(str(content))
+
+        doc.save(path)
+        return str(path)
+
+    def _load_docx(self, path: Path, **kwargs) -> str:
+        """Load DOCX file and extract text content."""
+        try:
+            from docx import Document
+        except ImportError:
+            raise StorageOperationError(
+                "python-docx not installed. Install with: pip install 'FileUtils[documents]'"
+            )
+
+        doc = Document(path)
+        text_content = []
+        
+        for paragraph in doc.paragraphs:
+            if paragraph.text.strip():
+                text_content.append(paragraph.text)
+        
+        # Also extract text from tables
+        for table in doc.tables:
+            for row in table.rows:
+                row_text = []
+                for cell in row.cells:
+                    if cell.text.strip():
+                        row_text.append(cell.text.strip())
+                if row_text:
+                    text_content.append(" | ".join(row_text))
+        
+        return "\n".join(text_content)
+
+    def _save_markdown(self, content: Union[str, Dict[str, Any]], path: Path, **kwargs) -> str:
+        """Save content to Markdown format."""
+        if isinstance(content, str):
+            markdown_content = content
+        elif isinstance(content, dict):
+            # Handle structured content with YAML frontmatter
+            frontmatter = content.get("frontmatter", {})
+            body = content.get("body", "")
+            
+            if frontmatter:
+                import yaml
+                frontmatter_yaml = yaml.safe_dump(frontmatter, default_flow_style=False)
+                markdown_content = f"---\n{frontmatter_yaml}---\n\n{body}"
+            else:
+                markdown_content = body
+        else:
+            markdown_content = str(content)
+
+        with open(path, "w", encoding=self.config["encoding"]) as f:
+            f.write(markdown_content)
+        
+        return str(path)
+
+    def _load_markdown(self, path: Path, **kwargs) -> Union[str, Dict[str, Any]]:
+        """Load Markdown file with optional YAML frontmatter."""
+        with open(path, "r", encoding=self.config["encoding"]) as f:
+            content = f.read()
+        
+        # Check for YAML frontmatter
+        if content.startswith("---\n"):
+            try:
+                import yaml
+                parts = content.split("---\n", 2)
+                if len(parts) >= 3:
+                    frontmatter = yaml.safe_load(parts[1])
+                    body = parts[2].strip()
+                    return {
+                        "frontmatter": frontmatter or {},
+                        "body": body
+                    }
+            except Exception:
+                # If frontmatter parsing fails, return as plain text
+                pass
+        
+        return content
+
+    def _save_pdf(self, content: Union[str, Dict[str, Any]], path: Path, **kwargs) -> str:
+        """Save content to PDF format using PyMuPDF."""
+        try:
+            import fitz  # PyMuPDF
+        except ImportError:
+            raise StorageOperationError(
+                "PyMuPDF not installed. Install with: pip install 'FileUtils[documents]'"
+            )
+
+        doc = fitz.open()  # Create new PDF
+        page = doc.new_page()
+        
+        if isinstance(content, str):
+            # Simple text content
+            page.insert_text((50, 50), content, fontsize=12)
+        elif isinstance(content, dict):
+            # Structured content
+            y_position = 50
+            if "title" in content:
+                page.insert_text((50, y_position), content["title"], fontsize=16)
+                y_position += 30
+            
+            if "sections" in content:
+                for section in content["sections"]:
+                    if "heading" in section:
+                        page.insert_text((50, y_position), section["heading"], fontsize=14)
+                        y_position += 25
+                    if "text" in section:
+                        page.insert_text((50, y_position), section["text"], fontsize=12)
+                        y_position += 20
+        else:
+            # Fallback: convert to string
+            page.insert_text((50, 50), str(content), fontsize=12)
+
+        doc.save(path)
+        doc.close()
+        return str(path)
+
+    def _load_pdf(self, path: Path, **kwargs) -> str:
+        """Load PDF file and extract text content."""
+        try:
+            import fitz  # PyMuPDF
+        except ImportError:
+            raise StorageOperationError(
+                "PyMuPDF not installed. Install with: pip install 'FileUtils[documents]'"
+            )
+
+        doc = fitz.open(path)
+        text_content = []
+        
+        for page_num in range(doc.page_count):
+            page = doc[page_num]
+            text = page.get_text()
+            if text.strip():
+                text_content.append(text)
+        
+        doc.close()
+        return "\n\n".join(text_content)

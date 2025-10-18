@@ -10,11 +10,8 @@ A Python utility package for consistent file operations across local and Azure s
   - Automatic directory structure management
 
 - **Comprehensive File Format Support**
-  - CSV (with delimiter auto-detection)
-  - Excel (.xlsx, .xls) with multi-sheet support
-  - Parquet (with compression options)
-  - JSON (records and index formats)
-  - YAML (with customizable formatting)
+  - **Tabular Data**: CSV (with delimiter auto-detection), Excel (.xlsx, .xls) with multi-sheet support, Parquet (with compression options), JSON (records and index formats), YAML (with customizable formatting)
+  - **Document Formats**: Microsoft Word (.docx), Markdown (.md) with YAML frontmatter, PDF (read-only text extraction)
 
 - **Advanced Data Handling**
   - Single and multi-DataFrame operations
@@ -111,6 +108,81 @@ loaded_report = file_utils.load_single_file(
 )
 ```
 
+## Document Handling
+
+FileUtils now supports rich document formats perfect for AI/agentic workflows:
+
+```python
+from FileUtils import FileUtils, OutputFileType
+
+# Initialize FileUtils
+file_utils = FileUtils()
+
+# Save Markdown with YAML frontmatter
+document_content = {
+    "frontmatter": {
+        "title": "AI Analysis Report",
+        "author": "AI Agent",
+        "confidence": 0.95
+    },
+    "body": """# Analysis Results
+
+## Key Findings
+- Pattern detected with 94.2% confidence
+- 3 anomalies identified
+- Recommended actions: Update model, retrain
+
+## Next Steps
+1. Review findings
+2. Implement recommendations
+3. Schedule follow-up
+"""
+}
+
+saved_path, _ = file_utils.save_document_to_storage(
+    content=document_content,
+    output_filetype=OutputFileType.MARKDOWN,
+    output_type="processed",
+    file_name="ai_analysis",
+    sub_path="reports/2024"
+)
+
+# Save structured DOCX document
+docx_content = {
+    "title": "Project Report",
+    "sections": [
+        {
+            "heading": "Executive Summary",
+            "level": 1,
+            "text": "Project completed successfully."
+        },
+        {
+            "heading": "Results",
+            "level": 2,
+            "table": [
+                ["Metric", "Value"],
+                ["Accuracy", "95.2%"],
+                ["Speed", "2.3s"]
+            ]
+        }
+    ]
+}
+
+saved_path, _ = file_utils.save_document_to_storage(
+    content=docx_content,
+    output_filetype=OutputFileType.DOCX,
+    output_type="processed",
+    file_name="project_report"
+)
+
+# Load document content
+loaded_content = file_utils.load_document_from_storage(
+    file_path="ai_analysis.md",
+    input_type="processed",
+    sub_path="reports/2024"
+)
+```
+
 ## Key Benefits
 
 - **Consistency**: Same interface for local and cloud storage operations
@@ -129,6 +201,7 @@ For a practical example, check out my [semantic text analyzer](https://www.githu
 - [Getting Started Guide](docs/GETTING_STARTED_GUIDE.md) - Quick introduction to key use cases
 - [Installation Guide](docs/INSTALLATION.md) - Detailed installation instructions
 - [Usage Guide](docs/USAGE.md) - Comprehensive examples and patterns
+- [Document Types Guide](docs/DOCUMENT_TYPES.md) - Rich document formats (DOCX, Markdown, PDF)
 - [API Reference](docs/API_REFERENCE.md) - Complete API documentation
 - [Azure Setup Guide](docs/AZURE_SETUP.md) - Azure Blob Storage configuration
 - [Development Guide](docs/DEVELOPMENT.md) - Setup, building, and contributing to the project
@@ -153,8 +226,12 @@ Choose the dependencies you need based on your use case:
   - pyarrow
 - **Excel Support** (`[excel]`):
   - openpyxl
+- **Document Formats** (`[documents]`):
+  - python-docx (Microsoft Word documents)
+  - markdown (Markdown processing)
+  - PyMuPDF (PDF read/write, supports multiple formats)
 
-Install optional dependencies using the corresponding extras tag (e.g., `pip install 'FileUtils[azure]'`).
+Install optional dependencies using the corresponding extras tag (e.g., `pip install 'FileUtils[documents]'`).
 
 ## Notes from the Author
 

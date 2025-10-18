@@ -388,13 +388,14 @@ class AzureStorage(BaseStorage):
             raise StorageOperationError(f"Failed to load JSON from Azure: {e}") from e
 
     def save_dataframes(
-        self, data: Dict[str, pd.DataFrame], file_path: Union[str, Path], **kwargs
+        self, data: Dict[str, pd.DataFrame], file_path: Union[str, Path], file_format: str, **kwargs
     ) -> Dict[str, str]:
         """Save multiple DataFrames to Azure Blob Storage.
         
         Args:
             data: Dictionary of DataFrames to save
             file_path: Path to save to (azure:// URL)
+            file_format: File format to save as
             **kwargs: Additional arguments for saving (e.g., engine for Excel)
             
         Returns:
@@ -403,16 +404,25 @@ class AzureStorage(BaseStorage):
         """
         try:
             container_name, blob_name = self._parse_azure_url(str(file_path))
-            suffix = Path(blob_name).suffix.lower()
 
-            if suffix in (".xlsx", ".xls"):
+            if file_format.lower() in ("xlsx", "xls"):
                 # Save all DataFrames to a single Excel file
+                suffix = f".{file_format}"
                 with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as temp_file:
                     temp_path = Path(temp_file.name)
                     try:
                         with pd.ExcelWriter(temp_path, engine=kwargs.get("engine", "openpyxl")) as writer:
                             for sheet_name, df in data.items():
-                                df.to_excel(writer, sheet_name=sheet_name, index=False)
+                                # Handle MultiIndex columns by flattening them
+                                if isinstance(df.columns, pd.MultiIndex):
+                                    df_to_save = df.copy()
+                                    df_to_save.columns = ['_'.join(col).strip() if isinstance(col, tuple) else col for col in df_to_save.columns]
+                                else:
+                                    df_to_save = df
+                                
+                                # Use index=True for MultiIndex columns, otherwise use index=False
+                                include_index = isinstance(df.columns, pd.MultiIndex) or isinstance(df.index, pd.MultiIndex)
+                                df_to_save.to_excel(writer, sheet_name=sheet_name, index=include_index)
 
                         # Upload the Excel file
                         blob_client = self.client.get_blob_client(
@@ -421,9 +431,9 @@ class AzureStorage(BaseStorage):
                         with open(temp_path, "rb") as data_file:
                             blob_client.upload_blob(data_file, overwrite=True)
 
-                        # For Excel files, return a single URL
+                        # For Excel files, return mapping of sheet names to URL
                         azure_url = f"azure://{container_name}/{blob_name}"
-                        return {"Sheet1": azure_url}
+                        return {sheet_name: azure_url for sheet_name in data.keys()}
                     finally:
                         temp_path.unlink(missing_ok=True)
             else:
@@ -431,7 +441,7 @@ class AzureStorage(BaseStorage):
                 saved_files = {}
                 for sheet_name, df in data.items():
                     # Create unique blob name for each sheet
-                    sheet_blob_name = f"{Path(blob_name).stem}_{sheet_name}{Path(blob_name).suffix}"
+                    sheet_blob_name = f"{Path(blob_name).stem}_{sheet_name}.{file_format}"
                     sheet_path = f"azure://{container_name}/{sheet_blob_name}"
                     saved_path = self.save_dataframe(df, sheet_path, **kwargs)
                     saved_files[sheet_name] = saved_path
@@ -441,3 +451,79 @@ class AzureStorage(BaseStorage):
             raise StorageOperationError(
                 f"Failed to save DataFrames to Azure: {e}"
             ) from e
+
+    def save_document(
+        self, content: Union[str, Dict[str, Any]], file_path: Union[str, Path], file_type: str, **kwargs
+    ) -> str:
+        """Save document content to Azure Blob Storage.
+        
+        Args:
+            content: Document content (string or dict)
+            file_path: Path to save to (azure:// URL)
+            file_type: Type of document (docx, md, pdf)
+            **kwargs: Additional arguments for saving
+            
+        Returns:
+            Azure URL where the file was saved
+        """
+        try:
+            container_name, blob_name = self._parse_azure_url(str(file_path))
+            suffix = Path(blob_name).suffix.lower()
+
+            # Create temporary file for document processing
+            with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as temp_file:
+                temp_path = Path(temp_file.name)
+                try:
+                    # Use LocalStorage methods to create the document
+                    from .local import LocalStorage
+                    local_storage = LocalStorage(self.config)
+                    local_storage.save_document(content, temp_path, file_type, **kwargs)
+
+                    # Upload to Azure
+                    blob_client = self.client.get_blob_client(
+                        container=container_name, blob=blob_name
+                    )
+                    with open(temp_path, "rb") as data_file:
+                        blob_client.upload_blob(data_file, overwrite=True)
+
+                    return f"azure://{container_name}/{blob_name}"
+                finally:
+                    temp_path.unlink(missing_ok=True)
+
+        except Exception as e:
+            raise StorageOperationError(f"Failed to save document to Azure: {e}") from e
+
+    def load_document(self, file_path: Union[str, Path], **kwargs) -> Union[str, Dict[str, Any]]:
+        """Load document content from Azure Blob Storage.
+        
+        Args:
+            file_path: Path to file (azure:// URL)
+            **kwargs: Additional arguments for loading
+            
+        Returns:
+            Document content (string or dict depending on file type)
+        """
+        try:
+            container_name, blob_name = self._parse_azure_url(str(file_path))
+            suffix = Path(blob_name).suffix.lower()
+
+            # Download to temporary file
+            with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as temp_file:
+                temp_path = Path(temp_file.name)
+                try:
+                    blob_client = self.client.get_blob_client(
+                        container=container_name, blob=blob_name
+                    )
+                    with open(temp_path, "wb") as data_file:
+                        download_stream = blob_client.download_blob()
+                        data_file.write(download_stream.readall())
+
+                    # Use LocalStorage methods to load the document
+                    from .local import LocalStorage
+                    local_storage = LocalStorage(self.config)
+                    return local_storage.load_document(temp_path, **kwargs)
+                finally:
+                    temp_path.unlink(missing_ok=True)
+
+        except Exception as e:
+            raise StorageOperationError(f"Failed to load document from Azure: {e}") from e

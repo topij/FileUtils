@@ -140,6 +140,50 @@ config = file_utils.load_yaml("config.yaml", input_type="raw")
 settings = file_utils.load_json("settings.json", input_type="raw")
 ```
 
+### 7. Document Handling
+
+FileUtils supports rich document formats perfect for AI/agentic workflows:
+
+```python
+# Save AI analysis as Markdown with metadata
+analysis_content = {
+    "frontmatter": {
+        "title": "AI Analysis Report",
+        "model": "GPT-4",
+        "confidence": 0.95
+    },
+    "body": """# Analysis Results
+
+## Key Findings
+- Pattern detected with 94.2% confidence
+- 3 anomalies identified
+- Recommended actions: Update model, retrain
+
+## Next Steps
+1. Review findings
+2. Implement recommendations
+3. Schedule follow-up
+"""
+}
+
+saved_path, _ = file_utils.save_document_to_storage(
+    content=analysis_content,
+    output_filetype=OutputFileType.MARKDOWN,
+    output_type="processed",
+    file_name="ai_analysis",
+    sub_path="reports/2024"
+)
+
+# Load the document
+loaded_content = file_utils.load_document_from_storage(
+    file_path="ai_analysis.md",
+    input_type="processed",
+    sub_path="reports/2024"
+)
+```
+
+**Note**: Document functionality requires optional dependencies. Install with `pip install 'FileUtils[documents]'`. Markdown works without additional dependencies.
+
 ## Common Patterns and Best Practices
 
 ### Organizing Data Files

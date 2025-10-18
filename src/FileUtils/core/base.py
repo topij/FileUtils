@@ -224,6 +224,36 @@ class BaseStorage(ABC):
         raise NotImplementedError("Subclasses must implement load_yaml")
 
     @abstractmethod
+    def save_document(
+        self, content: Union[str, Dict[str, Any]], file_path: Union[str, Path], file_type: str, **kwargs
+    ) -> str:
+        """Save document content to storage.
+        
+        Args:
+            content: Document content (string or dict)
+            file_path: Path to save to
+            file_type: Type of document (docx, md, pdf)
+            **kwargs: Additional arguments for saving
+            
+        Returns:
+            String path where the file was saved
+        """
+        pass
+
+    @abstractmethod
+    def load_document(self, file_path: Union[str, Path], **kwargs) -> Union[str, Dict[str, Any]]:
+        """Load document content from storage.
+        
+        Args:
+            file_path: Path to file
+            **kwargs: Additional arguments for loading
+            
+        Returns:
+            Document content (string or dict depending on file type)
+        """
+        pass
+
+    @abstractmethod
     def exists(self, file_path: Union[str, Path]) -> bool:
         """Check if file exists."""
         pass

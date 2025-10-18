@@ -6,11 +6,17 @@ from enum import Enum, auto
 class OutputFileType(Enum):
     """Supported output file types."""
 
+    # Tabular data formats
     CSV = "csv"
     XLSX = "xlsx"
     PARQUET = "parquet"
     JSON = "json"
     YAML = "yaml"
+    
+    # Document formats
+    DOCX = "docx"
+    MARKDOWN = "md"
+    PDF = "pdf"
 
 
 class StorageType(Enum):
