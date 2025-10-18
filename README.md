@@ -241,6 +241,34 @@ saved_path, _ = file_utils.save_document_to_storage(
 )
 ```
 
+## Examples
+
+FileUtils includes comprehensive example scripts demonstrating various use cases:
+
+### Quick Examples
+```bash
+# Run example scripts
+python examples/data_pipeline.py      # Complete data pipeline
+python examples/ai_workflow.py         # AI/agentic workflows  
+python examples/multi_format_reports.py # Multi-format reporting
+python examples/error_handling.py      # Robust error handling
+python examples/performance_optimization.py # Large dataset optimization
+```
+
+### Example Scripts Overview
+- **`basic_usage.py`** - Basic operations (CSV, Excel, metadata)
+- **`data_pipeline.py`** - Complete data science pipeline (7,000+ records)
+- **`ai_workflow.py`** - AI integration (sentiment analysis, recommendations)
+- **`multi_format_reports.py`** - Same data → Excel, PDF, Markdown, JSON
+- **`error_handling.py`** - Production-ready error handling and recovery
+- **`performance_optimization.py`** - Large dataset optimization (50MB+)
+- **`document_types.py`** - Document functionality (DOCX, Markdown, PDF)
+- **`configuration.py`** - Configuration options and customization
+- **`azure_storage.py`** - Azure Blob Storage integration
+- **`FileUtils_tutorial.ipynb`** - Comprehensive interactive tutorial
+
+📚 **[Complete Examples Documentation](docs/EXAMPLES.md)** - Detailed guide to all example scripts
+
 ## Key Benefits
 
 - **Consistency**: Same interface for local and cloud storage operations
@@ -262,6 +290,7 @@ For a practical example, check out my [semantic text analyzer](https://www.githu
 - [Installation Guide](docs/INSTALLATION.md) - Detailed installation instructions
 - [Usage Guide](docs/USAGE.md) - Comprehensive examples and patterns
 - [Document Types Guide](docs/DOCUMENT_TYPES.md) - Rich document formats (DOCX, Markdown, PDF)
+- [Examples Documentation](docs/EXAMPLES.md) - Complete guide to all example scripts
 - [API Reference](docs/API_REFERENCE.md) - Complete API documentation
 - [Azure Setup Guide](docs/AZURE_SETUP.md) - Azure Blob Storage configuration
 - [Development Guide](docs/DEVELOPMENT.md) - Setup, building, and contributing to the project
