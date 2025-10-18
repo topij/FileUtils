@@ -311,7 +311,7 @@ class FileUtils:
             else:
                 # For Excel or multiple DataFrames
                 saved_files = self.storage.save_dataframes(
-                    data, full_file_path, **kwargs
+                    data, full_file_path, output_filetype.value, **kwargs
                 )
 
             self.logger.info(f"Data saved successfully: {saved_files}")
@@ -375,10 +375,25 @@ class FileUtils:
                             f"Cannot provide sub_path ('{sub_path}') when file_path "
                             f"('{file_path}') already contains directory separators."
                         )
-                    full_path = base_dir / safe_sub_path / file_path_obj
+                    search_dir = base_dir / safe_sub_path
+                    full_path = search_dir / file_path_obj
                 else:
                     # No sub_path, use file_path relative to base_dir (allows subdir in file_path)
-                    full_path = base_dir / file_path_obj
+                    search_dir = base_dir
+                    full_path = search_dir / file_path_obj
+
+                # If the exact file doesn't exist, try to find a file with timestamp
+                if not full_path.exists():
+                    # Look for files matching the pattern (with timestamp)
+                    pattern = f"{file_path_obj.stem}_*{file_path_obj.suffix}"
+                    matching_files = list(search_dir.glob(pattern))
+                    
+                    if matching_files:
+                        # Use the most recent file (by modification time)
+                        full_path = max(matching_files, key=lambda f: f.stat().st_mtime)
+                    else:
+                        # If no timestamped file found, try the original path
+                        pass
 
             return self.storage.load_dataframe(full_path, **kwargs)
         except Exception as e:
@@ -760,7 +775,7 @@ class FileUtils:
             output_filetype = OutputFileType(output_filetype.lower())
 
         # Validate document format
-        document_formats = {OutputFileType.DOCX, OutputFileType.MARKDOWN, OutputFileType.PDF}
+        document_formats = {OutputFileType.DOCX, OutputFileType.MARKDOWN, OutputFileType.PDF, OutputFileType.JSON, OutputFileType.YAML}
         if output_filetype not in document_formats:
             raise ValueError(
                 f"Invalid document format: {output_filetype}. "

@@ -43,6 +43,9 @@ _archive/
 *.txt
 *.pyc
 
+# data directories
+data/
+
 # Don't ignore the following files
 # !fi.txt
 # !en.txt

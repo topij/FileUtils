@@ -205,8 +205,19 @@ class LocalStorage(BaseStorage):
         """Load YAML file from local filesystem."""
         try:
             path = Path(file_path)
+            
+            # If the exact file doesn't exist, try to find a file with timestamp
             if not path.exists():
-                raise FileNotFoundError(f"File not found: {path}")
+                # Look for files matching the pattern (with timestamp)
+                pattern = f"{path.stem}_*{path.suffix}"
+                matching_files = list(path.parent.glob(pattern))
+                
+                if matching_files:
+                    # Use the most recent file (by modification time)
+                    path = max(matching_files, key=lambda f: f.stat().st_mtime)
+                else:
+                    # If no timestamped file found, raise the original error
+                    raise FileNotFoundError(f"File not found: {path}")
 
             if path.suffix.lower() not in (".yaml", ".yml"):
                 raise ValueError("File must have .yaml or .yml extension")
@@ -220,8 +231,19 @@ class LocalStorage(BaseStorage):
         """Load JSON file from local filesystem."""
         try:
             path = Path(file_path)
+            
+            # If the exact file doesn't exist, try to find a file with timestamp
             if not path.exists():
-                raise FileNotFoundError(f"File not found: {path}")
+                # Look for files matching the pattern (with timestamp)
+                pattern = f"{path.stem}_*{path.suffix}"
+                matching_files = list(path.parent.glob(pattern))
+                
+                if matching_files:
+                    # Use the most recent file (by modification time)
+                    path = max(matching_files, key=lambda f: f.stat().st_mtime)
+                else:
+                    # If no timestamped file found, raise the original error
+                    raise FileNotFoundError(f"File not found: {path}")
 
             if path.suffix.lower() != ".json":
                 raise ValueError("File must have .json extension")
@@ -308,6 +330,10 @@ class LocalStorage(BaseStorage):
                 return self._save_markdown(content, path, **kwargs)
             elif suffix == ".pdf":
                 return self._save_pdf(content, path, **kwargs)
+            elif suffix == ".json":
+                return self._save_json(content, path, **kwargs)
+            elif suffix in (".yaml", ".yml"):
+                return self._save_yaml(content, path, **kwargs)
             else:
                 raise ValueError(f"Unsupported document format: {suffix}")
 
@@ -334,6 +360,10 @@ class LocalStorage(BaseStorage):
                 return self._load_markdown(path, **kwargs)
             elif suffix == ".pdf":
                 return self._load_pdf(path, **kwargs)
+            elif suffix == ".json":
+                return self._load_json(path, **kwargs)
+            elif suffix in (".yaml", ".yml"):
+                return self._load_yaml(path, **kwargs)
             else:
                 raise ValueError(f"Unsupported document format: {suffix}")
 
@@ -511,3 +541,56 @@ class LocalStorage(BaseStorage):
         
         doc.close()
         return "\n\n".join(text_content)
+
+    def _load_json(self, path: Path, **kwargs) -> Dict[str, Any]:
+        """Load JSON file."""
+        try:
+            import json
+            
+            with open(path, "r", encoding=self.config["encoding"]) as f:
+                return json.load(f, **kwargs)
+        except Exception as e:
+            raise StorageOperationError(f"Failed to load JSON file: {e}") from e
+
+    def _load_yaml(self, path: Path, **kwargs) -> Dict[str, Any]:
+        """Load YAML file."""
+        try:
+            import yaml
+            
+            with open(path, "r", encoding=self.config["encoding"]) as f:
+                return yaml.safe_load(f, **kwargs)
+        except Exception as e:
+            raise StorageOperationError(f"Failed to load YAML file: {e}") from e
+
+    def _save_json(self, content: Union[str, Dict[str, Any]], path: Path, **kwargs) -> str:
+        """Save content as JSON file."""
+        try:
+            import json
+            
+            # Custom JSON encoder to handle pandas types
+            class PandasJSONEncoder(json.JSONEncoder):
+                def default(self, obj):
+                    if hasattr(obj, 'isoformat'):  # datetime, Timestamp
+                        return obj.isoformat()
+                    elif hasattr(obj, 'item'):  # numpy types
+                        return obj.item()
+                    elif hasattr(obj, 'tolist'):  # numpy arrays
+                        return obj.tolist()
+                    return super().default(obj)
+            
+            with open(path, "w", encoding=self.config["encoding"]) as f:
+                json.dump(content, f, indent=kwargs.get("indent", 2), cls=PandasJSONEncoder, **kwargs)
+            return str(path)
+        except Exception as e:
+            raise StorageOperationError(f"Failed to save JSON file: {e}") from e
+
+    def _save_yaml(self, content: Union[str, Dict[str, Any]], path: Path, **kwargs) -> str:
+        """Save content as YAML file."""
+        try:
+            import yaml
+            
+            with open(path, "w", encoding=self.config["encoding"]) as f:
+                yaml.dump(content, f, default_flow_style=False, **kwargs)
+            return str(path)
+        except Exception as e:
+            raise StorageOperationError(f"Failed to save YAML file: {e}") from e
