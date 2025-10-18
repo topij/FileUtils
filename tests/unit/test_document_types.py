@@ -5,6 +5,12 @@ import pandas as pd
 from pathlib import Path
 import tempfile
 import os
+import warnings
+
+# Suppress PyMuPDF deprecation warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning, message=".*SwigPy.*")
+warnings.filterwarnings("ignore", category=DeprecationWarning, message=".*swigvarlink.*")
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="fitz")
 
 from FileUtils import FileUtils
 from FileUtils.core.enums import OutputFileType, StorageType

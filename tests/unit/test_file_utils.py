@@ -51,8 +51,9 @@ def test_save_multiple_dataframes(file_utils, sample_df):
         file_name="multi_sheet",
     )
 
-    assert len(saved_files) == 1
-    saved_path = Path(next(iter(saved_files.values())))
+    # Excel files return a mapping of sheet names to the same file path
+    assert len(saved_files) == 2  # One entry per sheet
+    saved_path = Path(next(iter(saved_files.values())))  # All sheets point to same file
     assert saved_path.exists()
 
     # Verify content
@@ -511,7 +512,8 @@ def test_save_excel_with_subpath(file_utils, sample_df):
         sub_path=sub_path,
     )
 
-    assert len(saved_files) == 1 # Excel saves as one file
+    # Excel files return a mapping of sheet names to the same file path
+    assert len(saved_files) == 2  # One entry per sheet
     saved_path = Path(next(iter(saved_files.values())))
     assert saved_path.exists()
 
