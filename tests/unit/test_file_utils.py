@@ -775,3 +775,286 @@ def test_load_single_file_backward_compatibility(file_utils, sample_df):
         # sub_path=None # Default
     )
     pd.testing.assert_frame_equal(loaded_df, sample_df)
+
+
+# New tests for document functionality
+def test_save_json_as_document(file_utils):
+    """Test saving JSON as structured document."""
+    config_data = {
+        "database": {
+            "host": "localhost",
+            "port": 5432,
+            "name": "test_db"
+        },
+        "api": {
+            "timeout": 30,
+            "retries": 3,
+            "base_url": "https://api.example.com"
+        },
+        "features": {
+            "enable_caching": True,
+            "cache_ttl": 3600
+        }
+    }
+    
+    saved_path, _ = file_utils.save_document_to_storage(
+        content=config_data,
+        output_filetype=OutputFileType.JSON,
+        output_type="processed",
+        file_name="app_config",
+        include_timestamp=False
+    )
+    
+    assert Path(saved_path).exists()
+    assert saved_path.endswith(".json")
+    
+    # Load and verify
+    loaded_config = file_utils.load_json(
+        file_path="app_config.json",
+        input_type="processed"
+    )
+    
+    assert loaded_config["database"]["host"] == "localhost"
+    assert loaded_config["api"]["timeout"] == 30
+    assert loaded_config["features"]["enable_caching"] is True
+
+
+def test_save_yaml_as_document(file_utils):
+    """Test saving YAML as structured document."""
+    pipeline_config = {
+        "project": {
+            "name": "Test Pipeline",
+            "version": "1.0.0"
+        },
+        "data_sources": {
+            "primary": {
+                "type": "database",
+                "connection": "postgresql://localhost:5432/test"
+            }
+        },
+        "processing": {
+            "batch_size": 1000,
+            "parallel_workers": 4
+        }
+    }
+    
+    saved_path, _ = file_utils.save_document_to_storage(
+        content=pipeline_config,
+        output_filetype=OutputFileType.YAML,
+        output_type="processed",
+        file_name="pipeline_config",
+        include_timestamp=False
+    )
+    
+    assert Path(saved_path).exists()
+    assert saved_path.endswith(".yaml")
+    
+    # Load and verify
+    loaded_config = file_utils.load_yaml(
+        file_path="pipeline_config.yaml",
+        input_type="processed"
+    )
+    
+    assert loaded_config["project"]["name"] == "Test Pipeline"
+    assert loaded_config["processing"]["batch_size"] == 1000
+
+
+def test_json_yaml_document_with_subpath(file_utils):
+    """Test saving JSON/YAML documents with subpath."""
+    config_data = {"test": "value", "nested": {"key": "value"}}
+    
+    # Test JSON with subpath
+    saved_path, _ = file_utils.save_document_to_storage(
+        content=config_data,
+        output_filetype=OutputFileType.JSON,
+        output_type="processed",
+        file_name="test_config",
+        sub_path="configs/app",
+        include_timestamp=False
+    )
+    
+    assert Path(saved_path).exists()
+    assert "configs/app" in str(saved_path)
+    
+    # Load and verify
+    loaded_config = file_utils.load_json(
+        file_path="test_config.json",
+        input_type="processed",
+        sub_path="configs/app"
+    )
+    
+    assert loaded_config["test"] == "value"
+    assert loaded_config["nested"]["key"] == "value"
+
+
+def test_automatic_pandas_type_conversion(file_utils, sample_df):
+    """Test automatic conversion of pandas types in JSON."""
+    # Create data with pandas types that need conversion
+    df_with_types = pd.DataFrame({
+        'date': pd.date_range('2024-01-01', periods=3),
+        'timestamp': pd.Timestamp.now(),
+        'int64': pd.Series([1, 2, 3], dtype='int64'),
+        'float64': pd.Series([1.1, 2.2, 3.3], dtype='float64'),
+        'category': pd.Categorical(['A', 'B', 'C'])
+    })
+    
+    # Create JSON data with pandas types
+    json_data = {
+        'metadata': {
+            'created': pd.Timestamp.now(),
+            'version': '1.0'
+        },
+        'summary': {
+            'total_rows': len(df_with_types),
+            'date_range': {
+                'start': df_with_types['date'].min(),
+                'end': df_with_types['date'].max()
+            }
+        },
+        'data': df_with_types.to_dict('records')
+    }
+    
+    # This should work without manual conversion due to PandasJSONEncoder
+    saved_path, _ = file_utils.save_document_to_storage(
+        content=json_data,
+        output_filetype=OutputFileType.JSON,
+        output_type="processed",
+        file_name="pandas_types_test",
+        include_timestamp=False
+    )
+    
+    assert Path(saved_path).exists()
+    
+    # Load and verify types are properly converted
+    loaded_data = file_utils.load_json(
+        file_path="pandas_types_test.json",
+        input_type="processed"
+    )
+    
+    # Check that pandas types were converted to JSON-serializable types
+    assert isinstance(loaded_data['metadata']['created'], str)  # Timestamp -> string
+    assert isinstance(loaded_data['summary']['date_range']['start'], str)  # Timestamp -> string
+    assert isinstance(loaded_data['summary']['date_range']['end'], str)  # Timestamp -> string
+    assert isinstance(loaded_data['summary']['total_rows'], int)  # int64 -> int
+    assert isinstance(loaded_data['data'][0]['int64'], int)  # int64 -> int
+    assert isinstance(loaded_data['data'][0]['float64'], float)  # float64 -> float
+
+
+def test_intelligent_timestamp_handling(file_utils, sample_df):
+    """Test intelligent timestamp handling in load methods."""
+    # Save file with timestamp
+    saved_files, _ = file_utils.save_data_to_storage(
+        data=sample_df,
+        output_filetype=OutputFileType.CSV,
+        output_type="processed",
+        file_name="timestamped_file",
+        include_timestamp=True  # This will add a timestamp
+    )
+    
+    # The file will be saved as something like "timestamped_file_20241019_123456.csv"
+    saved_path = Path(next(iter(saved_files.values())))
+    assert saved_path.exists()
+    
+    # Load using base filename (should find the timestamped version)
+    loaded_df = file_utils.load_single_file(
+        file_path="timestamped_file.csv",  # Base name without timestamp
+        input_type="processed"
+    )
+    
+    pd.testing.assert_frame_equal(loaded_df, sample_df)
+
+
+def test_multiindex_dataframe_excel(file_utils):
+    """Test MultiIndex DataFrame handling in Excel."""
+    # Create MultiIndex DataFrame
+    data = {
+        ('Sales', 'Q1'): [100, 200, 300],
+        ('Sales', 'Q2'): [150, 250, 350],
+        ('Marketing', 'Q1'): [50, 75, 100],
+        ('Marketing', 'Q2'): [60, 80, 110]
+    }
+    
+    df_multiindex = pd.DataFrame(data, index=['Product A', 'Product B', 'Product C'])
+    df_multiindex.columns = pd.MultiIndex.from_tuples(df_multiindex.columns)
+    
+    # Save as Excel (should handle MultiIndex automatically)
+    saved_files, _ = file_utils.save_data_to_storage(
+        data={'multi_sheet': df_multiindex},
+        output_filetype=OutputFileType.XLSX,
+        output_type="processed",
+        file_name="multiindex_test",
+        include_timestamp=False
+    )
+    
+    assert len(saved_files) == 1
+    saved_path = Path(next(iter(saved_files.values())))
+    assert saved_path.exists()
+    
+    # Load and verify MultiIndex was handled correctly
+    loaded_df = file_utils.load_single_file(
+        file_path="multiindex_test.xlsx",
+        input_type="processed"
+    )
+    
+    # The MultiIndex columns should be flattened, and index should be included
+    expected_columns = ['Unnamed: 0', 'Sales_Q1', 'Sales_Q2', 'Marketing_Q1', 'Marketing_Q2']
+    assert list(loaded_df.columns) == expected_columns
+    
+    # Verify the data is correct (excluding the index column)
+    data_columns = ['Sales_Q1', 'Sales_Q2', 'Marketing_Q1', 'Marketing_Q2']
+    assert loaded_df[data_columns].iloc[0].tolist() == [100, 150, 50, 60]
+    assert loaded_df[data_columns].iloc[1].tolist() == [200, 250, 75, 80]
+    assert loaded_df[data_columns].iloc[2].tolist() == [300, 350, 100, 110]
+
+
+def test_enhanced_json_encoder_edge_cases(file_utils):
+    """Test enhanced JSON encoder with edge cases."""
+    import numpy as np
+    from datetime import datetime
+    
+    # Test various edge cases
+    edge_case_data = {
+        'numpy_int': np.int64(42),
+        'numpy_float': np.float64(3.14),
+        'numpy_array': np.array([1, 2, 3]),
+        'datetime_obj': datetime.now(),
+        'pandas_timestamp': pd.Timestamp('2024-01-01'),
+        'nested_dict': {
+            'inner_timestamp': pd.Timestamp.now(),
+            'inner_numpy': np.int32(100)
+        },
+        'list_with_types': [
+            pd.Timestamp.now(),
+            np.float32(2.5),
+            datetime.now()
+        ]
+    }
+    
+    # This should work without errors due to PandasJSONEncoder
+    saved_path, _ = file_utils.save_document_to_storage(
+        content=edge_case_data,
+        output_filetype=OutputFileType.JSON,
+        output_type="processed",
+        file_name="edge_cases_test",
+        include_timestamp=False
+    )
+    
+    assert Path(saved_path).exists()
+    
+    # Load and verify all types were converted
+    loaded_data = file_utils.load_json(
+        file_path="edge_cases_test.json",
+        input_type="processed"
+    )
+    
+    # All pandas/numpy types should be converted to JSON-serializable types
+    assert isinstance(loaded_data['numpy_int'], int)
+    assert isinstance(loaded_data['numpy_float'], float)
+    assert isinstance(loaded_data['numpy_array'], list)
+    assert isinstance(loaded_data['datetime_obj'], str)
+    assert isinstance(loaded_data['pandas_timestamp'], str)
+    assert isinstance(loaded_data['nested_dict']['inner_timestamp'], str)
+    assert isinstance(loaded_data['nested_dict']['inner_numpy'], int)
+    assert isinstance(loaded_data['list_with_types'][0], str)
+    assert isinstance(loaded_data['list_with_types'][1], float)
+    assert isinstance(loaded_data['list_with_types'][2], str)

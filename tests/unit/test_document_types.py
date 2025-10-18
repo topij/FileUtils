@@ -354,3 +354,141 @@ class TestDocumentDependencies:
             assert True
         except ImportError:
             pytest.skip("markdown library not installed")
+
+
+class TestDocumentFormatIntegration:
+    """Test integration between document formats and existing functionality."""
+
+    def test_json_yaml_as_documents(self, file_utils):
+        """Test JSON and YAML as document formats."""
+        # Test JSON as document
+        json_data = {
+            "project": "Test Project",
+            "version": "1.0.0",
+            "config": {
+                "debug": True,
+                "timeout": 30
+            }
+        }
+        
+        saved_path, _ = file_utils.save_document_to_storage(
+            content=json_data,
+            output_filetype=OutputFileType.JSON,
+            output_type="processed",
+            file_name="test_json_doc",
+            include_timestamp=False
+        )
+        
+        assert Path(saved_path).exists()
+        
+        # Load as document
+        loaded_data = file_utils.load_document_from_storage(
+            file_path="test_json_doc.json",
+            input_type="processed"
+        )
+        
+        assert loaded_data["project"] == "Test Project"
+        assert loaded_data["config"]["debug"] is True
+        
+        # Test YAML as document
+        yaml_data = {
+            "database": {
+                "host": "localhost",
+                "port": 5432
+            },
+            "cache": {
+                "enabled": True,
+                "ttl": 3600
+            }
+        }
+        
+        saved_path, _ = file_utils.save_document_to_storage(
+            content=yaml_data,
+            output_filetype=OutputFileType.YAML,
+            output_type="processed",
+            file_name="test_yaml_doc",
+            include_timestamp=False
+        )
+        
+        assert Path(saved_path).exists()
+        
+        # Load as document
+        loaded_data = file_utils.load_document_from_storage(
+            file_path="test_yaml_doc.yaml",
+            input_type="processed"
+        )
+        
+        assert loaded_data["database"]["host"] == "localhost"
+        assert loaded_data["cache"]["enabled"] is True
+
+    def test_document_with_pandas_types(self, file_utils):
+        """Test document saving with pandas types."""
+        import pandas as pd
+        import numpy as np
+        
+        # Create data with pandas types
+        df = pd.DataFrame({
+            'date': pd.date_range('2024-01-01', periods=3),
+            'value': [1, 2, 3]
+        })
+        
+        document_data = {
+            'metadata': {
+                'created': pd.Timestamp.now(),
+                'total_records': len(df)
+            },
+            'data': df.to_dict('records'),
+            'summary': {
+                'mean_value': float(df['value'].mean()),
+                'date_range': {
+                    'start': str(df['date'].min()),
+                    'end': str(df['date'].max())
+                }
+            }
+        }
+        
+        # Save as JSON document (should handle pandas types automatically)
+        saved_path, _ = file_utils.save_document_to_storage(
+            content=document_data,
+            output_filetype=OutputFileType.JSON,
+            output_type="processed",
+            file_name="pandas_document",
+            include_timestamp=False
+        )
+        
+        assert Path(saved_path).exists()
+        
+        # Load and verify
+        loaded_data = file_utils.load_document_from_storage(
+            file_path="pandas_document.json",
+            input_type="processed"
+        )
+        
+        assert isinstance(loaded_data['metadata']['created'], str)
+        assert loaded_data['summary']['mean_value'] == 2.0
+        assert len(loaded_data['data']) == 3
+
+    def test_document_timestamp_handling(self, file_utils):
+        """Test timestamp handling for documents."""
+        content = "Test document for timestamp handling"
+        
+        # Save with timestamp
+        saved_path, _ = file_utils.save_document_to_storage(
+            content=content,
+            output_filetype=OutputFileType.MARKDOWN,
+            output_type="processed",
+            file_name="timestamped_doc",
+            include_timestamp=True
+        )
+        
+        assert Path(saved_path).exists()
+        # File should have timestamp in name
+        assert "_" in Path(saved_path).stem
+        
+        # Load using base name (should find timestamped version)
+        loaded_content = file_utils.load_document_from_storage(
+            file_path="timestamped_doc.md",
+            input_type="processed"
+        )
+        
+        assert loaded_content == content

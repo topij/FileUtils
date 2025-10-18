@@ -572,10 +572,10 @@ class LocalStorage(BaseStorage):
                 def default(self, obj):
                     if hasattr(obj, 'isoformat'):  # datetime, Timestamp
                         return obj.isoformat()
-                    elif hasattr(obj, 'item'):  # numpy types
-                        return obj.item()
-                    elif hasattr(obj, 'tolist'):  # numpy arrays
+                    elif hasattr(obj, 'tolist'):  # numpy arrays (check this first)
                         return obj.tolist()
+                    elif hasattr(obj, 'item'):  # numpy scalar types
+                        return obj.item()
                     return super().default(obj)
             
             with open(path, "w", encoding=self.config["encoding"]) as f:
