@@ -383,6 +383,29 @@ python examples/performance_optimization.py # Large dataset optimization
 
 📚 **[Complete Examples Documentation](docs/EXAMPLES.md)** - Detailed guide to all example scripts
 
+## Testing
+
+FileUtils includes comprehensive test coverage with **50+ tests** ensuring reliability and data integrity:
+
+- **Unit Tests**: Individual method validation with controlled inputs
+- **Integration Tests**: Complete workflow testing with realistic business data
+- **Excel ↔ CSV Tests**: Dedicated tests for round-trip conversion functionality
+- **Error Handling**: Graceful failure scenarios and edge cases
+- **Data Integrity**: Validation of data preservation through all operations
+
+```bash
+# Run all tests
+pytest
+
+# Run Excel ↔ CSV conversion tests
+pytest -k "excel_csv"
+
+# Run with coverage
+pytest --cov=FileUtils
+```
+
+📚 **[Testing Documentation](docs/TESTING.md)** - Complete test coverage guide and methodology
+
 ## Key Benefits
 
 - **Consistency**: Same interface for local and cloud storage operations
@@ -407,6 +430,7 @@ For a practical example, check out my [semantic text analyzer](https://www.githu
 - [Enhanced DOCX Guide](docs/ENHANCED_DOCX.md) - DOCX template system and markdown conversion
 - [Examples Documentation](docs/EXAMPLES.md) - Complete guide to all example scripts
 - [API Reference](docs/API_REFERENCE.md) - Complete API documentation
+- [Testing Documentation](docs/TESTING.md) - Test coverage and methodology
 - [Azure Setup Guide](docs/AZURE_SETUP.md) - Azure Blob Storage configuration
 - [Development Guide](docs/DEVELOPMENT.md) - Setup, building, and contributing to the project
 - [Future Features](docs/FUTURE_FEATURES.md) - Roadmap and planned enhancements

@@ -1058,3 +1058,219 @@ def test_enhanced_json_encoder_edge_cases(file_utils):
     assert isinstance(loaded_data['list_with_types'][0], str)
     assert isinstance(loaded_data['list_with_types'][1], float)
     assert isinstance(loaded_data['list_with_types'][2], str)
+
+
+# Excel ↔ CSV Conversion Tests
+
+def test_convert_excel_to_csv_with_structure_basic(file_utils, sample_df):
+    """Test basic Excel to CSV conversion with structure preservation."""
+    # Create a multi-sheet Excel workbook
+    workbook_data = {
+        "Sheet1": sample_df,
+        "Sheet2": sample_df.copy()
+    }
+    
+    # Save Excel workbook first
+    saved_files, _ = file_utils.save_data_to_storage(
+        data=workbook_data,
+        output_filetype=OutputFileType.XLSX,
+        output_type="raw",
+        file_name="test_workbook"
+    )
+    
+    excel_file_path = list(saved_files.values())[0]
+    
+    # Convert Excel to CSV with structure
+    csv_files, structure_file = file_utils.convert_excel_to_csv_with_structure(
+        excel_file_path=Path(excel_file_path).name,
+        input_type="raw",
+        output_type="processed",
+        file_name="converted_workbook"
+    )
+    
+    # Verify CSV files were created
+    assert len(csv_files) == 2
+    assert "Sheet1" in csv_files
+    assert "Sheet2" in csv_files
+    
+    # Verify CSV files exist and have correct content
+    for sheet_name, csv_path in csv_files.items():
+        assert Path(csv_path).exists()
+        loaded_df = pd.read_csv(csv_path)
+        pd.testing.assert_frame_equal(loaded_df, sample_df)
+    
+    # Verify structure file exists and has correct content
+    assert Path(structure_file).exists()
+    with open(structure_file, 'r') as f:
+        structure_data = json.load(f)
+    
+    assert "workbook_info" in structure_data
+    assert "sheets" in structure_data
+    assert structure_data["workbook_info"]["total_sheets"] == 2
+    assert len(structure_data["sheets"]) == 2
+    
+    # Verify sheet metadata
+    for sheet_name in ["Sheet1", "Sheet2"]:
+        assert sheet_name in structure_data["sheets"]
+        sheet_info = structure_data["sheets"][sheet_name]
+        assert "csv_file" in sheet_info
+        assert "dimensions" in sheet_info
+        assert "columns" in sheet_info
+        assert "data_info" in sheet_info
+        assert sheet_info["dimensions"]["rows"] == len(sample_df)
+        assert sheet_info["dimensions"]["columns"] == len(sample_df.columns)
+
+
+def test_convert_excel_to_csv_with_structure_no_preserve(file_utils, sample_df):
+    """Test Excel to CSV conversion without structure preservation."""
+    # Create a multi-sheet Excel workbook
+    workbook_data = {
+        "Sheet1": sample_df,
+        "Sheet2": sample_df.copy()
+    }
+    
+    # Save Excel workbook first
+    saved_files, _ = file_utils.save_data_to_storage(
+        data=workbook_data,
+        output_filetype=OutputFileType.XLSX,
+        output_type="raw",
+        file_name="test_workbook_no_structure"
+    )
+    
+    excel_file_path = list(saved_files.values())[0]
+    
+    # Convert Excel to CSV without structure preservation
+    csv_files, structure_file = file_utils.convert_excel_to_csv_with_structure(
+        excel_file_path=Path(excel_file_path).name,
+        input_type="raw",
+        output_type="processed",
+        file_name="converted_workbook_no_structure",
+        preserve_structure=False
+    )
+    
+    # Verify CSV files were created
+    assert len(csv_files) == 2
+    
+    # Verify no structure file was created
+    assert structure_file == ""
+
+
+def test_convert_csv_to_excel_workbook_basic(file_utils, sample_df):
+    """Test basic CSV to Excel workbook reconstruction."""
+    # First create CSV files with structure
+    workbook_data = {
+        "Sheet1": sample_df,
+        "Sheet2": sample_df.copy()
+    }
+    
+    # Save Excel workbook first
+    saved_files, _ = file_utils.save_data_to_storage(
+        data=workbook_data,
+        output_filetype=OutputFileType.XLSX,
+        output_type="raw",
+        file_name="test_workbook_reconstruction"
+    )
+    
+    excel_file_path = list(saved_files.values())[0]
+    
+    # Convert Excel to CSV with structure
+    csv_files, structure_file = file_utils.convert_excel_to_csv_with_structure(
+        excel_file_path=Path(excel_file_path).name,
+        input_type="raw",
+        output_type="processed",
+        file_name="test_workbook_reconstruction"
+    )
+    
+    # Now reconstruct Excel workbook from CSV files
+    reconstructed_excel = file_utils.convert_csv_to_excel_workbook(
+        structure_json_path=structure_file,
+        input_type="processed",
+        output_type="processed",
+        file_name="reconstructed_workbook"
+    )
+    
+    # Verify reconstructed Excel file exists
+    assert Path(reconstructed_excel).exists()
+    
+    # Verify reconstructed Excel has correct content
+    reconstructed_sheets = file_utils.load_excel_sheets(
+        Path(reconstructed_excel).name,
+        input_type="processed"
+    )
+    
+    assert len(reconstructed_sheets) == 2
+    assert "Sheet1" in reconstructed_sheets
+    assert "Sheet2" in reconstructed_sheets
+    
+    # Verify content matches original
+    for sheet_name, df in reconstructed_sheets.items():
+        pd.testing.assert_frame_equal(df, sample_df)
+
+
+def test_excel_csv_roundtrip_workflow(file_utils, sample_df):
+    """Test complete Excel ↔ CSV round-trip workflow."""
+    # Step 1: Create Excel workbook
+    workbook_data = {
+        "Sales": sample_df,
+        "Customers": sample_df.copy(),
+        "Products": sample_df.copy()
+    }
+    
+    saved_files, _ = file_utils.save_data_to_storage(
+        data=workbook_data,
+        output_filetype=OutputFileType.XLSX,
+        output_type="raw",
+        file_name="roundtrip_workbook"
+    )
+    
+    excel_file_path = list(saved_files.values())[0]
+    
+    # Step 2: Convert Excel to CSV
+    csv_files, structure_file = file_utils.convert_excel_to_csv_with_structure(
+        excel_file_path=Path(excel_file_path).name,
+        input_type="raw",
+        output_type="processed",
+        file_name="roundtrip_workbook"
+    )
+    
+    # Step 3: Modify CSV data
+    modified_df = sample_df.copy()
+    modified_df['processed'] = True
+    
+    # Save modified Sales data
+    file_utils.save_data_to_storage(
+        data=modified_df,
+        output_filetype=OutputFileType.CSV,
+        output_type="processed",
+        file_name="roundtrip_workbook_Sales",
+        include_timestamp=False
+    )
+    
+    # Step 4: Reconstruct Excel workbook
+    reconstructed_excel = file_utils.convert_csv_to_excel_workbook(
+        structure_json_path=structure_file,
+        input_type="processed",
+        output_type="processed",
+        file_name="roundtrip_reconstructed"
+    )
+    
+    # Step 5: Verify round-trip
+    assert Path(reconstructed_excel).exists()
+    
+    reconstructed_sheets = file_utils.load_excel_sheets(
+        Path(reconstructed_excel).name,
+        input_type="processed"
+    )
+    
+    assert len(reconstructed_sheets) == 3
+    assert "Sales" in reconstructed_sheets
+    assert "Customers" in reconstructed_sheets
+    assert "Products" in reconstructed_sheets
+    
+    # Verify Sales sheet has modifications
+    assert 'processed' in reconstructed_sheets["Sales"].columns
+    assert all(reconstructed_sheets["Sales"]['processed'] == True)
+    
+    # Verify other sheets are unchanged
+    pd.testing.assert_frame_equal(reconstructed_sheets["Customers"], sample_df)
+    pd.testing.assert_frame_equal(reconstructed_sheets["Products"], sample_df)
