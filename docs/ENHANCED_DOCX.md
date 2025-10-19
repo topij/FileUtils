@@ -155,14 +155,15 @@ file_utils.save_document_to_storage(
 Configure templates in your FileUtils configuration:
 
 ```yaml
-# config.yaml
+# Default configuration (generic template for sharing)
 docx_templates:
   template_dir: "templates"
-  default_template: "IP-template-doc.docx"
+  default_template: "style-template-doc.docx"
   templates:
-    default: "IP-template-doc.docx"
-    review: "review-template.docx"
-    report: "report-template.docx"
+    default: "style-template-doc.docx"  # Generic template
+    review: "style-template-doc.docx"
+    report: "style-template-doc.docx"
+    ip_template: "IP-template-doc.docx"  # Personal IP template
     simple: null  # Use default document
 
 style_mapping:
@@ -183,6 +184,39 @@ markdown_options:
     checked: "☑"
     font: "Segoe UI Symbol"
     size: 12
+```
+
+#### Switching to Personal Template
+
+For personal use with your IP template, you can easily switch:
+
+**Option 1: Override in code**
+```python
+from FileUtils import FileUtils
+
+file_utils = FileUtils(
+    config_override={
+        "docx_templates": {
+            "default_template": "IP-template-doc.docx",
+            "templates": {
+                "default": "IP-template-doc.docx"
+            }
+        }
+    }
+)
+```
+
+**Option 2: Use personal config file**
+Copy `src/FileUtils/templates/config/personal_template_config.yaml` to override the default configuration.
+
+**Option 3: Use specific template**
+```python
+# Use IP template for specific documents
+file_utils.save_document_to_storage(
+    content=markdown_content,
+    output_filetype=OutputFileType.DOCX,
+    template="ip_template"  # Use IP template specifically
+)
 ```
 
 ### Programmatic Configuration
@@ -263,8 +297,11 @@ Your DOCX templates should:
 2. **Contain Styles**: Include the styles you want to use (e.g., "IP-table_light", "Heading 1")
 3. **Be Clean**: Template content will be cleared, but styles are preserved
 4. **Be Accessible**: Place templates in the configured template directory
+5. **Include Headers/Footers**: Headers and footers from templates are automatically preserved
 
 **Important**: FileUtils uses regular `.docx` files as templates, not Microsoft Word `.dotx` template files. The system loads the DOCX file, clears its content, and preserves the styles for use in the generated documents.
+
+**Headers and Footers**: The system automatically preserves headers and footers from your template files. This means you can create templates with company logos, page numbers, document titles, or any other header/footer content, and they will be maintained in the generated documents.
 
 ### Style Names
 
@@ -335,9 +372,13 @@ template_manager = DocxTemplateManager(config)
 # Validate template
 is_valid = template_manager.validate_template(template_path)
 
-# Get template information
+# Get template information including headers/footers
 info = template_manager.get_template_info("default")
 print(f"Available styles: {info['available_styles']}")
+print(f"Has headers: {info['headers_footers']['has_headers']}")
+print(f"Has footers: {info['headers_footers']['has_footers']}")
+print(f"Header count: {info['headers_footers']['header_count']}")
+print(f"Footer count: {info['headers_footers']['footer_count']}")
 ```
 
 ## Error Handling

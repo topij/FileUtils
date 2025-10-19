@@ -14,13 +14,15 @@ from ..utils.common import get_logger
 class DocxTemplateManager:
     """Manages DOCX templates and their configurations."""
     
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any], project_root: Optional[Path] = None):
         """Initialize template manager.
         
         Args:
             config: Configuration dictionary containing template settings
+            project_root: Project root directory for template resolution
         """
         self.config = config
+        self.project_root = project_root or self._find_project_root()
         self.logger = get_logger(self.__class__.__name__)
         self.template_config = self._load_template_config()
         self.style_mappings = self._load_style_mappings()
@@ -32,11 +34,12 @@ class DocxTemplateManager:
         # Default template configuration
         default_config = {
             "template_dir": "templates",
-            "default_template": "IP-template-doc.docx",
+            "default_template": "style-template-doc.docx",
             "templates": {
-                "default": "IP-template-doc.docx",
-                "review": "IP-template-doc.docx",  # Can be different
-                "report": "IP-template-doc.docx"   # Can be different
+                "default": "style-template-doc.docx",  # Generic template for sharing
+                "review": "style-template-doc.docx",
+                "report": "style-template-doc.docx",
+                "ip_template": "IP-template-doc.docx"  # Personal IP template
             },
             "fallback_template": None  # Use python-docx default
         }
@@ -75,6 +78,18 @@ class DocxTemplateManager:
         default_mappings.update(style_config)
         return default_mappings
     
+    def _find_project_root(self) -> Optional[Path]:
+        """Find project root directory by looking for indicators."""
+        current_dir = Path.cwd()
+        root_indicators = [".git", "pyproject.toml", "setup.py", "environment.yaml"]
+        
+        while current_dir != current_dir.parent:
+            if any((current_dir / indicator).exists() for indicator in root_indicators):
+                return current_dir
+            current_dir = current_dir.parent
+        
+        return None
+    
     def get_template_path(self, template_name: Optional[str] = None) -> Optional[Path]:
         """Get the path to a specific template.
         
@@ -89,19 +104,52 @@ class DocxTemplateManager:
         
         # Get template filename
         template_filename = self.template_config.get("templates", {}).get(template_name)
+        
+        # If not found in configuration, check if it's a filename directly
         if not template_filename:
-            self.logger.warning(f"Template '{template_name}' not found in configuration")
-            return None
+            # Check if template_name is actually a filename
+            if template_name.endswith('.docx'):
+                template_filename = template_name
+            else:
+                # Try with .docx extension
+                template_filename = f"{template_name}.docx"
+            
+            # Verify the file exists before proceeding
+            template_dir = self.template_config.get("template_dir", "templates")
+            test_paths = [
+                Path(template_dir) / template_filename,
+                Path("templates") / template_filename,
+                Path("data/templates") / template_filename,
+                Path(template_filename)
+            ]
+            
+            if not any(path.exists() for path in test_paths):
+                self.logger.warning(f"Template '{template_name}' not found in configuration")
+                return None
         
         # Look for template in multiple locations
         template_dir = self.template_config.get("template_dir", "templates")
-        search_paths = [
+        
+        # Build search paths, using project root if available
+        search_paths = []
+        
+        if self.project_root:
+            # Use project root for absolute paths
+            search_paths.extend([
+                self.project_root / template_dir / template_filename,
+                self.project_root / "templates" / template_filename,
+                self.project_root / "data/templates" / template_filename,
+                self.project_root / "src/conversion/templates" / template_filename,
+            ])
+        
+        # Add relative paths as fallback
+        search_paths.extend([
             Path(template_dir) / template_filename,
             Path("templates") / template_filename,
             Path("data/templates") / template_filename,
             Path(template_filename),  # Current directory
             Path("src/conversion/templates") / template_filename,  # Your old location
-        ]
+        ])
         
         for template_path in search_paths:
             if template_path.exists():
@@ -177,11 +225,12 @@ class DocxTemplateManager:
             if template_path:
                 available[name] = template_path
         
-        # Also scan template directory for additional templates
+        # Also scan template directory for additional templates (as fallback)
         template_dir_path = Path(template_dir)
         if template_dir_path.exists():
             for template_file in template_dir_path.glob("*.docx"):
                 if template_file not in available.values():
+                    # Use filename as template name for discovered templates
                     name = template_file.stem
                     available[name] = template_file
         
@@ -207,6 +256,9 @@ class DocxTemplateManager:
             # Get available styles
             available_styles = [style.name for style in doc.styles]
             
+            # Check for headers and footers
+            header_footer_info = self._get_header_footer_info(doc)
+            
             return {
                 "name": template_name or "default",
                 "path": str(template_path),
@@ -214,7 +266,8 @@ class DocxTemplateManager:
                 "available_styles": available_styles,
                 "style_count": len(available_styles),
                 "paragraph_count": len(doc.paragraphs),
-                "table_count": len(doc.tables)
+                "table_count": len(doc.tables),
+                "headers_footers": header_footer_info
             }
         except Exception as e:
             return {
@@ -223,3 +276,44 @@ class DocxTemplateManager:
                 "exists": True,
                 "error": str(e)
             }
+    
+    def _get_header_footer_info(self, doc) -> Dict[str, Any]:
+        """Get information about headers and footers in the document.
+        
+        Args:
+            doc: Document object
+            
+        Returns:
+            Dictionary with header/footer information
+        """
+        try:
+            info = {
+                "has_headers": False,
+                "has_footers": False,
+                "header_count": 0,
+                "footer_count": 0,
+                "header_types": [],
+                "footer_types": []
+            }
+            
+            # Check for headers
+            for section in doc.sections:
+                if section.header:
+                    info["has_headers"] = True
+                    info["header_count"] += 1
+                    if section.header.is_linked_to_previous:
+                        info["header_types"].append("linked")
+                    else:
+                        info["header_types"].append("unique")
+                
+                if section.footer:
+                    info["has_footers"] = True
+                    info["footer_count"] += 1
+                    if section.footer.is_linked_to_previous:
+                        info["footer_types"].append("linked")
+                    else:
+                        info["footer_types"].append("unique")
+            
+            return info
+        except Exception as e:
+            return {"error": f"Failed to analyze headers/footers: {e}"}

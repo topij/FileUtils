@@ -11,7 +11,7 @@ from pathlib import Path
 project_root = Path(__file__).resolve().parent.parent
 src_path = str(project_root / "src")
 if src_path not in sys.path:
-    sys.path.append(src_path)
+    sys.path.insert(0, src_path)  # Insert at beginning to prioritize
 
 from FileUtils import FileUtils, OutputFileType
 
@@ -25,11 +25,12 @@ def demonstrate_enhanced_docx():
         config_override={
             "docx_templates": {
                 "template_dir": "data/templates",
-                "default_template": "IP-template-doc.docx",
+                "default_template": "style-template-doc.docx",
                 "templates": {
-                    "default": "IP-template-doc.docx",
-                    "review": "IP-template-doc.docx",
-                    "report": "IP-template-doc.docx"
+                    "default": "style-template-doc.docx",
+                    "review": "style-template-doc.docx",
+                    "report": "style-template-doc.docx",
+                    "ip_template": "IP-template-doc.docx"  # Personal IP template
                 }
             },
             "style_mapping": {
@@ -179,9 +180,19 @@ End of document."""
         available_templates = template_manager.list_available_templates()
         print(f"Available templates: {list(available_templates.keys())}")
         
-        # Get template info
+        # Get template info including headers/footers
         template_info = template_manager.get_template_info("default")
         print(f"Default template info: {template_info}")
+        
+        # Check for headers and footers
+        if "headers_footers" in template_info:
+            hf_info = template_info["headers_footers"]
+            print(f"Template has headers: {hf_info.get('has_headers', False)}")
+            print(f"Template has footers: {hf_info.get('has_footers', False)}")
+            if hf_info.get('has_headers'):
+                print(f"Header count: {hf_info.get('header_count', 0)}")
+            if hf_info.get('has_footers'):
+                print(f"Footer count: {hf_info.get('footer_count', 0)}")
         
     except ImportError:
         print("Template management not available (templates module not found)")

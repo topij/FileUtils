@@ -87,18 +87,18 @@ class MarkdownToDocxConverter:
         return Document()
     
     def _clear_template_content(self, doc: Document):
-        """Clear template content while preserving styles."""
-        # Remove all paragraphs
+        """Clear template content while preserving styles, headers, and footers."""
+        # Remove all paragraphs from main document body only
         while len(doc.paragraphs) > 0:
             p = doc.paragraphs[0]._element
             p.getparent().remove(p)
         
-        # Remove all tables
+        # Remove all tables from main document body only
         while len(doc.tables) > 0:
             t = doc.tables[0]._element
             t.getparent().remove(t)
         
-        # Clear document body
+        # Clear document body while preserving headers/footers
         try:
             body = doc._body
             for element in list(body):
@@ -106,6 +106,9 @@ class MarkdownToDocxConverter:
                     body.remove(element)
         except Exception:
             pass
+        
+        # Note: Headers and footers are preserved automatically by python-docx
+        # They are stored separately from the main document body
     
     def _add_reviewer_instructions(self, doc: Document):
         """Add reviewer instructions section."""

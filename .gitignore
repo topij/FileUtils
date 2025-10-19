@@ -44,7 +44,17 @@ old_code/
 *.txt
 *.pyc
 
-# data directories
+# data directories (ignore most content)
+# data/raw/
+# data/processed/
+# data/temp/
+# data/cache/
+# data/logs/
+
+# Keep the the generic template in the repository
+!data/templates/style-template-doc.docx
+# but ignore the rest of the data directory files
+data/templates/
 data/
 
 # Don't ignore the following files

@@ -384,12 +384,23 @@ class LocalStorage(BaseStorage):
         if isinstance(content, str) and self._is_markdown_content(content):
             return self._save_markdown_as_docx(content, path, **kwargs)
         
-        # Check if template is specified
+        # Check if template is specified, otherwise use default template
         template_name = kwargs.get("template")
+        if template_name is None:
+            # Use default template if no template specified
+            try:
+                from ..templates import DocxTemplateManager
+                template_manager = DocxTemplateManager(self.config)
+                default_template = template_manager.template_config.get("default_template")
+                if default_template:
+                    template_name = "default"  # Use the default template name
+            except ImportError:
+                pass  # Fall back to no template if template system not available
+        
         if template_name:
             return self._save_with_template(content, path, template_name, **kwargs)
         
-        # Default DOCX creation
+        # Fallback: Default DOCX creation without template
         doc = Document()
         
         if isinstance(content, str):
@@ -476,6 +487,7 @@ class LocalStorage(BaseStorage):
     def _save_with_template(self, content: Union[str, Dict[str, Any]], path: Path, template_name: str, **kwargs) -> str:
         """Save content using a specific template."""
         try:
+            from docx import Document
             from ..templates import DocxTemplateManager
             
             template_manager = DocxTemplateManager(self.config)
@@ -517,18 +529,18 @@ class LocalStorage(BaseStorage):
             raise StorageOperationError(f"Failed to save with template '{template_name}': {e}") from e
     
     def _clear_template_content(self, doc):
-        """Clear template content while preserving styles."""
-        # Remove all paragraphs
+        """Clear template content while preserving styles, headers, and footers."""
+        # Remove all paragraphs from main document body only
         while len(doc.paragraphs) > 0:
             p = doc.paragraphs[0]._element
             p.getparent().remove(p)
         
-        # Remove all tables
+        # Remove all tables from main document body only
         while len(doc.tables) > 0:
             t = doc.tables[0]._element
             t.getparent().remove(t)
         
-        # Clear document body
+        # Clear document body while preserving headers/footers
         try:
             body = doc._body
             for element in list(body):
@@ -536,6 +548,9 @@ class LocalStorage(BaseStorage):
                     body.remove(element)
         except Exception:
             pass
+        
+        # Note: Headers and footers are preserved automatically by python-docx
+        # They are stored separately from the main document body
 
     def _load_docx(self, path: Path, **kwargs) -> str:
         """Load DOCX file and extract text content."""

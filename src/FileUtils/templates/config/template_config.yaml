@@ -5,14 +5,15 @@
 
 # Template directory and file settings
 template_dir: "templates"
-default_template: "IP-template-doc.docx"
+default_template: "style-template-doc.docx"
 fallback_template: null  # Use python-docx default if no template found
 
 # Available templates mapping (all should be .docx files)
 templates:
-  default: "IP-template-doc.docx"
-  review: "IP-template-doc.docx"  # Can be different template for reviews
-  report: "IP-template-doc.docx"  # Can be different template for reports
+  default: "style-template-doc.docx"  # Generic template for sharing
+  review: "style-template-doc.docx"   # Can be different template for reviews
+  report: "style-template-doc.docx"   # Can be different template for reports
+  ip_template: "IP-template-doc.docx"  # Personal IP template (easy to switch to)
   simple: null  # Use default document (no template)
 
 # Style mappings for DOCX elements

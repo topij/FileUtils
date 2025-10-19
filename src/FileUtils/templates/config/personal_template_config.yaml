@@ -1,0 +1,47 @@
+# Personal Template Configuration for FileUtils
+# 
+# This file allows you to easily switch back to your personal IP template
+# Copy this file to override the default template configuration
+
+# Template directory and file settings
+template_dir: "templates"
+default_template: "IP-template-doc.docx"  # Your personal IP template
+fallback_template: null
+
+# Available templates mapping
+templates:
+  default: "IP-template-doc.docx"  # Your personal IP template
+  review: "IP-template-doc.docx"   # Your personal IP template
+  report: "IP-template-doc.docx"    # Your personal IP template
+  generic: "style-template-doc.docx"  # Generic template for sharing
+  simple: null  # Use default document (no template)
+
+# Style mappings for DOCX elements (same as default)
+style_mapping:
+  # Table styles (with fallback chain)
+  table: "IP-table_light"
+  table_fallback: "IP-table"
+  table_default: "Table Grid"
+  
+  # Heading styles
+  heading_1: "Heading 1"
+  heading_2: "Heading 2"
+  heading_3: "Heading 3"
+  
+  # List styles
+  list_bullet: "List Bullet"
+  list_number: "List Number"
+  list_paragraph: "List Paragraph"
+  
+  # Text styles
+  normal: "Normal"
+
+# Markdown conversion options
+markdown_options:
+  add_provenance: true
+  add_reviewer_instructions: false
+  checkbox_symbols:
+    unchecked: "☐"
+    checked: "☑"
+  table_style_fallback: true
+  preserve_formatting: true
