@@ -1,0 +1,59 @@
+# DOCX Template Configuration for FileUtils
+
+# Template directory and file settings
+template_dir: "templates"
+default_template: "IP-template-doc.docx"
+fallback_template: null  # Use python-docx default if no template found
+
+# Available templates mapping
+templates:
+  default: "IP-template-doc.docx"
+  review: "IP-template-doc.docx"  # Can be different template for reviews
+  report: "IP-template-doc.docx"  # Can be different template for reports
+  simple: null  # Use default document (no template)
+
+# Style mappings for DOCX elements
+style_mapping:
+  # Table styles (with fallback chain)
+  table: "IP-table_light"
+  table_fallback: "IP-table"
+  table_default: "Table Grid"
+  
+  # Heading styles
+  heading_1: "Heading 1"
+  heading_2: "Heading 2"
+  heading_3: "Heading 3"
+  heading_4: "Heading 4"
+  heading_5: "Heading 5"
+  heading_6: "Heading 6"
+  
+  # List styles
+  list_bullet: "List Bullet"
+  list_number: "List Number"
+  list_paragraph: "List Paragraph"
+  
+  # Text styles
+  normal: "Normal"
+  title: "Title"
+  subtitle: "Subtitle"
+
+# Markdown conversion options
+markdown_options:
+  # Content processing
+  add_provenance: true
+  add_reviewer_instructions: false
+  preserve_formatting: true
+  
+  # Formatting options
+  checkbox_symbols:
+    unchecked: "☐"
+    checked: "☑"
+    font: "Segoe UI Symbol"
+    size: 12
+  
+  # Link processing
+  process_links: true  # Convert [text](link) to just text
+  
+  # Table processing
+  skip_table_separators: true
+  auto_detect_tables: true

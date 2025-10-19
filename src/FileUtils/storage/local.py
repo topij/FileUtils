@@ -371,7 +371,7 @@ class LocalStorage(BaseStorage):
             raise StorageOperationError(f"Failed to load document: {e}") from e
 
     def _save_docx(self, content: Union[str, Dict[str, Any]], path: Path, **kwargs) -> str:
-        """Save content to DOCX format using python-docx."""
+        """Save content to DOCX format using python-docx with template support."""
         try:
             from docx import Document
             from docx.shared import Inches
@@ -380,6 +380,16 @@ class LocalStorage(BaseStorage):
                 "python-docx not installed. Install with: pip install 'FileUtils[documents]'"
             )
 
+        # Check if this is markdown content that should be converted
+        if isinstance(content, str) and self._is_markdown_content(content):
+            return self._save_markdown_as_docx(content, path, **kwargs)
+        
+        # Check if template is specified
+        template_name = kwargs.get("template")
+        if template_name:
+            return self._save_with_template(content, path, template_name, **kwargs)
+        
+        # Default DOCX creation
         doc = Document()
         
         if isinstance(content, str):
@@ -408,6 +418,124 @@ class LocalStorage(BaseStorage):
 
         doc.save(path)
         return str(path)
+    
+    def _is_markdown_content(self, content: str) -> bool:
+        """Check if content looks like markdown."""
+        # Simple heuristics to detect markdown
+        markdown_indicators = [
+            content.startswith('#'),
+            '##' in content,
+            '###' in content,
+            '- ' in content,
+            '* ' in content,
+            '|' in content and '|' in content.split('\n')[0] if '\n' in content else False,
+            '**' in content,
+            '`' in content
+        ]
+        return any(markdown_indicators)
+    
+    def _save_markdown_as_docx(self, markdown_content: str, path: Path, **kwargs) -> str:
+        """Save markdown content as DOCX using template system."""
+        try:
+            from ..templates import DocxTemplateManager, MarkdownToDocxConverter, StyleMapper
+            
+            # Initialize template system
+            template_manager = DocxTemplateManager(self.config)
+            style_mapper = StyleMapper()
+            converter = MarkdownToDocxConverter(template_manager, style_mapper)
+            
+            # Get conversion options
+            template_name = kwargs.get("template")
+            add_provenance = kwargs.get("add_provenance", True)
+            add_reviewer_instructions = kwargs.get("add_reviewer_instructions", False)
+            source_file = kwargs.get("source_file")
+            
+            # Convert markdown to DOCX
+            doc = converter.convert_markdown_to_docx(
+                markdown_content=markdown_content,
+                template_name=template_name,
+                add_provenance=add_provenance,
+                add_reviewer_instructions=add_reviewer_instructions,
+                source_file=source_file
+            )
+            
+            # Save document
+            doc.save(path)
+            return str(path)
+            
+        except ImportError as e:
+            # Fallback to simple conversion if template system not available
+            self.logger.warning(f"Template system not available, using simple conversion: {e}")
+            doc = Document()
+            doc.add_paragraph(markdown_content)
+            doc.save(path)
+            return str(path)
+        except Exception as e:
+            raise StorageOperationError(f"Failed to convert markdown to DOCX: {e}") from e
+    
+    def _save_with_template(self, content: Union[str, Dict[str, Any]], path: Path, template_name: str, **kwargs) -> str:
+        """Save content using a specific template."""
+        try:
+            from ..templates import DocxTemplateManager
+            
+            template_manager = DocxTemplateManager(self.config)
+            template_path = template_manager.get_template_path(template_name)
+            
+            if template_path and template_path.exists():
+                # Load template
+                doc = Document(template_path)
+                
+                # Clear template content
+                self._clear_template_content(doc)
+                
+                # Add content
+                if isinstance(content, str):
+                    doc.add_paragraph(content)
+                elif isinstance(content, dict):
+                    if "title" in content:
+                        doc.add_heading(content["title"], 0)
+                    if "sections" in content:
+                        for section in content["sections"]:
+                            if "heading" in section:
+                                doc.add_heading(section["heading"], level=section.get("level", 1))
+                            if "text" in section:
+                                doc.add_paragraph(section["text"])
+                            if "table" in section and isinstance(section["table"], list):
+                                table = doc.add_table(rows=len(section["table"]), cols=len(section["table"][0]))
+                                for i, row in enumerate(section["table"]):
+                                    for j, cell in enumerate(row):
+                                        table.cell(i, j).text = str(cell)
+                
+                doc.save(path)
+                return str(path)
+            else:
+                # Fallback to default if template not found
+                self.logger.warning(f"Template '{template_name}' not found, using default")
+                return self._save_docx(content, path, **{k: v for k, v in kwargs.items() if k != 'template'})
+                
+        except Exception as e:
+            raise StorageOperationError(f"Failed to save with template '{template_name}': {e}") from e
+    
+    def _clear_template_content(self, doc):
+        """Clear template content while preserving styles."""
+        # Remove all paragraphs
+        while len(doc.paragraphs) > 0:
+            p = doc.paragraphs[0]._element
+            p.getparent().remove(p)
+        
+        # Remove all tables
+        while len(doc.tables) > 0:
+            t = doc.tables[0]._element
+            t.getparent().remove(t)
+        
+        # Clear document body
+        try:
+            body = doc._body
+            for element in list(body):
+                if element.tag.endswith('p') or element.tag.endswith('tbl'):
+                    body.remove(element)
+        except Exception:
+            pass
 
     def _load_docx(self, path: Path, **kwargs) -> str:
         """Load DOCX file and extract text content."""

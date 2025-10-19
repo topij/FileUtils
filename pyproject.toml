@@ -27,9 +27,9 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["FileUtils", "FileUtils.core", "FileUtils.storage", "FileUtils.config", "FileUtils.utils"]
+packages = ["FileUtils", "FileUtils.core", "FileUtils.storage", "FileUtils.config", "FileUtils.utils", "FileUtils.templates"]
 package-dir = {"" = "src"}
-package-data = { "FileUtils" = ["config/*.yaml"] }
+package-data = { "FileUtils" = ["config/*.yaml", "templates/config/*.yaml"] }
 
 [project.optional-dependencies]
 azure = [
