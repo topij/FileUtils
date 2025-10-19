@@ -106,6 +106,78 @@ tests/
   - Multi-sheet workbooks maintain structure
   - Data integrity through entire process
 
+#### **Configurable Directory Tests**
+
+##### **`test_configurable_directory_default`**
+- **What**: Tests default directory configuration behavior
+- **Why**: Validates backward compatibility and default settings
+- **Key API**: `_get_directory_config()`, `get_data_path(data_type)`
+- **Validates**:
+  - Default configuration uses "data" as main directory
+  - Subdirectories use standard names ("raw", "processed", "templates")
+  - Path generation works with default settings
+  - Directories are created automatically
+
+##### **`test_configurable_directory_custom`**
+- **What**: Tests custom directory configuration
+- **Why**: Validates domain-specific directory naming
+- **Key API**: `FileUtils(config_override=custom_config)`
+- **Validates**:
+  - Custom main directory name is used
+  - Custom subdirectory names are applied
+  - Path resolution works with custom configuration
+  - Directory structure matches configuration
+
+##### **`test_configurable_directory_file_operations`**
+- **What**: Tests file operations with custom directory configuration
+- **Why**: Validates that all file operations work with custom directories
+- **Key API**: `save_data_to_storage()`, `load_single_file()`
+- **Validates**:
+  - Files are saved to custom directories
+  - Files are loaded from custom directories
+  - Both raw and processed operations work correctly
+  - Data integrity is maintained
+
+##### **`test_configurable_directory_excel_csv_conversion`**
+- **What**: Tests Excel ↔ CSV conversion with custom directory configuration
+- **Why**: Validates that conversion workflows work with custom directories
+- **Key API**: `convert_excel_to_csv_with_structure()`, `convert_csv_to_excel_workbook()`
+- **Validates**:
+  - Excel files are read from custom raw directory
+  - CSV files are created in custom processed directory
+  - Structure JSON is saved to custom processed directory
+  - Reconstruction works with custom directory paths
+
+##### **`test_configurable_directory_create_directory`**
+- **What**: Tests directory creation with custom configuration
+- **Why**: Validates directory creation with configurable parent directories
+- **Key API**: `create_directory(directory_name, parent_dir=None)`
+- **Validates**:
+  - Directory creation uses configured data directory by default
+  - Explicit parent directory specification works
+  - Directories are created in correct locations
+  - Legacy validation still works for explicit parents
+
+##### **`test_configurable_directory_backward_compatibility`**
+- **What**: Tests backward compatibility with existing projects
+- **Why**: Ensures existing projects continue working unchanged
+- **Key API**: `FileUtils()` (default initialization)
+- **Validates**:
+  - Default configuration uses "data" directory
+  - Existing file operations work unchanged
+  - No breaking changes for existing projects
+  - Path structure remains consistent
+
+##### **`test_configurable_directory_partial_config`**
+- **What**: Tests partial configuration (only data_directory specified)
+- **Why**: Validates flexible configuration options
+- **Key API**: `FileUtils(config_override=partial_config)`
+- **Validates**:
+  - Custom main directory name is used
+  - Default subdirectory names are applied
+  - Configuration fallback behavior works correctly
+  - Mixed configuration scenarios work properly
+
 #### **Subpath Operations**
 - **`test_save_single_dataframe_with_subpath`**: Tests saving with subdirectories
 - **`test_load_single_file_with_subpath`**: Tests loading from subdirectories
@@ -353,8 +425,16 @@ pytest --cov=FileUtils
 - **Fast**: Complete test suite runs in < 1 minute
 - **Maintainable**: Clear test structure and naming
 
+### Test Count Summary
+
+- **Unit Tests**: 54 tests covering core functionality
+- **Integration Tests**: 3 tests covering end-to-end workflows
+- **Total Coverage**: 57 tests across all major features
+- **Configurable Directory Tests**: 7 new tests for directory customization
+- **Excel ↔ CSV Tests**: 7 tests for conversion workflows
+
 ## Conclusion
 
-The FileUtils test suite provides comprehensive validation of all core functionality, with particular emphasis on the Excel ↔ CSV conversion workflow. The tests ensure data integrity, proper error handling, and real-world usability while maintaining fast execution and clear documentation.
+The FileUtils test suite provides comprehensive validation of all core functionality, with particular emphasis on the Excel ↔ CSV conversion workflow and configurable directory features. The tests ensure data integrity, proper error handling, and real-world usability while maintaining fast execution and clear documentation.
 
-The combination of unit tests (for individual method validation) and integration tests (for complete workflow validation) provides confidence that FileUtils is robust, reliable, and ready for production use.
+The combination of unit tests (for individual method validation) and integration tests (for complete workflow validation) provides confidence that FileUtils is robust, reliable, and ready for production use. The configurable directory tests ensure that domain-specific workflows can be implemented seamlessly while maintaining backward compatibility.

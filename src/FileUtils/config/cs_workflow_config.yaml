@@ -1,37 +1,36 @@
-# src/FileUtils/config/default_config.yaml
+# Example configuration for Customer Success documentation workflow
+# This demonstrates how to customize directory names for domain-specific projects
 
+# Directory configuration
+directories:
+  # Use "documents" instead of "data" for document-focused projects
+  data_directory: "documents"
+  
+  # Customize subdirectory names if needed
+  subdirectories:
+    raw: "raw"           # Product documentation
+    processed: "processed"  # CS plans and documents
+    templates: "templates"  # DOCX templates
+
+# Standard FileUtils configuration
 csv_delimiter: ";"
 encoding: "utf-8"
 quoting: 0  # csv.QUOTE_MINIMAL
 include_timestamp: true
 logging_level: "INFO"
 
-# Directory configuration
-directories:
-  # Main data directory name (can be customized)
-  data_directory: "data"
-  
-  # Subdirectory names within the data directory
-  subdirectories:
-    raw: "raw"
-    processed: "processed"
-    templates: "templates"
-
 # Legacy directory structure (for backward compatibility)
 directory_structure:
   data:
     - raw
-    - interim
     - processed
-    - external
-    - configurations
+    - templates
   reports:
     - figures
     - outputs
     - tables
   models: []
   src: []
-
 
 logging:
   format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

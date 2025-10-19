@@ -18,6 +18,7 @@ FileUtils includes a comprehensive collection of example scripts that demonstrat
 | [`document_types.py`](#document-types) | Document functionality | Beginner | DOCX, Markdown, PDF |
 | [`configuration.py`](#configuration) | Configuration options | Beginner | Custom configs, settings |
 | [`azure_storage.py`](#azure-storage) | Azure integration | Intermediate | Cloud storage, Azure Blob |
+| [`configurable_directories.py`](#configurable-directories) | Domain-specific directory customization | Intermediate | Custom directory names, workflow examples |
 | [`FileUtils_tutorial.ipynb`](#tutorial-notebook) | Comprehensive tutorial | All levels | Interactive learning |
 
 ---
@@ -893,6 +894,77 @@ The example creates:
 - Perfect for data pipelines and collaborative work
 - Provides audit trail of all modifications
 - Handles missing files gracefully
+
+---
+
+## `configurable_directories.py`
+
+### Purpose
+Demonstrates how to use FileUtils with custom directory names for domain-specific projects. Perfect for document processing, content creation, research projects, or any workflow where "data" doesn't make sense.
+
+### Features
+- **Customer Success Workflow**: `cs_workflow/` with `product_docs/` and `cs_documents/`
+- **Content Creation Workflow**: `assets/` with `source_materials/` and `final_content/`
+- **Research Project Workflow**: `experiments/` with `data_collection/` and `analysis_results/`
+- **Backward Compatibility**: Demonstrates existing projects continue working
+- **Partial Configuration**: Shows flexible configuration options
+
+### Use Cases
+- **Document Processing**: Use `documents/` instead of `data/`
+- **Content Creation**: Use `assets/` instead of `data/`
+- **Research Projects**: Use `experiments/` instead of `data/`
+- **Customer Success**: Use `cs_workflow/` instead of `data/`
+
+### Running Instructions
+
+```bash
+# Run the complete demonstration
+python examples/configurable_directories.py
+```
+
+### Key Code Patterns
+
+**Configuration Setup:**
+```python
+# Customer Success workflow
+cs_config = {
+    "directories": {
+        "data_directory": "cs_workflow",
+        "subdirectories": {
+            "raw": "product_docs",
+            "processed": "cs_documents",
+            "templates": "templates"
+        }
+    }
+}
+
+file_utils = FileUtils(project_root=temp_dir, config_override=cs_config)
+```
+
+**File Operations:**
+```python
+# All operations automatically use custom directories
+file_utils.save_data_to_storage(data, output_filetype=OutputFileType.CSV, 
+                                output_type="raw")  # → cs_workflow/product_docs/
+
+file_utils.load_single_file("data.csv", input_type="raw")  # → cs_workflow/product_docs/data.csv
+```
+
+**Excel ↔ CSV Conversion:**
+```python
+# Conversion works seamlessly with custom directories
+csv_files, structure_file = file_utils.convert_excel_to_csv_with_structure(
+    "workbook.xlsx", input_type="raw", output_type="processed"
+)
+# → cs_workflow/product_docs/workbook.xlsx → cs_workflow/cs_documents/*.csv
+```
+
+**Benefits**:
+- Domain-specific directory names improve project clarity
+- Seamless integration with all FileUtils features
+- Backward compatibility with existing projects
+- Flexible configuration options for different workflows
+- Perfect for Customer Success, Content Creation, and Research projects
 
 ---
 

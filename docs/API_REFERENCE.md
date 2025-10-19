@@ -270,6 +270,34 @@ The method creates a reconstruction metadata JSON file with information about:
 - Sheets successfully reconstructed vs. missing files
 - Current dimensions and column information for each sheet
 
+##### `_get_directory_config`
+
+Get directory configuration with fallback to defaults.
+
+```python
+_get_directory_config() -> Dict[str, str]
+```
+
+**Returns:**
+
+- Dictionary with directory configuration including:
+  - `data_directory`: Main directory name (e.g., "data", "documents")
+  - `raw`: Raw data subdirectory name
+  - `processed`: Processed data subdirectory name
+  - `templates`: Templates subdirectory name
+
+**Example:**
+
+```python
+dir_config = file_utils._get_directory_config()
+# Returns: {
+#     "data_directory": "documents",
+#     "raw": "product_docs",
+#     "processed": "cs_documents",
+#     "templates": "templates"
+# }
+```
+
 ##### `load_multiple_files`
 
 Load multiple files into a dictionary of DataFrames. File formats are automatically detected from extensions.

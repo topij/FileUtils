@@ -349,6 +349,42 @@ excel_path = file_utils.convert_csv_to_excel_workbook(
 - Sheet details (dimensions, columns, data types, null counts)
 - Data quality metrics (memory usage, index information)
 
+### Configurable Directory Names
+
+Customize directory names to match your project domain. Perfect for document processing, content creation, or research projects.
+
+**Configuration:**
+```yaml
+# config.yaml
+directories:
+  data_directory: "documents"  # Instead of "data"
+  subdirectories:
+    raw: "product_docs"        # Instead of "raw"
+    processed: "cs_documents"  # Instead of "processed"
+    templates: "templates"     # DOCX templates
+```
+
+**Usage:**
+```python
+# Initialize with custom configuration
+file_utils = FileUtils(config_file="config.yaml")
+
+# Files will be saved to:
+# documents/product_docs/     (instead of data/raw/)
+# documents/cs_documents/     (instead of data/processed/)
+# documents/templates/       (DOCX templates)
+
+# All FileUtils operations work seamlessly
+file_utils.save_data_to_storage(data, output_filetype=OutputFileType.CSV, 
+                                output_type="raw")  # → documents/product_docs/
+```
+
+**Perfect for:**
+- **Document Projects**: `documents/` instead of `data/`
+- **Content Creation**: `assets/` instead of `data/`
+- **Research**: `experiments/` instead of `data/`
+- **Customer Success**: `cs_workflow/` instead of `data/`
+
 ## Examples
 
 FileUtils includes comprehensive example scripts demonstrating various use cases:
@@ -412,6 +448,7 @@ pytest --cov=FileUtils
 - **Flexibility**: Extensive options for each file format
 - **Reliability**: Robust error handling and logging
 - **Simplicity**: Intuitive API with sensible defaults
+- **Configurable Directories**: Customize directory names for domain-specific projects
 - **Smart Type Handling**: Automatic conversion of pandas types for JSON/YAML documents
 - **Intelligent File Discovery**: Automatic handling of timestamped files when loading
 

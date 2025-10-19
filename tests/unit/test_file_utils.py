@@ -1274,3 +1274,251 @@ def test_excel_csv_roundtrip_workflow(file_utils, sample_df):
     # Verify other sheets are unchanged
     pd.testing.assert_frame_equal(reconstructed_sheets["Customers"], sample_df)
     pd.testing.assert_frame_equal(reconstructed_sheets["Products"], sample_df)
+
+
+# Configurable Directory Tests
+
+def test_configurable_directory_default(file_utils, sample_df):
+    """Test default directory configuration."""
+    # Test default configuration
+    dir_config = file_utils._get_directory_config()
+    
+    assert dir_config["data_directory"] == "data"
+    assert dir_config["raw"] == "raw"
+    assert dir_config["processed"] == "processed"
+    assert dir_config["templates"] == "templates"
+    
+    # Test path generation
+    raw_path = file_utils.get_data_path("raw")
+    processed_path = file_utils.get_data_path("processed")
+    
+    assert "data/raw" in str(raw_path)
+    assert "data/processed" in str(processed_path)
+    assert raw_path.exists()
+    assert processed_path.exists()
+
+
+def test_configurable_directory_custom(temp_dir, sample_df):
+    """Test custom directory configuration."""
+    # Create custom config
+    custom_config = {
+        "directories": {
+            "data_directory": "documents",
+            "subdirectories": {
+                "raw": "product_docs",
+                "processed": "cs_documents",
+                "templates": "templates"
+            }
+        }
+    }
+    
+    file_utils = FileUtils(project_root=temp_dir, config_override=custom_config)
+    
+    # Test custom configuration
+    dir_config = file_utils._get_directory_config()
+    
+    assert dir_config["data_directory"] == "documents"
+    assert dir_config["raw"] == "product_docs"
+    assert dir_config["processed"] == "cs_documents"
+    assert dir_config["templates"] == "templates"
+    
+    # Test path generation
+    raw_path = file_utils.get_data_path("raw")
+    processed_path = file_utils.get_data_path("processed")
+    
+    assert "documents/product_docs" in str(raw_path)
+    assert "documents/cs_documents" in str(processed_path)
+    assert raw_path.exists()
+    assert processed_path.exists()
+
+
+def test_configurable_directory_file_operations(temp_dir, sample_df):
+    """Test file operations with custom directory configuration."""
+    # Create custom config
+    custom_config = {
+        "directories": {
+            "data_directory": "documents",
+            "subdirectories": {
+                "raw": "product_docs",
+                "processed": "cs_documents",
+                "templates": "templates"
+            }
+        }
+    }
+    
+    file_utils = FileUtils(project_root=temp_dir, config_override=custom_config)
+    
+    # Test saving data
+    saved_files, _ = file_utils.save_data_to_storage(
+        data=sample_df,
+        output_filetype=OutputFileType.CSV,
+        output_type="raw",
+        file_name="test_data"
+    )
+    
+    # Verify file was saved in custom directory
+    saved_path = list(saved_files.values())[0]
+    assert "documents/product_docs" in str(saved_path)
+    assert Path(saved_path).exists()
+    
+    # Test loading data
+    loaded_df = file_utils.load_single_file("test_data.csv", input_type="raw")
+    pd.testing.assert_frame_equal(loaded_df, sample_df)
+    
+    # Test saving to processed directory
+    saved_files, _ = file_utils.save_data_to_storage(
+        data=sample_df,
+        output_filetype=OutputFileType.CSV,
+        output_type="processed",
+        file_name="processed_data"
+    )
+    
+    # Verify file was saved in custom processed directory
+    saved_path = list(saved_files.values())[0]
+    assert "documents/cs_documents" in str(saved_path)
+    assert Path(saved_path).exists()
+
+
+def test_configurable_directory_excel_csv_conversion(temp_dir, sample_df):
+    """Test Excel ↔ CSV conversion with custom directory configuration."""
+    # Create custom config
+    custom_config = {
+        "directories": {
+            "data_directory": "documents",
+            "subdirectories": {
+                "raw": "product_docs",
+                "processed": "cs_documents",
+                "templates": "templates"
+            }
+        }
+    }
+    
+    file_utils = FileUtils(project_root=temp_dir, config_override=custom_config)
+    
+    # Create Excel workbook
+    workbook_data = {
+        "Sheet1": sample_df,
+        "Sheet2": sample_df.copy()
+    }
+    
+    saved_files, _ = file_utils.save_data_to_storage(
+        data=workbook_data,
+        output_filetype=OutputFileType.XLSX,
+        output_type="raw",
+        file_name="test_workbook"
+    )
+    
+    excel_file_path = list(saved_files.values())[0]
+    assert "documents/product_docs" in str(excel_file_path)
+    
+    # Convert Excel to CSV
+    csv_files, structure_file = file_utils.convert_excel_to_csv_with_structure(
+        excel_file_path=Path(excel_file_path).name,
+        input_type="raw",
+        output_type="processed",
+        file_name="converted_workbook"
+    )
+    
+    # Verify CSV files were created in custom processed directory
+    assert len(csv_files) == 2
+    for sheet_name, csv_path in csv_files.items():
+        assert "documents/cs_documents" in str(csv_path)
+        assert Path(csv_path).exists()
+    
+    # Verify structure file was created in custom processed directory
+    assert "documents/cs_documents" in str(structure_file)
+    assert Path(structure_file).exists()
+    
+    # Test CSV to Excel reconstruction
+    reconstructed_excel = file_utils.convert_csv_to_excel_workbook(
+        structure_json_path=structure_file,
+        input_type="processed",
+        output_type="processed",
+        file_name="reconstructed_workbook"
+    )
+    
+    # Verify reconstructed Excel was created in custom processed directory
+    assert "documents/cs_documents" in str(reconstructed_excel)
+    assert Path(reconstructed_excel).exists()
+
+
+def test_configurable_directory_create_directory(temp_dir):
+    """Test create_directory with custom directory configuration."""
+    # Create custom config
+    custom_config = {
+        "directories": {
+            "data_directory": "documents",
+            "subdirectories": {
+                "raw": "product_docs",
+                "processed": "cs_documents",
+                "templates": "templates"
+            }
+        }
+    }
+    
+    file_utils = FileUtils(project_root=temp_dir, config_override=custom_config)
+    
+    # Test creating directory with default parent (should use configured data directory)
+    custom_dir = file_utils.create_directory("ai_plans")
+    
+    assert "documents/ai_plans" in str(custom_dir)
+    assert custom_dir.exists()
+    
+    # Test creating directory with explicit parent
+    custom_dir2 = file_utils.create_directory("reports", parent_dir="documents")
+    
+    assert "documents/reports" in str(custom_dir2)
+    assert custom_dir2.exists()
+
+
+def test_configurable_directory_backward_compatibility(file_utils, sample_df):
+    """Test backward compatibility with existing projects."""
+    # Test that existing projects still work with default configuration
+    raw_path = file_utils.get_data_path("raw")
+    processed_path = file_utils.get_data_path("processed")
+    
+    # Should still use "data" directory
+    assert "data/raw" in str(raw_path)
+    assert "data/processed" in str(processed_path)
+    
+    # Test file operations still work
+    saved_files, _ = file_utils.save_data_to_storage(
+        data=sample_df,
+        output_filetype=OutputFileType.CSV,
+        output_type="raw",
+        file_name="compatibility_test"
+    )
+    
+    saved_path = list(saved_files.values())[0]
+    assert "data/raw" in str(saved_path)
+    assert Path(saved_path).exists()
+
+
+def test_configurable_directory_partial_config(temp_dir, sample_df):
+    """Test partial directory configuration (only data_directory specified)."""
+    # Create partial config (only data_directory)
+    partial_config = {
+        "directories": {
+            "data_directory": "documents"
+            # subdirectories not specified - should use defaults
+        }
+    }
+    
+    file_utils = FileUtils(project_root=temp_dir, config_override=partial_config)
+    
+    # Test configuration
+    dir_config = file_utils._get_directory_config()
+    
+    assert dir_config["data_directory"] == "documents"
+    assert dir_config["raw"] == "raw"  # Default
+    assert dir_config["processed"] == "processed"  # Default
+    assert dir_config["templates"] == "templates"  # Default
+    
+    # Test path generation
+    raw_path = file_utils.get_data_path("raw")
+    processed_path = file_utils.get_data_path("processed")
+    
+    assert "documents/raw" in str(raw_path)
+    assert "documents/processed" in str(processed_path)
+    assert raw_path.exists()
+    assert processed_path.exists()

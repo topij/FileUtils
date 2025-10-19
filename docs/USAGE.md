@@ -172,6 +172,83 @@ excel_path = file_utils.convert_csv_to_excel_workbook(
 - Creates reconstruction metadata for audit trail
 - Maintains original sheet names and structure
 
+### Configurable Directory Names
+
+Customize directory names to match your project domain and workflow.
+
+#### Basic Configuration
+
+```yaml
+# config.yaml
+directories:
+  data_directory: "documents"  # Main directory name
+  subdirectories:
+    raw: "product_docs"        # Input directory
+    processed: "cs_documents"  # Output directory
+    templates: "templates"     # Template directory
+```
+
+#### Usage Examples
+
+```python
+# Initialize with custom configuration
+file_utils = FileUtils(config_file="config.yaml")
+
+# All operations automatically use custom directories
+file_utils.save_data_to_storage(data, output_filetype=OutputFileType.CSV, 
+                                output_type="raw")  # → documents/product_docs/
+
+file_utils.load_single_file("data.csv", input_type="raw")  # → documents/product_docs/data.csv
+
+# Excel ↔ CSV conversion works seamlessly
+csv_files, structure_file = file_utils.convert_excel_to_csv_with_structure(
+    "workbook.xlsx", input_type="raw", output_type="processed"
+)
+# → documents/product_docs/workbook.xlsx → documents/cs_documents/*.csv
+```
+
+#### Domain-Specific Examples
+
+**Document Processing:**
+```yaml
+directories:
+  data_directory: "documents"
+  subdirectories:
+    raw: "source_docs"
+    processed: "ai_processed"
+    templates: "templates"
+```
+
+**Content Creation:**
+```yaml
+directories:
+  data_directory: "assets"
+  subdirectories:
+    raw: "source_materials"
+    processed: "final_content"
+    templates: "brand_templates"
+```
+
+**Research Projects:**
+```yaml
+directories:
+  data_directory: "experiments"
+  subdirectories:
+    raw: "data_collection"
+    processed: "analysis_results"
+    templates: "report_templates"
+```
+
+#### Backward Compatibility
+
+Existing projects continue to work unchanged. The default configuration uses the traditional `data/` directory structure:
+
+```python
+# Default behavior (unchanged)
+file_utils = FileUtils()
+# Uses: project_root/data/raw/ and project_root/data/processed/
+```
+
 ### JSON Files
 
 JSON files can be used in two ways: as DataFrame storage or as structured documents.

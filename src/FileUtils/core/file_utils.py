@@ -106,7 +106,15 @@ class FileUtils:
     def _get_default_config(self) -> Dict[str, Any]:
         """Get minimal default configuration."""
         return {
-            "directory_structure": {"data": ["raw", "processed"]},
+            "directories": {
+                "data_directory": "data",
+                "subdirectories": {
+                    "raw": "raw",
+                    "processed": "processed",
+                    "templates": "templates"
+                }
+            },
+            "directory_structure": {"data": ["raw", "processed"]},  # Legacy support
             "csv_delimiter": ";",
             "encoding": "utf-8",
             "quoting": 0,
@@ -183,6 +191,30 @@ class FileUtils:
 
         return LocalStorage(self.config)
 
+    def _get_directory_config(self) -> Dict[str, str]:
+        """Get directory configuration with fallback to defaults.
+        
+        Returns:
+            Dictionary with directory configuration
+        """
+        directories_config = self.config.get("directories", {})
+        
+        # Get data directory name with fallback
+        data_directory = directories_config.get("data_directory", "data")
+        
+        # Get subdirectory names with fallbacks
+        subdirectories = directories_config.get("subdirectories", {})
+        raw_dir = subdirectories.get("raw", "raw")
+        processed_dir = subdirectories.get("processed", "processed")
+        templates_dir = subdirectories.get("templates", "templates")
+        
+        return {
+            "data_directory": data_directory,
+            "raw": raw_dir,
+            "processed": processed_dir,
+            "templates": templates_dir
+        }
+
     def get_data_path(self, data_type: str = "raw") -> Path:
         """Get the path for a specific data directory.
 
@@ -192,16 +224,29 @@ class FileUtils:
         Returns:
             Path to the specified data directory
         """
-        path = self.project_root / "data" / data_type
+        dir_config = self._get_directory_config()
+        data_directory = dir_config["data_directory"]
+        
+        # Map data_type to configured subdirectory name
+        subdirectory_mapping = {
+            "raw": dir_config["raw"],
+            "processed": dir_config["processed"],
+            "templates": dir_config["templates"]
+        }
+        
+        # Use configured subdirectory name or fallback to data_type
+        subdirectory = subdirectory_mapping.get(data_type, data_type)
+        
+        path = self.project_root / data_directory / subdirectory
         path.mkdir(parents=True, exist_ok=True)
         return path
 
-    def create_directory(self, directory_name: str, parent_dir: str = "data") -> Path:
+    def create_directory(self, directory_name: str, parent_dir: str = None) -> Path:
         """Create a new directory within the configured directory structure.
 
         Args:
             directory_name: Name of the new directory to create
-            parent_dir: Parent directory under project root (e.g., "data", "reports", "models")
+            parent_dir: Parent directory under project root. If None, uses configured data directory.
 
         Returns:
             Path: Path to the created directory
@@ -211,13 +256,18 @@ class FileUtils:
             StorageError: If directory creation fails
         """
         try:
-            # Validate parent directory exists in config
-            if parent_dir not in self.config["directory_structure"]:
-                valid_parents = list(self.config["directory_structure"].keys())
-                raise ValueError(
-                    f"Invalid parent directory: {parent_dir}. "
-                    f"Must be one of: {', '.join(valid_parents)}"
-                )
+            if parent_dir is None:
+                # Use configured data directory
+                dir_config = self._get_directory_config()
+                parent_dir = dir_config["data_directory"]
+            else:
+                # Validate parent directory exists in config (legacy support)
+                if "directory_structure" in self.config and parent_dir not in self.config["directory_structure"]:
+                    valid_parents = list(self.config["directory_structure"].keys())
+                    raise ValueError(
+                        f"Invalid parent directory: {parent_dir}. "
+                        f"Must be one of: {', '.join(valid_parents)}"
+                    )
 
             # Create new directory path
             new_dir = self.project_root / parent_dir / directory_name
@@ -225,8 +275,10 @@ class FileUtils:
             # Create directory
             new_dir.mkdir(parents=True, exist_ok=True)
 
-            # Add to config structure if not exists
-            if directory_name not in self.config["directory_structure"][parent_dir]:
+            # Add to config structure if not exists (legacy support)
+            if "directory_structure" in self.config and directory_name not in self.config["directory_structure"].get(parent_dir, []):
+                if parent_dir not in self.config["directory_structure"]:
+                    self.config["directory_structure"][parent_dir] = []
                 self.config["directory_structure"][parent_dir].append(directory_name)
 
             self.logger.info(f"Created directory: {new_dir}")
@@ -362,7 +414,7 @@ class FileUtils:
                 full_path = file_path
             else:
                 # Construct local path
-                base_dir = self.project_root / "data" / input_type
+                base_dir = self.get_data_path(input_type)
                 file_path_obj = Path(file_path)
 
                 if sub_path:
@@ -433,7 +485,7 @@ class FileUtils:
                  full_path = file_path
             else:
                 # Construct local path
-                base_dir = self.project_root / "data" / input_type
+                base_dir = self.get_data_path(input_type)
                 file_path_obj = Path(file_path)
 
                 if sub_path:
@@ -595,7 +647,7 @@ class FileUtils:
                 full_path = file_path
             else:
                 # Construct local path
-                base_dir = self.project_root / "data" / input_type
+                base_dir = self.get_data_path(input_type)
                 file_path_obj = Path(file_path)
 
                 if sub_path:
@@ -651,7 +703,7 @@ class FileUtils:
                 full_path = file_path
             else:
                 # Construct local path
-                base_dir = self.project_root / "data" / input_type
+                base_dir = self.get_data_path(input_type)
                 file_path_obj = Path(file_path)
 
                 if sub_path:
@@ -843,7 +895,7 @@ class FileUtils:
                 full_path = file_path
             else:
                 # Construct local path
-                base_dir = self.project_root / "data" / input_type
+                base_dir = self.get_data_path(input_type)
                 file_path_obj = Path(file_path)
 
                 if sub_path:
