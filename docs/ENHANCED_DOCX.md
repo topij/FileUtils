@@ -19,8 +19,8 @@ file_utils = FileUtils(
         "docx_templates": {
             "template_dir": "templates",
             "templates": {
-                "default": "IP-template-doc.docx",
-                "review": "review-template.docx"
+                "default": "style-template-doc.docx",  # Generic template
+                "personal": "IP-template-doc.docx"      # Personal template
             }
         },
         "style_mapping": {
@@ -303,6 +303,8 @@ Your DOCX templates should:
 
 **Headers and Footers**: The system automatically preserves headers and footers from your template files. This means you can create templates with company logos, page numbers, document titles, or any other header/footer content, and they will be maintained in the generated documents.
 
+**Template Files**: The generic template (`style-template-doc.docx`) is included in the repository for sharing, while personal templates (like `IP-template-doc.docx`) remain private and are ignored by git.
+
 ### Style Names
 
 The system looks for these style names (configurable):
@@ -381,6 +383,11 @@ print(f"Header count: {info['headers_footers']['header_count']}")
 print(f"Footer count: {info['headers_footers']['footer_count']}")
 ```
 
+**Flexible Template Referencing**: The system supports multiple ways to reference templates:
+- **Template names**: `"default"`, `"report"`, `"ip_template"`
+- **Filenames**: `"style-template-doc.docx"`, `"IP-template-doc.docx"`
+- **Names without extension**: `"style-template-doc"`, `"IP-template-doc"`
+
 ## Error Handling
 
 The system includes comprehensive error handling:
@@ -416,7 +423,7 @@ If you're migrating from the old `markdown_to_docx.py` script:
 
 **Old Script:**
 ```python
-converter = MarkdownToDocxConverter("IP-template-doc.docx")
+converter = MarkdownToDocxConverter("style-template-doc.docx")
 converter.convert_file("input.md", "output.docx")
 ```
 
@@ -424,7 +431,7 @@ converter.convert_file("input.md", "output.docx")
 ```python
 file_utils = FileUtils(config_override={
     "docx_templates": {
-        "templates": {"default": "IP-template-doc.docx"}
+        "templates": {"default": "style-template-doc.docx"}
     }
 })
 

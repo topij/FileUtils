@@ -140,7 +140,7 @@ file_utils = FileUtils(
         "docx_templates": {
             "template_dir": "templates",
             "templates": {
-                "default": "IP-template-doc.docx",
+                "default": "style-template-doc.docx",  # Generic template
                 "review": "review-template.docx"
             }
         },
