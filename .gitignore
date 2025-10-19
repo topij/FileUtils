@@ -37,6 +37,7 @@ test_env/
 
 # own
 _archive/
+old_code/
 *.xlsx
 *.csv
 *.json
