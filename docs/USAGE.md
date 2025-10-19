@@ -47,6 +47,34 @@ loaded_df = file_utils.load_single_file(
     sub_path="run_1/results" # Specify the sub_path
 )
 
+# Enhanced DOCX with Template Support
+markdown_content = """# Project Report
+
+## Executive Summary
+This is a comprehensive analysis of our project progress.
+
+## Key Findings
+- **Important**: We've achieved 95% completion
+- [ ] Complete final testing
+- [x] Update documentation
+
+| Metric | Value | Status |
+|--------|-------|--------|
+| Progress | 95% | ✅ On Track |
+| Budget | $45,000 | ✅ Under Budget |
+"""
+
+# Convert markdown to DOCX with template
+saved_path, _ = file_utils.save_document_to_storage(
+    content=markdown_content,
+    output_filetype=OutputFileType.DOCX,
+    output_type="processed",
+    file_name="project_report",
+    template="review",  # Use specific template
+    add_provenance=True,
+    add_reviewer_instructions=True
+)
+
 # Load multiple files from a subdirectory
 # Assume data_a.csv and data_b.csv exist in data/raw/source_x/files/
 multi_loaded = file_utils.load_multiple_files(

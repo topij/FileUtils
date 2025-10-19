@@ -11,7 +11,7 @@ A Python utility package for consistent file operations across local and Azure s
 
 - **Comprehensive File Format Support**
   - **Tabular Data**: CSV (with delimiter auto-detection), Excel (.xlsx, .xls) with multi-sheet support, Parquet (with compression options)
-  - **Document Formats**: Microsoft Word (.docx), Markdown (.md) with YAML frontmatter, PDF (read-only text extraction)
+  - **Document Formats**: Microsoft Word (.docx) with template support, Markdown (.md) with YAML frontmatter, PDF (read-only text extraction)
   - **Multi-Purpose Formats**: JSON and YAML support both DataFrame storage and structured document handling with automatic pandas type conversion
 
 - **Advanced Data Handling**
@@ -148,6 +148,34 @@ saved_path, _ = file_utils.save_document_to_storage(
     sub_path="reports/2024"
 )
 
+# Enhanced DOCX with Template Support
+markdown_content = """# Project Report
+
+## Executive Summary
+This is a comprehensive analysis of our project progress.
+
+## Key Findings
+- **Important**: We've achieved 95% completion
+- [ ] Complete final testing
+- [x] Update documentation
+
+| Metric | Value | Status |
+|--------|-------|--------|
+| Progress | 95% | ✅ On Track |
+| Budget | $45,000 | ✅ Under Budget |
+"""
+
+# Convert markdown to DOCX with template
+saved_path, _ = file_utils.save_document_to_storage(
+    content=markdown_content,
+    output_filetype=OutputFileType.DOCX,
+    output_type="processed",
+    file_name="project_report",
+    template="review",  # Use specific template
+    add_provenance=True,
+    add_reviewer_instructions=True
+)
+
 # Save structured DOCX document
 docx_content = {
     "title": "Project Report",
@@ -241,6 +269,48 @@ saved_path, _ = file_utils.save_document_to_storage(
 )
 ```
 
+## Enhanced DOCX Template System
+
+FileUtils includes a comprehensive DOCX template system with:
+
+- **Template Support**: Use existing DOCX files with custom styles (not .dotx template files)
+- **Markdown Conversion**: Convert markdown content to professionally formatted DOCX
+- **Style Mapping**: Customize how elements are styled in the output
+- **Reviewer Workflow**: Built-in support for document review processes
+- **Provenance Tracking**: Automatic metadata and source tracking
+
+**Important**: FileUtils uses regular `.docx` files as templates, not Microsoft Word `.dotx` template files. The system loads the DOCX file, clears its content, and preserves the styles for use in the generated documents.
+
+```python
+# Initialize with template configuration
+file_utils = FileUtils(
+    config_override={
+        "docx_templates": {
+            "template_dir": "templates",
+            "templates": {
+                "default": "IP-template-doc.docx",
+                "review": "review-template.docx"
+            }
+        },
+        "style_mapping": {
+            "table": "IP-table_light",
+            "heading_1": "Heading 1"
+        }
+    }
+)
+
+# Convert markdown to DOCX with template
+file_utils.save_document_to_storage(
+    content=markdown_content,
+    output_filetype=OutputFileType.DOCX,
+    template="review",
+    add_provenance=True,
+    add_reviewer_instructions=True
+)
+```
+
+For detailed DOCX template documentation, see [Enhanced DOCX Guide](docs/ENHANCED_DOCX.md).
+
 ## Examples
 
 FileUtils includes comprehensive example scripts demonstrating various use cases:
@@ -251,6 +321,7 @@ FileUtils includes comprehensive example scripts demonstrating various use cases
 python examples/data_pipeline.py      # Complete data pipeline
 python examples/ai_workflow.py         # AI/agentic workflows  
 python examples/multi_format_reports.py # Multi-format reporting
+python examples/enhanced_docx.py       # Enhanced DOCX template system
 python examples/error_handling.py      # Robust error handling
 python examples/performance_optimization.py # Large dataset optimization
 ```
@@ -259,6 +330,7 @@ python examples/performance_optimization.py # Large dataset optimization
 - **`basic_usage.py`** - Basic operations (CSV, Excel, metadata)
 - **`data_pipeline.py`** - Complete data science pipeline (7,000+ records)
 - **`ai_workflow.py`** - AI integration (sentiment analysis, recommendations)
+- **`enhanced_docx.py`** - Enhanced DOCX template system (markdown conversion, templates)
 - **`multi_format_reports.py`** - Same data → Excel, PDF, Markdown, JSON
 - **`error_handling.py`** - Production-ready error handling and recovery
 - **`performance_optimization.py`** - Large dataset optimization (50MB+)
@@ -290,6 +362,7 @@ For a practical example, check out my [semantic text analyzer](https://www.githu
 - [Installation Guide](docs/INSTALLATION.md) - Detailed installation instructions
 - [Usage Guide](docs/USAGE.md) - Comprehensive examples and patterns
 - [Document Types Guide](docs/DOCUMENT_TYPES.md) - Rich document formats (DOCX, Markdown, PDF)
+- [Enhanced DOCX Guide](docs/ENHANCED_DOCX.md) - DOCX template system and markdown conversion
 - [Examples Documentation](docs/EXAMPLES.md) - Complete guide to all example scripts
 - [API Reference](docs/API_REFERENCE.md) - Complete API documentation
 - [Azure Setup Guide](docs/AZURE_SETUP.md) - Azure Blob Storage configuration

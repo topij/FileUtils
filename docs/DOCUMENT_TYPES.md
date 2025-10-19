@@ -7,8 +7,22 @@ This guide covers FileUtils' support for rich document formats, perfect for AI/a
 FileUtils now supports three document formats alongside traditional tabular data:
 
 - **Markdown (.md)**: Text-based documents with YAML frontmatter support
-- **Microsoft Word (.docx)**: Structured documents with headings, text, and tables
+- **Microsoft Word (.docx)**: Structured documents with headings, text, and tables, **now with enhanced template support**
 - **PDF (.pdf)**: Text documents with basic formatting (read-only extraction)
+
+## Enhanced DOCX Template System
+
+FileUtils includes a comprehensive DOCX template system that provides:
+
+- **Template Support**: Use existing DOCX files with custom styles (not .dotx template files)
+- **Markdown Conversion**: Convert markdown content to professionally formatted DOCX
+- **Style Mapping**: Customize how elements are styled in the output
+- **Reviewer Workflow**: Built-in support for document review processes
+- **Provenance Tracking**: Automatic metadata and source tracking
+
+**Important**: FileUtils uses regular `.docx` files as templates, not Microsoft Word `.dotx` template files. The system loads the DOCX file, clears its content, and preserves the styles for use in the generated documents.
+
+For detailed DOCX template documentation, see [Enhanced DOCX Guide](ENHANCED_DOCX.md).
 
 ## Document vs. Tabular Data
 
@@ -114,6 +128,56 @@ if isinstance(loaded_content, dict):
 ```
 
 ## DOCX Files
+
+### Enhanced Template Support
+
+DOCX documents now support comprehensive template functionality with markdown conversion:
+
+```python
+# Initialize with template configuration
+file_utils = FileUtils(
+    config_override={
+        "docx_templates": {
+            "template_dir": "templates",
+            "templates": {
+                "default": "IP-template-doc.docx",
+                "review": "review-template.docx"
+            }
+        },
+        "style_mapping": {
+            "table": "IP-table_light",
+            "heading_1": "Heading 1"
+        }
+    }
+)
+
+# Convert markdown to DOCX with template
+markdown_content = """# Project Report
+
+## Executive Summary
+This is a comprehensive analysis of our project progress.
+
+## Key Findings
+- **Important**: We've achieved 95% completion
+- [ ] Complete final testing
+- [x] Update documentation
+
+| Metric | Value | Status |
+|--------|-------|--------|
+| Progress | 95% | ✅ On Track |
+| Budget | $45,000 | ✅ Under Budget |
+"""
+
+saved_path, _ = file_utils.save_document_to_storage(
+    content=markdown_content,
+    output_filetype=OutputFileType.DOCX,
+    output_type="processed",
+    file_name="project_report",
+    template="review",  # Use specific template
+    add_provenance=True,
+    add_reviewer_instructions=True
+)
+```
 
 ### Simple DOCX
 

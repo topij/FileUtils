@@ -11,6 +11,7 @@ FileUtils includes a comprehensive collection of example scripts that demonstrat
 | [`basic_usage.py`](#basic-usage) | Basic operations | Beginner | CSV, Excel, metadata |
 | [`data_pipeline.py`](#data-pipeline) | Complete data pipeline | Intermediate | End-to-end processing |
 | [`ai_workflow.py`](#ai-workflow) | AI/agentic workflows | Intermediate | AI integration, multi-format |
+| [`enhanced_docx.py`](#enhanced-docx) | Enhanced DOCX template system | Intermediate | Template support, markdown conversion |
 | [`multi_format_reports.py`](#multi-format-reports) | Multi-format reporting | Intermediate | Excel, PDF, Markdown, JSON |
 | [`error_handling.py`](#error-handling) | Robust error handling | Advanced | Retry logic, fallbacks |
 | [`performance_optimization.py`](#performance-optimization) | Large dataset optimization | Advanced | Memory management, chunking |
@@ -44,6 +45,7 @@ cd examples/
 python data_pipeline.py
 python ai_workflow.py
 python multi_format_reports.py
+python enhanced_docx.py
 ```
 
 ---
@@ -130,6 +132,53 @@ Demonstrates a complete data science pipeline from raw data generation through a
 - `sales_analysis_report_*.xlsx` - Analysis results
 - `sales_insights_*.md` - Insights document
 - `pipeline_config_*.json` - Configuration
+
+---
+
+### Enhanced DOCX Template System
+
+**File**: `enhanced_docx.py`  
+**Level**: Intermediate  
+**Duration**: ~1-2 minutes  
+
+#### Purpose
+Demonstrates the enhanced DOCX template system with markdown conversion, template support, and customizable styling.
+
+#### Key Features
+- ✅ Template support with custom styles
+- ✅ Markdown to DOCX conversion
+- ✅ Style mapping and fallbacks
+- ✅ Reviewer workflow support
+- ✅ Provenance tracking
+- ✅ Template management utilities
+
+#### What It Does
+1. **Template Configuration**: Sets up template system with custom styles
+2. **Markdown Conversion**: Converts markdown content to professionally formatted DOCX
+3. **Structured Content**: Creates DOCX documents with headings, tables, and formatting
+4. **Template Management**: Demonstrates template listing and validation
+5. **Configuration Options**: Shows custom template and style configuration
+
+#### Sample Output
+```
+=== Enhanced DOCX Template System Demo ===
+✓ Markdown converted to DOCX: /path/to/project_report.docx
+✓ Structured DOCX created: /path/to/technical_spec.docx
+✓ Simple DOCX created: /path/to/simple_doc.docx
+✓ Template management: Available templates listed
+```
+
+#### Use Cases
+- Document generation with templates
+- Markdown to DOCX conversion
+- Professional document formatting
+- Review workflow automation
+- Template management and validation
+
+#### Generated Files
+- `project_report_*.docx` - Markdown converted with template
+- `technical_spec_*.docx` - Structured content with template
+- `simple_doc_*.docx` - Basic DOCX document
 
 ---
 
@@ -470,6 +519,9 @@ python ai_workflow.py
 # Multi-format reports
 python multi_format_reports.py
 
+# Enhanced DOCX template system
+python enhanced_docx.py
+
 # Error handling
 python error_handling.py
 
@@ -509,24 +561,26 @@ jupyter notebook FileUtils_tutorial.ipynb
 
 ## 📊 Example Comparison
 
-| **Feature** | **Basic** | **Pipeline** | **AI** | **Multi-Format** | **Error Handling** | **Performance** |
-|-------------|-----------|---------------|--------|------------------|-------------------|-----------------|
-| **Data Generation** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Multiple Formats** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Error Handling** | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| **Performance Focus** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| **AI Integration** | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| **Large Datasets** | ❌ | ✅ | ❌ | ❌ | ❌ | ✅ |
-| **Production Ready** | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Feature** | **Basic** | **Pipeline** | **AI** | **Enhanced DOCX** | **Multi-Format** | **Error Handling** | **Performance** |
+|-------------|-----------|---------------|--------|-------------------|------------------|-------------------|-----------------|
+| **Data Generation** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Multiple Formats** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Template Support** | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| **Markdown Conversion** | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| **Error Handling** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| **Performance Focus** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| **AI Integration** | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Large Datasets** | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| **Production Ready** | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ---
 
 ## 🎯 Choosing the Right Example
 
-### For Beginners
-- **Start with**: `basic_usage.py`
-- **Then try**: `document_types.py`, `configuration.py`
-- **Learn**: Basic operations, document handling
+### For Document Generation
+- **Start with**: `enhanced_docx.py`
+- **Then try**: `document_types.py`
+- **Learn**: Template support, markdown conversion, document formatting
 
 ### For Data Scientists
 - **Start with**: `data_pipeline.py`

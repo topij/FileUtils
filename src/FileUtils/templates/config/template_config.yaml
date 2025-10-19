@@ -1,11 +1,14 @@
 # DOCX Template Configuration for FileUtils
+# 
+# IMPORTANT: FileUtils uses regular .docx files as templates, not .dotx template files.
+# The system loads the DOCX file, clears its content, and preserves the styles.
 
 # Template directory and file settings
 template_dir: "templates"
 default_template: "IP-template-doc.docx"
 fallback_template: null  # Use python-docx default if no template found
 
-# Available templates mapping
+# Available templates mapping (all should be .docx files)
 templates:
   default: "IP-template-doc.docx"
   review: "IP-template-doc.docx"  # Can be different template for reviews

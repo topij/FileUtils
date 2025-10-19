@@ -259,9 +259,12 @@ Line 1<br>Line 2
 
 Your DOCX templates should:
 
-1. **Contain Styles**: Include the styles you want to use (e.g., "IP-table_light", "Heading 1")
-2. **Be Clean**: Template content will be cleared, but styles are preserved
-3. **Be Accessible**: Place templates in the configured template directory
+1. **Be Regular DOCX Files**: Use standard `.docx` files (not `.dotx` template files)
+2. **Contain Styles**: Include the styles you want to use (e.g., "IP-table_light", "Heading 1")
+3. **Be Clean**: Template content will be cleared, but styles are preserved
+4. **Be Accessible**: Place templates in the configured template directory
+
+**Important**: FileUtils uses regular `.docx` files as templates, not Microsoft Word `.dotx` template files. The system loads the DOCX file, clears its content, and preserves the styles for use in the generated documents.
 
 ### Style Names
 
