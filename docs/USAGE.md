@@ -118,6 +118,60 @@ file_utils.save_data_to_storage(
 sheets_dict = file_utils.load_excel_sheets("multi_sheet.xlsx")
 ```
 
+### Excel to CSV Conversion
+
+Convert Excel workbooks with multiple worksheets to CSV files while preserving workbook structure and metadata.
+
+```python
+# Convert Excel workbook to CSV files with structure preservation
+csv_files, structure_file = file_utils.convert_excel_to_csv_with_structure(
+    excel_file_path="workbook.xlsx",
+    file_name="converted_workbook",
+    preserve_structure=True
+)
+
+# Result:
+# csv_files = {
+#     "Sheet1": "data/processed/converted_workbook_Sheet1.csv",
+#     "Sheet2": "data/processed/converted_workbook_Sheet2.csv"
+# }
+# structure_file = "data/processed/converted_workbook_structure.json"
+
+# Load converted data
+employees_df = file_utils.load_single_file(
+    "converted_workbook_Employees.csv", 
+    input_type="processed"
+)
+```
+
+**Structure JSON includes:**
+- Workbook metadata (source file, conversion timestamp, sheet count)
+- Sheet details (dimensions, columns, data types, null counts)
+- Data quality metrics (memory usage, index information)
+
+### CSV to Excel Reconstruction
+
+Reconstruct Excel workbooks from modified CSV files using the structure JSON created during conversion.
+
+```python
+# Reconstruct Excel workbook from modified CSV files
+excel_path = file_utils.convert_csv_to_excel_workbook(
+    structure_json_path=structure_file,
+    file_name="reconstructed_workbook"
+)
+
+# The method creates:
+# - Excel workbook with all sheets
+# - Reconstruction metadata JSON
+# - Handles missing files gracefully
+```
+
+**Reconstruction Features:**
+- Uses structure JSON to locate and load CSV files
+- Handles missing or modified CSV files gracefully
+- Creates reconstruction metadata for audit trail
+- Maintains original sheet names and structure
+
 ### JSON Files
 
 JSON files can be used in two ways: as DataFrame storage or as structured documents.

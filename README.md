@@ -13,6 +13,7 @@ A Python utility package for consistent file operations across local and Azure s
   - **Tabular Data**: CSV (with delimiter auto-detection), Excel (.xlsx, .xls) with multi-sheet support, Parquet (with compression options)
   - **Document Formats**: Microsoft Word (.docx) with template support, Markdown (.md) with YAML frontmatter, PDF (read-only text extraction)
   - **Multi-Purpose Formats**: JSON and YAML support both DataFrame storage and structured document handling with automatic pandas type conversion
+  - **Excel ↔ CSV Round-Trip**: Convert Excel workbooks to CSV files with structure preservation, and reconstruct Excel workbooks from modified CSV files
 
 - **Advanced Data Handling**
   - Single and multi-DataFrame operations
@@ -311,6 +312,43 @@ file_utils.save_document_to_storage(
 
 For detailed DOCX template documentation, see [Enhanced DOCX Guide](docs/ENHANCED_DOCX.md).
 
+### Excel ↔ CSV Round-Trip Conversion
+
+Complete round-trip workflow for Excel workbooks: Excel → CSV → Excel. Perfect for data processing pipelines where you need to work with individual CSV files but distribute results as consolidated Excel workbooks.
+
+**Key Features:**
+- **Excel → CSV**: Convert each Excel sheet to separate CSV files with structure preservation
+- **CSV → Excel**: Reconstruct Excel workbooks from modified CSV files using structure JSON
+- **Structure Preservation**: JSON metadata maintains workbook relationships and sheet information
+- **Data Modification**: Work with individual CSV files, then reconstruct for distribution
+- **Error Handling**: Graceful handling of missing or modified files
+
+```python
+# Step 1: Convert Excel to CSV with structure preservation
+csv_files, structure_file = file_utils.convert_excel_to_csv_with_structure(
+    excel_file_path="workbook.xlsx",
+    file_name="converted_workbook",
+    preserve_structure=True
+)
+
+# Step 2: Work with individual CSV files
+sales_df = file_utils.load_single_file("converted_workbook_Sales.csv", input_type="processed")
+# ... modify data ...
+file_utils.save_data_to_storage(sales_df, output_filetype=OutputFileType.CSV, 
+                                file_name="converted_workbook_Sales", include_timestamp=False)
+
+# Step 3: Reconstruct Excel workbook from modified CSV files
+excel_path = file_utils.convert_csv_to_excel_workbook(
+    structure_json_path=structure_file,
+    file_name="reconstructed_workbook"
+)
+```
+
+**Structure JSON includes:**
+- Workbook metadata (source file, conversion timestamp, sheet count)
+- Sheet details (dimensions, columns, data types, null counts)
+- Data quality metrics (memory usage, index information)
+
 ## Examples
 
 FileUtils includes comprehensive example scripts demonstrating various use cases:
@@ -322,6 +360,8 @@ python examples/data_pipeline.py      # Complete data pipeline
 python examples/ai_workflow.py         # AI/agentic workflows  
 python examples/multi_format_reports.py # Multi-format reporting
 python examples/enhanced_docx.py       # Enhanced DOCX template system
+python examples/excel_to_csv_conversion.py # Excel workbook to CSV conversion
+python examples/excel_csv_roundtrip.py      # Complete Excel ↔ CSV round-trip workflow
 python examples/error_handling.py      # Robust error handling
 python examples/performance_optimization.py # Large dataset optimization
 ```
@@ -331,6 +371,8 @@ python examples/performance_optimization.py # Large dataset optimization
 - **`data_pipeline.py`** - Complete data science pipeline (7,000+ records)
 - **`ai_workflow.py`** - AI integration (sentiment analysis, recommendations)
 - **`enhanced_docx.py`** - Enhanced DOCX template system (markdown conversion, templates)
+- **`excel_to_csv_conversion.py`** - Excel workbook to CSV conversion with structure preservation
+- **`excel_csv_roundtrip.py`** - Complete Excel ↔ CSV round-trip workflow (Excel → CSV → Excel)
 - **`multi_format_reports.py`** - Same data → Excel, PDF, Markdown, JSON
 - **`error_handling.py`** - Production-ready error handling and recovery
 - **`performance_optimization.py`** - Large dataset optimization (50MB+)

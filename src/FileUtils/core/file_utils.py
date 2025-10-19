@@ -882,3 +882,300 @@ class FileUtils:
                 raise
             self.logger.error(f"Failed to load document {file_path}: {e}")
             raise StorageError(f"Failed to load document {file_path}: {e}") from e
+
+    def convert_excel_to_csv_with_structure(
+        self,
+        excel_file_path: Union[str, Path],
+        input_type: str = "raw",
+        output_type: str = "processed",
+        file_name: Optional[str] = None,
+        preserve_structure: bool = True,
+        sub_path: Optional[Union[str, Path]] = None,
+        **kwargs,
+    ) -> Tuple[Dict[str, str], str]:
+        """Convert Excel file with multiple worksheets to CSV files while maintaining workbook structure.
+        
+        This method loads all sheets from an Excel file, converts each sheet to a separate CSV file,
+        and creates a JSON file containing the workbook structure and metadata.
+        
+        Args:
+            excel_file_path: Path to Excel file, relative to input_type/sub_path directory
+            input_type: Type of input directory (e.g., "raw", "processed")
+            output_type: Type of output directory (e.g., "processed", "raw")
+            file_name: Base name for output files (defaults to Excel filename without extension)
+            preserve_structure: Whether to create a structure JSON file
+            sub_path: Optional subdirectory path relative to input_type directory
+            **kwargs: Additional arguments for CSV saving (encoding, delimiter, etc.)
+            
+        Returns:
+            Tuple of (csv_files_dict, structure_json_path):
+            - csv_files_dict: Dictionary mapping sheet names to CSV file paths
+            - structure_json_path: Path to the structure JSON file (empty string if preserve_structure=False)
+            
+        Raises:
+            StorageError: If conversion fails
+            ValueError: If sub_path is provided and file_path also contains path separators
+            
+        Example:
+            >>> file_utils = FileUtils()
+            >>> csv_files, structure_file = file_utils.convert_excel_to_csv_with_structure(
+            ...     "workbook.xlsx", 
+            ...     file_name="converted_workbook"
+            ... )
+            >>> # Result:
+            >>> # csv_files = {
+            >>> #     "Sheet1": "data/processed/converted_workbook_Sheet1.csv",
+            >>> #     "Sheet2": "data/processed/converted_workbook_Sheet2.csv"
+            >>> # }
+            >>> # structure_file = "data/processed/converted_workbook_structure.json"
+        """
+        try:
+            # Load all sheets from Excel file
+            self.logger.info(f"Loading Excel file: {excel_file_path}")
+            sheets_dict = self.load_excel_sheets(
+                excel_file_path, 
+                input_type=input_type, 
+                sub_path=sub_path, 
+                **kwargs
+            )
+            
+            if not sheets_dict:
+                raise StorageError(f"No sheets found in Excel file: {excel_file_path}")
+            
+            # Determine output file name
+            if file_name is None:
+                excel_path = Path(excel_file_path)
+                file_name = excel_path.stem
+            
+            # Convert each sheet to CSV
+            csv_files = {}
+            structure_data = {
+                "workbook_info": {
+                    "source_file": str(excel_file_path),
+                    "conversion_timestamp": pd.Timestamp.now().isoformat(),
+                    "total_sheets": len(sheets_dict),
+                    "sheet_names": list(sheets_dict.keys())
+                },
+                "sheets": {}
+            }
+            
+            self.logger.info(f"Converting {len(sheets_dict)} sheets to CSV format")
+            
+            for sheet_name, df in sheets_dict.items():
+                # Create CSV file name
+                csv_file_name = f"{file_name}_{sheet_name}"
+                
+                # Save sheet as CSV
+                saved_files, _ = self.save_data_to_storage(
+                    data=df,
+                    output_filetype=OutputFileType.CSV,
+                    output_type=output_type,
+                    file_name=csv_file_name,
+                    sub_path=sub_path,
+                    **kwargs
+                )
+                
+                # Get the CSV file path (should be single file)
+                csv_file_path = list(saved_files.values())[0]
+                csv_files[sheet_name] = csv_file_path
+                
+                # Collect sheet metadata for structure file
+                if preserve_structure:
+                    structure_data["sheets"][sheet_name] = {
+                        "csv_file": csv_file_path,
+                        "csv_filename": Path(csv_file_path).name,
+                        "dimensions": {
+                            "rows": len(df),
+                            "columns": len(df.columns)
+                        },
+                        "columns": {
+                            "names": df.columns.tolist(),
+                            "dtypes": df.dtypes.astype(str).to_dict(),
+                            "count": len(df.columns)
+                        },
+                        "data_info": {
+                            "has_index": df.index.name is not None,
+                            "index_name": df.index.name,
+                            "memory_usage": df.memory_usage(deep=True).sum(),
+                            "null_counts": df.isnull().sum().to_dict()
+                        }
+                    }
+                
+                self.logger.debug(f"Converted sheet '{sheet_name}' to CSV: {csv_file_path}")
+            
+            # Save structure JSON file if requested
+            structure_json_path = ""
+            if preserve_structure:
+                structure_file_name = f"{file_name}_structure"
+                saved_path, _ = self.save_document_to_storage(
+                    content=structure_data,
+                    output_filetype=OutputFileType.JSON,
+                    output_type=output_type,
+                    file_name=structure_file_name,
+                    sub_path=sub_path
+                )
+                structure_json_path = saved_path
+                self.logger.info(f"Created structure file: {structure_json_path}")
+            
+            self.logger.info(f"Successfully converted Excel file to {len(csv_files)} CSV files")
+            return csv_files, structure_json_path
+            
+        except Exception as e:
+            if isinstance(e, (ValueError, StorageError)):
+                raise
+            self.logger.error(f"Failed to convert Excel file {excel_file_path}: {e}")
+            raise StorageError(f"Failed to convert Excel file {excel_file_path}: {e}") from e
+
+    def convert_csv_to_excel_workbook(
+        self,
+        structure_json_path: Union[str, Path],
+        input_type: str = "processed",
+        output_type: str = "processed",
+        file_name: Optional[str] = None,
+        sub_path: Optional[Union[str, Path]] = None,
+        **kwargs,
+    ) -> str:
+        """Convert CSV files back to Excel workbook using structure JSON.
+        
+        This method reconstructs an Excel workbook from CSV files that were previously
+        created using convert_excel_to_csv_with_structure(). It uses the structure JSON
+        to determine which CSV files to load and how to organize them into sheets.
+        
+        Args:
+            structure_json_path: Path to the structure JSON file created during CSV conversion
+            input_type: Type of input directory where CSV files are located
+            output_type: Type of output directory for the Excel workbook
+            file_name: Base name for output Excel file (defaults to structure file name)
+            sub_path: Optional subdirectory path relative to input_type directory
+            **kwargs: Additional arguments for Excel saving (engine, etc.)
+            
+        Returns:
+            Path to the created Excel workbook file
+            
+        Raises:
+            StorageError: If conversion fails
+            ValueError: If structure JSON is invalid or CSV files are missing
+            
+        Example:
+            >>> file_utils = FileUtils()
+            >>> # First convert Excel to CSV
+            >>> csv_files, structure_file = file_utils.convert_excel_to_csv_with_structure(
+            ...     "workbook.xlsx", file_name="converted_workbook"
+            ... )
+            >>> # ... make changes to CSV files ...
+            >>> # Then convert back to Excel
+            >>> excel_path = file_utils.convert_csv_to_excel_workbook(
+            ...     structure_file, file_name="reconstructed_workbook"
+            ... )
+        """
+        try:
+            import json
+            
+            # Load structure JSON
+            self.logger.info(f"Loading structure file: {structure_json_path}")
+            structure_path = Path(structure_json_path)
+            
+            if not structure_path.exists():
+                raise StorageError(f"Structure file not found: {structure_json_path}")
+            
+            with open(structure_path, 'r') as f:
+                structure_data = json.load(f)
+            
+            # Validate structure data
+            if 'sheets' not in structure_data:
+                raise ValueError("Invalid structure JSON: missing 'sheets' key")
+            
+            # Determine output file name
+            if file_name is None:
+                file_name = structure_path.stem.replace('_structure', '') + '_reconstructed'
+            
+            # Load CSV files and reconstruct workbook
+            workbook_data = {}
+            missing_files = []
+            
+            self.logger.info(f"Reconstructing workbook from {len(structure_data['sheets'])} CSV files")
+            
+            for sheet_name, sheet_info in structure_data['sheets'].items():
+                csv_filename = sheet_info.get('csv_filename')
+                if not csv_filename:
+                    self.logger.warning(f"No CSV filename found for sheet '{sheet_name}', skipping")
+                    continue
+                
+                try:
+                    # Load CSV file
+                    df = self.load_single_file(
+                        csv_filename,
+                        input_type=input_type,
+                        sub_path=sub_path
+                    )
+                    workbook_data[sheet_name] = df
+                    self.logger.debug(f"Loaded sheet '{sheet_name}' from {csv_filename}")
+                    
+                except Exception as e:
+                    missing_files.append(f"{sheet_name}: {csv_filename}")
+                    self.logger.warning(f"Failed to load CSV file for sheet '{sheet_name}': {e}")
+            
+            if not workbook_data:
+                raise StorageError(f"No CSV files could be loaded. Missing files: {missing_files}")
+            
+            if missing_files:
+                self.logger.warning(f"Some CSV files were missing: {missing_files}")
+            
+            # Save as Excel workbook
+            self.logger.info(f"Saving reconstructed workbook with {len(workbook_data)} sheets")
+            saved_files, _ = self.save_data_to_storage(
+                data=workbook_data,
+                output_filetype=OutputFileType.XLSX,
+                output_type=output_type,
+                file_name=file_name,
+                sub_path=sub_path,
+                **kwargs
+            )
+            
+            # Get the Excel file path (should be single file)
+            excel_file_path = list(saved_files.values())[0]
+            
+            # Create reconstruction metadata
+            reconstruction_info = {
+                "reconstruction_info": {
+                    "source_structure_file": str(structure_json_path),
+                    "reconstruction_timestamp": pd.Timestamp.now().isoformat(),
+                    "original_workbook_info": structure_data.get('workbook_info', {}),
+                    "sheets_reconstructed": len(workbook_data),
+                    "sheets_original": len(structure_data['sheets']),
+                    "missing_files": missing_files
+                },
+                "sheets": {
+                    sheet_name: {
+                        "csv_source": sheet_info.get('csv_filename'),
+                        "dimensions": {
+                            "rows": len(df),
+                            "columns": len(df.columns)
+                        },
+                        "columns": {
+                            "names": df.columns.tolist(),
+                            "count": len(df.columns)
+                        }
+                    }
+                    for sheet_name, df in workbook_data.items()
+                }
+            }
+            
+            # Save reconstruction metadata
+            metadata_file_name = f"{file_name}_reconstruction_metadata"
+            self.save_document_to_storage(
+                content=reconstruction_info,
+                output_filetype=OutputFileType.JSON,
+                output_type=output_type,
+                file_name=metadata_file_name,
+                sub_path=sub_path
+            )
+            
+            self.logger.info(f"Successfully reconstructed Excel workbook: {excel_file_path}")
+            return excel_file_path
+            
+        except Exception as e:
+            if isinstance(e, (ValueError, StorageError)):
+                raise
+            self.logger.error(f"Failed to convert CSV files to Excel workbook: {e}")
+            raise StorageError(f"Failed to convert CSV files to Excel workbook: {e}") from e

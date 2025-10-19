@@ -131,6 +131,145 @@ load_excel_sheets(
 
 - Dictionary mapping sheet names to DataFrames.
 
+##### `convert_excel_to_csv_with_structure`
+
+Convert Excel file with multiple worksheets to CSV files while maintaining workbook structure.
+
+```python
+convert_excel_to_csv_with_structure(
+    excel_file_path: Union[str, Path],
+    input_type: str = "raw",
+    output_type: str = "processed",
+    file_name: Optional[str] = None,
+    preserve_structure: bool = True,
+    sub_path: Optional[Union[str, Path]] = None,
+    **kwargs
+) -> Tuple[Dict[str, str], str]
+```
+
+**Parameters:**
+
+- `excel_file_path`: Path to Excel file. If `sub_path` is provided, this should be the filename only. If `sub_path` is None, this is the path relative to the `input_type` directory.
+- `input_type`: Directory name to load from - not the file format.
+- `output_type`: Directory name to save to - not the file format.
+- `file_name`: Base name for output files (defaults to Excel filename without extension).
+- `preserve_structure`: Whether to create a structure JSON file with workbook metadata.
+- `sub_path`: Optional subdirectory path relative to `input_type` directory.
+- `**kwargs`: Additional arguments for CSV saving (encoding, delimiter, etc.).
+
+**Returns:**
+
+- Tuple of (csv_files_dict, structure_json_path):
+  - `csv_files_dict`: Dictionary mapping sheet names to CSV file paths
+  - `structure_json_path`: Path to the structure JSON file (empty string if preserve_structure=False)
+
+**Example:**
+
+```python
+# Convert Excel workbook to CSV files with structure preservation
+csv_files, structure_file = file_utils.convert_excel_to_csv_with_structure(
+    excel_file_path="workbook.xlsx",
+    file_name="converted_workbook",
+    preserve_structure=True
+)
+
+# Result:
+# csv_files = {
+#     "Sheet1": "data/processed/converted_workbook_Sheet1.csv",
+#     "Sheet2": "data/processed/converted_workbook_Sheet2.csv"
+# }
+# structure_file = "data/processed/converted_workbook_structure.json"
+```
+
+**Structure JSON Format:**
+
+The structure JSON file contains comprehensive metadata about the workbook:
+
+```json
+{
+  "workbook_info": {
+    "source_file": "workbook.xlsx",
+    "conversion_timestamp": "2024-01-15T10:30:00",
+    "total_sheets": 2,
+    "sheet_names": ["Sheet1", "Sheet2"]
+  },
+  "sheets": {
+    "Sheet1": {
+      "csv_file": "data/processed/converted_workbook_Sheet1.csv",
+      "csv_filename": "converted_workbook_Sheet1.csv",
+      "dimensions": {
+        "rows": 100,
+        "columns": 5
+      },
+      "columns": {
+        "names": ["id", "name", "value", "category", "date"],
+        "dtypes": {"id": "int64", "name": "object", "value": "float64"},
+        "count": 5
+      },
+      "data_info": {
+        "has_index": false,
+        "index_name": null,
+        "memory_usage": 8192,
+        "null_counts": {"name": 2, "value": 0}
+      }
+    }
+  }
+}
+```
+
+##### `convert_csv_to_excel_workbook`
+
+Convert CSV files back to Excel workbook using structure JSON.
+
+```python
+convert_csv_to_excel_workbook(
+    structure_json_path: Union[str, Path],
+    input_type: str = "processed",
+    output_type: str = "processed",
+    file_name: Optional[str] = None,
+    sub_path: Optional[Union[str, Path]] = None,
+    **kwargs
+) -> str
+```
+
+**Parameters:**
+
+- `structure_json_path`: Path to the structure JSON file created during CSV conversion.
+- `input_type`: Directory name where CSV files are located.
+- `output_type`: Directory name for the Excel workbook.
+- `file_name`: Base name for output Excel file (defaults to structure file name).
+- `sub_path`: Optional subdirectory path relative to `input_type` directory.
+- `**kwargs`: Additional arguments for Excel saving (engine, etc.).
+
+**Returns:**
+
+- Path to the created Excel workbook file.
+
+**Example:**
+
+```python
+# First convert Excel to CSV
+csv_files, structure_file = file_utils.convert_excel_to_csv_with_structure(
+    "workbook.xlsx", file_name="converted_workbook"
+)
+
+# ... make changes to CSV files ...
+
+# Then convert back to Excel
+excel_path = file_utils.convert_csv_to_excel_workbook(
+    structure_json_path=structure_file,
+    file_name="reconstructed_workbook"
+)
+```
+
+**Reconstruction Metadata:**
+
+The method creates a reconstruction metadata JSON file with information about:
+- Source structure file and reconstruction timestamp
+- Original workbook information
+- Sheets successfully reconstructed vs. missing files
+- Current dimensions and column information for each sheet
+
 ##### `load_multiple_files`
 
 Load multiple files into a dictionary of DataFrames. File formats are automatically detected from extensions.

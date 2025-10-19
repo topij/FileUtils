@@ -746,4 +746,154 @@ if __name__ == "__main__":
 
 ---
 
+## Excel to CSV Conversion
+
+### `excel_to_csv_conversion.py`
+
+**Purpose**: Demonstrate Excel workbook to CSV conversion with structure preservation.
+
+**Complexity**: Intermediate
+
+**Key Features**:
+- Convert Excel workbooks with multiple sheets to individual CSV files
+- Preserve workbook structure and metadata in JSON format
+- Handle different data types and special characters
+- Provide comprehensive data quality information
+- Integrate with FileUtils workflow patterns
+
+**Use Cases**:
+- Data pipeline preprocessing
+- Excel to CSV migration projects
+- Data quality assessment
+- Multi-sheet workbook analysis
+
+**Running the Example**:
+
+```bash
+python examples/excel_to_csv_conversion.py
+```
+
+**What It Demonstrates**:
+
+1. **Sample Workbook Creation**: Creates a multi-sheet Excel workbook with realistic data
+2. **Basic Conversion**: Converts Excel to CSV with structure preservation
+3. **Structure Analysis**: Inspects the generated JSON structure file
+4. **Data Loading**: Demonstrates loading converted CSV files
+5. **Advanced Features**: Shows handling of special data types and edge cases
+6. **Workflow Integration**: Demonstrates integration with typical data pipelines
+
+**Key Code Patterns**:
+
+```python
+# Convert Excel workbook to CSV files with structure preservation
+csv_files, structure_file = file_utils.convert_excel_to_csv_with_structure(
+    excel_file_path="workbook.xlsx",
+    file_name="converted_workbook",
+    preserve_structure=True
+)
+
+# Inspect structure information
+with open(structure_file, 'r') as f:
+    structure_data = json.load(f)
+
+# Load converted data
+employees_df = file_utils.load_single_file(
+    "converted_workbook_Employees.csv", 
+    input_type="processed"
+)
+```
+
+**Output Structure**:
+
+The example creates:
+- Individual CSV files for each Excel sheet
+- A comprehensive JSON structure file with metadata
+- Demonstrates data quality metrics and analysis
+
+**Benefits**:
+- Preserves Excel workbook relationships
+- Enables CSV-based data processing
+- Provides detailed data quality information
+- Maintains audit trail of conversion process
+
+---
+
+## Excel ↔ CSV Round-Trip Workflow
+
+### `excel_csv_roundtrip.py`
+
+**Purpose**: Demonstrate complete Excel ↔ CSV round-trip workflow with data modification.
+
+**Complexity**: Intermediate
+
+**Key Features**:
+- Excel → CSV conversion with structure preservation
+- CSV data modification and processing
+- CSV → Excel reconstruction for distribution
+- Metadata tracking throughout the workflow
+- Error handling for missing files
+
+**Use Cases**:
+- Data processing pipelines
+- Collaborative data analysis
+- ETL workflows
+- Report generation and distribution
+- Data modification workflows
+
+**Running the Example**:
+
+```bash
+python examples/excel_csv_roundtrip.py
+```
+
+**What It Demonstrates**:
+
+1. **Sample Workbook Creation**: Creates realistic business data (Sales, Customers, Products)
+2. **Excel to CSV Conversion**: Converts workbook to individual CSV files with structure JSON
+3. **Data Modification**: Processes and enhances CSV data (adds fields, new records, calculations)
+4. **CSV to Excel Reconstruction**: Rebuilds Excel workbook from modified CSV files
+5. **Workflow Comparison**: Compares original vs. reconstructed workbooks
+6. **Error Handling**: Demonstrates graceful handling of missing files
+
+**Key Code Patterns**:
+
+```python
+# Complete round-trip workflow
+# Step 1: Excel → CSV
+csv_files, structure_file = file_utils.convert_excel_to_csv_with_structure(
+    excel_file_path="workbook.xlsx",
+    file_name="converted_workbook"
+)
+
+# Step 2: Modify CSV data
+sales_df = file_utils.load_single_file("converted_workbook_Sales.csv", input_type="processed")
+# ... modify data ...
+file_utils.save_data_to_storage(sales_df, output_filetype=OutputFileType.CSV, 
+                                file_name="converted_workbook_Sales", include_timestamp=False)
+
+# Step 3: CSV → Excel
+excel_path = file_utils.convert_csv_to_excel_workbook(
+    structure_json_path=structure_file,
+    file_name="reconstructed_workbook"
+)
+```
+
+**Output Structure**:
+
+The example creates:
+- Individual CSV files for each Excel sheet
+- Structure JSON with workbook metadata
+- Modified CSV files with enhanced data
+- Reconstructed Excel workbook
+- Reconstruction metadata JSON
+
+**Benefits**:
+- Enables individual sheet processing
+- Maintains workbook structure throughout workflow
+- Perfect for data pipelines and collaborative work
+- Provides audit trail of all modifications
+- Handles missing files gracefully
+
+---
+
 *This documentation covers all FileUtils examples. For questions or contributions, please refer to the main project documentation.*
