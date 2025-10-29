@@ -1522,3 +1522,175 @@ def test_configurable_directory_partial_config(temp_dir, sample_df):
     assert "documents/processed" in str(processed_path)
     assert raw_path.exists()
     assert processed_path.exists()
+
+
+def test_root_level_save_and_load(temp_dir, sample_df):
+    """Test saving and loading files to/from root-level directories."""
+    file_utils = FileUtils(project_root=temp_dir)
+    
+    # Save to root-level config directory
+    saved_files, _ = file_utils.save_data_to_storage(
+        data=sample_df,
+        output_filetype=OutputFileType.CSV,
+        output_type="config",
+        file_name="test_config",
+        root_level=True
+    )
+    
+    saved_path = list(saved_files.values())[0]
+    # Should be in project_root/config/, not project_root/data/config/
+    assert "config" in str(saved_path)
+    assert "data" not in str(saved_path) or "/data/config" not in str(saved_path)
+    assert Path(saved_path).exists()
+    assert (temp_dir / "config").exists()
+    
+    # Load from root-level config directory
+    loaded_df = file_utils.load_single_file(
+        file_path="test_config.csv",
+        input_type="config",
+        root_level=True
+    )
+    
+    assert len(loaded_df) == len(sample_df)
+    assert list(loaded_df.columns) == list(sample_df.columns)
+
+
+def test_root_level_document_operations(temp_dir):
+    """Test saving and loading documents from root-level directories."""
+    file_utils = FileUtils(project_root=temp_dir)
+    
+    config_data = {
+        "database": {"host": "localhost", "port": 5432},
+        "api": {"timeout": 30}
+    }
+    
+    # Save JSON config to root-level config directory
+    saved_path, _ = file_utils.save_document_to_storage(
+        content=config_data,
+        output_filetype=OutputFileType.JSON,
+        output_type="config",
+        file_name="app_config",
+        root_level=True
+    )
+    
+    assert "config" in str(saved_path)
+    assert Path(saved_path).exists()
+    assert (temp_dir / "config").exists()
+    
+    # Load from root-level config directory
+    loaded_config = file_utils.load_json(
+        file_path="app_config.json",
+        input_type="config",
+        root_level=True
+    )
+    
+    assert loaded_config["database"]["host"] == "localhost"
+    assert loaded_config["api"]["timeout"] == 30
+
+
+def test_root_level_with_subpath(temp_dir, sample_df):
+    """Test root-level directories with sub_path."""
+    file_utils = FileUtils(project_root=temp_dir)
+    
+    # Save to root-level config with subpath
+    saved_files, _ = file_utils.save_data_to_storage(
+        data=sample_df,
+        output_filetype=OutputFileType.CSV,
+        output_type="config",
+        file_name="nested_config",
+        sub_path="environments/production",
+        root_level=True
+    )
+    
+    saved_path = list(saved_files.values())[0]
+    assert "config/environments/production" in str(saved_path)
+    assert Path(saved_path).exists()
+    assert (temp_dir / "config" / "environments" / "production").exists()
+
+
+def test_root_level_vs_data_directory(temp_dir, sample_df):
+    """Test that root_level=True creates directories at root, not under data."""
+    file_utils = FileUtils(project_root=temp_dir)
+    
+    # Save with root_level=True
+    saved_root, _ = file_utils.save_data_to_storage(
+        data=sample_df,
+        output_filetype=OutputFileType.CSV,
+        output_type="logs",
+        file_name="root_logs",
+        root_level=True
+    )
+    
+    # Save with root_level=False (default)
+    saved_data, _ = file_utils.save_data_to_storage(
+        data=sample_df,
+        output_filetype=OutputFileType.CSV,
+        output_type="logs",
+        file_name="data_logs",
+        root_level=False
+    )
+    
+    root_path = list(saved_root.values())[0]
+    data_path = list(saved_data.values())[0]
+    
+    # Root-level should be in logs/ at project root
+    assert str(temp_dir / "logs") in str(root_path)
+    assert "data" not in str(root_path) or not str(root_path).replace(str(temp_dir), "").startswith("/data")
+    
+    # Data-level should be in data/logs/
+    assert str(temp_dir / "data" / "logs") in str(data_path)
+    
+    # Both should exist
+    assert Path(root_path).exists()
+    assert Path(data_path).exists()
+
+
+def test_root_level_yaml_operations(temp_dir):
+    """Test YAML operations with root-level directories."""
+    file_utils = FileUtils(project_root=temp_dir)
+    
+    yaml_config = {
+        "project": {"name": "TestProject", "version": "1.0.0"},
+        "settings": {"debug": True}
+    }
+    
+    # Save YAML to root-level config directory
+    saved_path, _ = file_utils.save_document_to_storage(
+        content=yaml_config,
+        output_filetype=OutputFileType.YAML,
+        output_type="config",
+        file_name="project_config",
+        root_level=True
+    )
+    
+    assert "config" in str(saved_path)
+    assert Path(saved_path).exists()
+    
+    # Load YAML from root-level config directory
+    loaded_config = file_utils.load_yaml(
+        file_path="project_config.yaml",
+        input_type="config",
+        root_level=True
+    )
+    
+    assert loaded_config["project"]["name"] == "TestProject"
+    assert loaded_config["settings"]["debug"] is True
+
+
+def test_root_level_get_base_path(temp_dir):
+    """Test the _get_base_path helper method."""
+    file_utils = FileUtils(project_root=temp_dir)
+    
+    # Root-level directory
+    root_path = file_utils._get_base_path("config", root_level=True)
+    assert root_path == temp_dir / "config"
+    assert root_path.exists()
+    
+    # Data-level directory (default)
+    data_path = file_utils._get_base_path("processed", root_level=False)
+    assert "data" in str(data_path)
+    assert data_path.exists()
+    
+    # Root-level None (project root itself)
+    project_root_path = file_utils._get_base_path(None, root_level=True)
+    assert project_root_path == temp_dir

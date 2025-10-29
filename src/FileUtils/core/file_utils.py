@@ -241,6 +241,33 @@ class FileUtils:
         path.mkdir(parents=True, exist_ok=True)
         return path
 
+    def _get_base_path(self, directory_type: Optional[str] = None, root_level: bool = False) -> Path:
+        """Get base path for file operations, supporting both data directory and root-level directories.
+
+        Args:
+            directory_type: Directory name/type (e.g., "raw", "processed", "config", "logs")
+            root_level: If True, directory is at project root level. If False, it's under data directory.
+
+        Returns:
+            Path to the specified directory
+        """
+        if root_level:
+            # Root-level directory (e.g., config, logs at project root)
+            if directory_type is None:
+                # Default to project root itself
+                path = self.project_root
+            else:
+                # Directory at project root level
+                path = self.project_root / directory_type
+        else:
+            # Data directory (current behavior)
+            if directory_type is None:
+                directory_type = "raw"  # Default fallback
+            path = self.get_data_path(directory_type)
+        
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
     def create_directory(self, directory_name: str, parent_dir: str = None) -> Path:
         """Create a new directory within the configured directory structure.
 
@@ -298,6 +325,7 @@ class FileUtils:
         file_name: Optional[str] = None,
         sub_path: Optional[Union[str, Path]] = None,
         include_timestamp: Optional[bool] = None,
+        root_level: bool = False,
         **kwargs,
     ) -> Tuple[Dict[str, str], Optional[str]]:
         """Save data using configured storage backend.
@@ -305,10 +333,12 @@ class FileUtils:
         Args:
             data: DataFrame or dict of DataFrames to save
             output_filetype: Type of output file
-            output_type: Type of output (e.g., "processed", "raw")
+            output_type: Type of output (e.g., "processed", "raw", "config", "logs")
             file_name: Base name for output file
             sub_path: Optional subdirectory path relative to output_type directory
             include_timestamp: Whether to include timestamp in filename
+            root_level: If True, output_type is a directory at project root level.
+                       If False (default), output_type is under the data directory.
             **kwargs: Additional arguments for storage backend
 
         Returns:
@@ -328,7 +358,7 @@ class FileUtils:
             kwargs["engine"] = "openpyxl"
 
         # Generate output path
-        base_dir = self.get_data_path(output_type)
+        base_dir = self._get_base_path(output_type, root_level=root_level)
         full_file_path_str = format_file_path(
             base_dir,
             file_name or "data",
@@ -387,6 +417,7 @@ class FileUtils:
         file_path: Union[str, Path],
         input_type: str = "raw",
         sub_path: Optional[Union[str, Path]] = None,
+        root_level: bool = False,
         **kwargs,
     ) -> pd.DataFrame:
         """Load a single file from storage.
@@ -394,8 +425,10 @@ class FileUtils:
         Args:
             file_path: Path to file, relative to input_type/sub_path directory
                        OR relative to input_type directory if sub_path is None.
-            input_type: Type of input directory (e.g., "raw", "processed")
+            input_type: Type of input directory (e.g., "raw", "processed", "config", "logs")
             sub_path: Optional subdirectory path relative to input_type directory
+            root_level: If True, input_type is a directory at project root level.
+                       If False (default), input_type is under the data directory.
             **kwargs: Additional arguments passed to storage backend
 
         Returns:
@@ -414,7 +447,7 @@ class FileUtils:
                 full_path = file_path
             else:
                 # Construct local path
-                base_dir = self.get_data_path(input_type)
+                base_dir = self._get_base_path(input_type, root_level=root_level)
                 file_path_obj = Path(file_path)
 
                 if sub_path:
@@ -459,6 +492,7 @@ class FileUtils:
         file_path: Union[str, Path],
         input_type: str = "raw",
         sub_path: Optional[Union[str, Path]] = None,
+        root_level: bool = False,
         **kwargs,
     ) -> Dict[str, pd.DataFrame]:
         """Load all sheets from an Excel file.
@@ -466,8 +500,10 @@ class FileUtils:
         Args:
             file_path: Path to Excel file, relative to input_type/sub_path directory
                        OR relative to input_type directory if sub_path is None.
-            input_type: Type of input directory (e.g., "raw", "processed")
+            input_type: Type of input directory (e.g., "raw", "processed", "config", "logs")
             sub_path: Optional subdirectory path relative to input_type directory
+            root_level: If True, input_type is a directory at project root level.
+                       If False (default), input_type is under the data directory.
             **kwargs: Additional arguments passed to storage backend
 
         Returns:
@@ -485,7 +521,7 @@ class FileUtils:
                  full_path = file_path
             else:
                 # Construct local path
-                base_dir = self.get_data_path(input_type)
+                base_dir = self._get_base_path(input_type, root_level=root_level)
                 file_path_obj = Path(file_path)
 
                 if sub_path:
@@ -516,6 +552,7 @@ class FileUtils:
         input_type: str = "raw",
         sub_path: Optional[Union[str, Path]] = None,
         file_type: Optional[OutputFileType] = None,
+        root_level: bool = False,
         **kwargs,
     ) -> Dict[str, pd.DataFrame]:
         """Load multiple files of the same type from storage.
@@ -524,9 +561,11 @@ class FileUtils:
             file_paths: List of file paths, relative to input_type/sub_path directory
                         OR relative to input_type directory if sub_path is None.
                         If sub_path is used, these should be filenames only.
-            input_type: Type of input directory (e.g., "raw", "processed")
+            input_type: Type of input directory (e.g., "raw", "processed", "config", "logs")
             sub_path: Optional subdirectory path relative to input_type directory
             file_type: Optional OutputFileType to enforce specific type checking
+            root_level: If True, input_type is a directory at project root level.
+                       If False (default), input_type is under the data directory.
             **kwargs: Additional arguments passed to load_single_file
 
         Returns:
@@ -538,7 +577,7 @@ class FileUtils:
                         also contains path separators.
         """
         loaded_data = {}
-        base_dir = self.get_data_path(input_type) # Base path for the input type
+        base_dir = self._get_base_path(input_type, root_level=root_level) # Base path for the input type
 
         # Prepare safe_sub_path once if provided
         safe_sub_path = None
@@ -571,11 +610,12 @@ class FileUtils:
                 raise ValueError(f"File {current_full_path_for_check} does not match type: {file_type.value}")
 
             # Call load_single_file - it will handle combining base_dir and load_path_arg correctly now
-            # Pass down any extra kwargs
+            # Pass down any extra kwargs including root_level
             loaded_data[file_path_obj.stem] = self.load_single_file(
                 file_path=load_path_arg, # Pass the path relative to input_type
                 input_type=input_type,
                 sub_path=None, # sub_path logic is handled above for the list context
+                root_level=root_level,
                 **kwargs
             )
 
@@ -621,6 +661,7 @@ class FileUtils:
         file_path: Union[str, Path],
         input_type: str = "raw",
         sub_path: Optional[Union[str, Path]] = None,
+        root_level: bool = False,
         **kwargs,
     ) -> Any:
         """Load a YAML file as a Python object.
@@ -628,8 +669,10 @@ class FileUtils:
         Args:
             file_path: Path to YAML file, relative to input_type/sub_path directory
                        OR relative to input_type directory if sub_path is None.
-            input_type: Type of input directory ("raw", "processed", etc.)
+            input_type: Type of input directory ("raw", "processed", "config", "logs", etc.)
             sub_path: Optional subdirectory path relative to input_type directory
+            root_level: If True, input_type is a directory at project root level.
+                       If False (default), input_type is under the data directory.
             **kwargs: Additional arguments passed to yaml.safe_load or storage backend
 
         Returns:
@@ -647,7 +690,7 @@ class FileUtils:
                 full_path = file_path
             else:
                 # Construct local path
-                base_dir = self.get_data_path(input_type)
+                base_dir = self._get_base_path(input_type, root_level=root_level)
                 file_path_obj = Path(file_path)
 
                 if sub_path:
@@ -677,6 +720,7 @@ class FileUtils:
         file_path: Union[str, Path],
         input_type: str = "raw",
         sub_path: Optional[Union[str, Path]] = None,
+        root_level: bool = False,
         **kwargs,
     ) -> Any:
         """Load a JSON file as a Python object.
@@ -684,8 +728,10 @@ class FileUtils:
         Args:
             file_path: Path to JSON file, relative to input_type/sub_path directory
                        OR relative to input_type directory if sub_path is None.
-            input_type: Type of input directory ("raw", "processed", etc.)
+            input_type: Type of input directory ("raw", "processed", "config", "logs", etc.)
             sub_path: Optional subdirectory path relative to input_type directory
+            root_level: If True, input_type is a directory at project root level.
+                       If False (default), input_type is under the data directory.
             **kwargs: Additional arguments passed to json.load or storage backend
 
         Returns:
@@ -703,7 +749,7 @@ class FileUtils:
                 full_path = file_path
             else:
                 # Construct local path
-                base_dir = self.get_data_path(input_type)
+                base_dir = self._get_base_path(input_type, root_level=root_level)
                 file_path_obj = Path(file_path)
 
                 if sub_path:
@@ -803,6 +849,7 @@ class FileUtils:
         file_name: Optional[str] = None,
         sub_path: Optional[Union[str, Path]] = None,
         include_timestamp: Optional[bool] = None,
+        root_level: bool = False,
         **kwargs,
     ) -> Tuple[str, Optional[str]]:
         """Save document content using configured storage backend.
@@ -811,10 +858,12 @@ class FileUtils:
             content: Document content (string, dict, bytes, or Path).
                     For PPTX: accepts bytes (file content) or Path/str (path to source .pptx file).
             output_filetype: Type of output file (DOCX, MARKDOWN, PDF, PPTX, JSON, YAML)
-            output_type: Type of output (e.g., "processed", "raw")
+            output_type: Type of output (e.g., "processed", "raw", "config", "logs")
             file_name: Base name for output file
             sub_path: Optional subdirectory path relative to output_type directory
             include_timestamp: Whether to include timestamp in filename
+            root_level: If True, output_type is a directory at project root level.
+                       If False (default), output_type is under the data directory.
             **kwargs: Additional arguments for storage backend
 
         Returns:
@@ -836,7 +885,7 @@ class FileUtils:
             )
 
         # Generate output path
-        base_dir = self.get_data_path(output_type)
+        base_dir = self._get_base_path(output_type, root_level=root_level)
         full_file_path_str = format_file_path(
             base_dir,
             file_name or "document",
@@ -870,6 +919,7 @@ class FileUtils:
         file_path: Union[str, Path],
         input_type: str = "raw",
         sub_path: Optional[Union[str, Path]] = None,
+        root_level: bool = False,
         **kwargs,
     ) -> Union[str, Dict[str, Any], bytes]:
         """Load document content from storage.
@@ -877,8 +927,10 @@ class FileUtils:
         Args:
             file_path: Path to file, relative to input_type/sub_path directory
                        OR relative to input_type directory if sub_path is None.
-            input_type: Type of input directory (e.g., "raw", "processed")
+            input_type: Type of input directory (e.g., "raw", "processed", "config", "logs")
             sub_path: Optional subdirectory path relative to input_type directory
+            root_level: If True, input_type is a directory at project root level.
+                       If False (default), input_type is under the data directory.
             **kwargs: Additional arguments passed to storage backend
 
         Returns:
@@ -897,7 +949,7 @@ class FileUtils:
                 full_path = file_path
             else:
                 # Construct local path
-                base_dir = self.get_data_path(input_type)
+                base_dir = self._get_base_path(input_type, root_level=root_level)
                 file_path_obj = Path(file_path)
 
                 if sub_path:
@@ -945,6 +997,7 @@ class FileUtils:
         file_name: Optional[str] = None,
         preserve_structure: bool = True,
         sub_path: Optional[Union[str, Path]] = None,
+        root_level: bool = False,
         **kwargs,
     ) -> Tuple[Dict[str, str], str]:
         """Convert Excel file with multiple worksheets to CSV files while maintaining workbook structure.
@@ -954,11 +1007,13 @@ class FileUtils:
         
         Args:
             excel_file_path: Path to Excel file, relative to input_type/sub_path directory
-            input_type: Type of input directory (e.g., "raw", "processed")
-            output_type: Type of output directory (e.g., "processed", "raw")
+            input_type: Type of input directory (e.g., "raw", "processed", "config", "logs")
+            output_type: Type of output directory (e.g., "processed", "raw", "config", "logs")
             file_name: Base name for output files (defaults to Excel filename without extension)
             preserve_structure: Whether to create a structure JSON file
             sub_path: Optional subdirectory path relative to input_type directory
+            root_level: If True, input_type and output_type are directories at project root level.
+                       If False (default), they are under the data directory.
             **kwargs: Additional arguments for CSV saving (encoding, delimiter, etc.)
             
         Returns:
@@ -989,7 +1044,8 @@ class FileUtils:
             sheets_dict = self.load_excel_sheets(
                 excel_file_path, 
                 input_type=input_type, 
-                sub_path=sub_path, 
+                sub_path=sub_path,
+                root_level=root_level,
                 **kwargs
             )
             
@@ -1026,6 +1082,7 @@ class FileUtils:
                     output_type=output_type,
                     file_name=csv_file_name,
                     sub_path=sub_path,
+                    root_level=root_level,
                     **kwargs
                 )
                 
@@ -1066,7 +1123,8 @@ class FileUtils:
                     output_filetype=OutputFileType.JSON,
                     output_type=output_type,
                     file_name=structure_file_name,
-                    sub_path=sub_path
+                    sub_path=sub_path,
+                    root_level=root_level
                 )
                 structure_json_path = saved_path
                 self.logger.info(f"Created structure file: {structure_json_path}")
@@ -1087,6 +1145,7 @@ class FileUtils:
         output_type: str = "processed",
         file_name: Optional[str] = None,
         sub_path: Optional[Union[str, Path]] = None,
+        root_level: bool = False,
         **kwargs,
     ) -> str:
         """Convert CSV files back to Excel workbook using structure JSON.
@@ -1101,6 +1160,8 @@ class FileUtils:
             output_type: Type of output directory for the Excel workbook
             file_name: Base name for output Excel file (defaults to structure file name)
             sub_path: Optional subdirectory path relative to input_type directory
+            root_level: If True, input_type and output_type are directories at project root level.
+                       If False (default), they are under the data directory.
             **kwargs: Additional arguments for Excel saving (engine, etc.)
             
         Returns:
@@ -1160,7 +1221,8 @@ class FileUtils:
                     df = self.load_single_file(
                         csv_filename,
                         input_type=input_type,
-                        sub_path=sub_path
+                        sub_path=sub_path,
+                        root_level=root_level
                     )
                     workbook_data[sheet_name] = df
                     self.logger.debug(f"Loaded sheet '{sheet_name}' from {csv_filename}")
@@ -1183,6 +1245,7 @@ class FileUtils:
                 output_type=output_type,
                 file_name=file_name,
                 sub_path=sub_path,
+                root_level=root_level,
                 **kwargs
             )
             
@@ -1222,7 +1285,8 @@ class FileUtils:
                 output_filetype=OutputFileType.JSON,
                 output_type=output_type,
                 file_name=metadata_file_name,
-                sub_path=sub_path
+                sub_path=sub_path,
+                root_level=root_level
             )
             
             self.logger.info(f"Successfully reconstructed Excel workbook: {excel_file_path}")

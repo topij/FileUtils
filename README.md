@@ -385,6 +385,53 @@ file_utils.save_data_to_storage(data, output_filetype=OutputFileType.CSV,
 - **Research**: `experiments/` instead of `data/`
 - **Customer Success**: `cs_workflow/` instead of `data/`
 
+### Root-Level Directories
+
+FileUtils can work with directories outside the data folder at the project root level. This is useful for configuration files, logs, documentation, or any other project-level directories.
+
+**Usage:**
+```python
+from FileUtils import FileUtils, OutputFileType
+
+file_utils = FileUtils()
+
+# Save configuration to config directory at project root
+config_data = {
+    "database": {"host": "localhost", "port": 5432},
+    "api": {"timeout": 30}
+}
+
+file_utils.save_document_to_storage(
+    content=config_data,
+    output_filetype=OutputFileType.JSON,
+    output_type="config",
+    file_name="app_config",
+    root_level=True  # Creates config/ at project root, not data/config/
+)
+
+# Load configuration from root-level config directory
+loaded_config = file_utils.load_json(
+    file_path="app_config.json",
+    input_type="config",
+    root_level=True
+)
+
+# Save logs to logs directory at project root
+file_utils.save_data_to_storage(
+    data=log_df,
+    output_filetype=OutputFileType.CSV,
+    output_type="logs",
+    file_name="application_logs",
+    root_level=True  # Creates logs/ at project root
+)
+```
+
+**Key Points:**
+- `root_level=True`: Directory is created at project root (e.g., `project_root/config/`)
+- `root_level=False` (default): Directory is under data directory (e.g., `project_root/data/processed/`)
+- Works with all file operations: save, load, documents, Excel conversion, etc.
+- Can use `sub_path` with root-level directories for nested structures
+
 ## Examples
 
 FileUtils includes comprehensive example scripts demonstrating various use cases:
