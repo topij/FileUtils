@@ -225,14 +225,15 @@ class BaseStorage(ABC):
 
     @abstractmethod
     def save_document(
-        self, content: Union[str, Dict[str, Any]], file_path: Union[str, Path], file_type: str, **kwargs
+        self, content: Union[str, Dict[str, Any], bytes, Path], file_path: Union[str, Path], file_type: str, **kwargs
     ) -> str:
         """Save document content to storage.
         
         Args:
-            content: Document content (string or dict)
+            content: Document content (string, dict, bytes, or Path).
+                    For PPTX: accepts bytes (file content) or Path/str (path to source .pptx file).
             file_path: Path to save to
-            file_type: Type of document (docx, md, pdf)
+            file_type: Type of document (docx, md, pdf, pptx)
             **kwargs: Additional arguments for saving
             
         Returns:
@@ -241,7 +242,7 @@ class BaseStorage(ABC):
         pass
 
     @abstractmethod
-    def load_document(self, file_path: Union[str, Path], **kwargs) -> Union[str, Dict[str, Any]]:
+    def load_document(self, file_path: Union[str, Path], **kwargs) -> Union[str, Dict[str, Any], bytes]:
         """Load document content from storage.
         
         Args:
@@ -249,7 +250,8 @@ class BaseStorage(ABC):
             **kwargs: Additional arguments for loading
             
         Returns:
-            Document content (string or dict depending on file type)
+            Document content (string, dict, or bytes depending on file type).
+            For PPTX: returns bytes.
         """
         pass
 

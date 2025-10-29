@@ -4,11 +4,12 @@ This guide covers FileUtils' support for rich document formats, perfect for AI/a
 
 ## Overview
 
-FileUtils now supports three document formats alongside traditional tabular data:
+FileUtils now supports the following document formats alongside traditional tabular data:
 
 - **Markdown (.md)**: Text-based documents with YAML frontmatter support
 - **Microsoft Word (.docx)**: Structured documents with headings, text, and tables, **now with enhanced template support**
 - **PDF (.pdf)**: Text documents with basic formatting (read-only extraction)
+- **PowerPoint (.pptx)**: Native `.pptx` file handling (save/load raw files)
 
 ## Enhanced DOCX Template System
 
@@ -311,6 +312,52 @@ loaded_content = file_utils.load_document_from_storage(
     sub_path="docs/architecture"
 )
 ```
+
+## PPTX Files
+
+PPTX support is designed for raw file handling: save an existing `.pptx` (bytes or path) and load as bytes. This keeps your presentation content intact without rendering or modifying slides.
+
+```python
+from FileUtils import FileUtils, OutputFileType
+
+file_utils = FileUtils()
+
+# Save PPTX from bytes
+with open("deck.pptx", "rb") as f:
+    pptx_bytes = f.read()
+
+saved_path, _ = file_utils.save_document_to_storage(
+    content=pptx_bytes,
+    output_filetype=OutputFileType.PPTX,
+    output_type="processed",
+    file_name="customer_adp",
+    sub_path="presentations/2024"
+)
+
+# Or copy from a local path
+saved_path, _ = file_utils.save_document_to_storage(
+    content="/path/to/deck.pptx",
+    output_filetype=OutputFileType.PPTX,
+    output_type="processed",
+    file_name="customer_adp",
+    sub_path="presentations/2024"
+)
+
+# Load PPTX as bytes
+pptx_bytes = file_utils.load_document_from_storage(
+    file_path="customer_adp.pptx",
+    input_type="processed",
+    sub_path="presentations/2024"
+)
+
+# Write bytes back to a file if needed
+with open("/tmp/customer_adp.pptx", "wb") as f:
+    f.write(pptx_bytes)
+```
+
+Notes:
+- No additional dependencies required for PPTX handling (copy/bytes only).
+- For programmatic slide editing/generation, use a dedicated library upstream (e.g., `python-pptx`), then pass the generated `.pptx` bytes/path to FileUtils.
 
 ## AI/Agentic Workflow Examples
 

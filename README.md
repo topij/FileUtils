@@ -11,7 +11,7 @@ A Python utility package for consistent file operations across local and Azure s
 
 - **Comprehensive File Format Support**
   - **Tabular Data**: CSV (with delimiter auto-detection), Excel (.xlsx, .xls) with multi-sheet support, Parquet (with compression options)
-  - **Document Formats**: Microsoft Word (.docx) with template support, Markdown (.md) with YAML frontmatter, PDF (read-only text extraction)
+  - **Document Formats**: Microsoft PowerPoint (.pptx), Microsoft Word (.docx) with template support, Markdown (.md) with YAML frontmatter, PDF (read-only text extraction)
   - **Multi-Purpose Formats**: JSON and YAML support both DataFrame storage and structured document handling with automatic pandas type conversion
   - **Excel ↔ CSV Round-Trip**: Convert Excel workbooks to CSV files with structure preservation, and reconstruct Excel workbooks from modified CSV files
 

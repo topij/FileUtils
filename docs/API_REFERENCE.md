@@ -479,11 +479,11 @@ set_logging_level(level: str) -> None
 
 ##### `save_document_to_storage`
 
-Save document content using configured storage backend. Supports rich document formats including DOCX, Markdown, PDF, JSON, and YAML.
+Save document content using configured storage backend. Supports rich document formats including DOCX, Markdown, PDF, PPTX, JSON, and YAML.
 
 ```python
 save_document_to_storage(
-    content: Union[str, Dict[str, Any]],
+    content: Union[str, Dict[str, Any], bytes, Path],
     output_filetype: Union[OutputFileType, str],
     output_type: str = "processed",
     file_name: Optional[str] = None,
@@ -495,8 +495,12 @@ save_document_to_storage(
 
 **Parameters:**
 
-- `content`: Document content (string, dict, or structured content).
-- `output_filetype`: Type of output file (DOCX, MARKDOWN, PDF, JSON, YAML).
+- `content`: Document content.
+  - DOCX: string or structured dict (title/sections)
+  - MARKDOWN: string or dict with `frontmatter` and `body`
+  - PDF: string or structured dict (title/sections)
+  - PPTX: bytes of a `.pptx` or a local Path/str pointing to a `.pptx` file
+- `output_filetype`: Type of output file (DOCX, MARKDOWN, PDF, PPTX, JSON, YAML).
 - `output_type`: Directory name to save in (e.g., "raw", "processed").
 - `file_name`: Base name for the file without extension.
 - `sub_path`: Optional relative path for subdirectory within `output_type` directory.
@@ -528,7 +532,7 @@ load_document_from_storage(
     input_type: str = "raw",
     sub_path: Optional[Union[str, Path]] = None,
     **kwargs
-) -> Union[str, Dict[str, Any]]
+) -> Union[str, Dict[str, Any], bytes]
 ```
 
 **Parameters:**
@@ -540,7 +544,11 @@ load_document_from_storage(
 
 **Returns:**
 
-- Document content (string or dict depending on file type).
+- Document content (string, dict, or bytes depending on file type).
+  - MARKDOWN: str or dict (if YAML frontmatter present)
+  - DOCX: extracted text (str)
+  - PDF: extracted text (str)
+  - PPTX: bytes of the `.pptx` file
 
 **Raises:**
 
@@ -564,7 +572,6 @@ class OutputFileType(Enum):
     # Tabular data formats
     CSV = "csv"
     XLSX = "xlsx"
-    XLS = "xls"
     PARQUET = "parquet"
     
     # Multi-purpose formats (both tabular and document)
@@ -575,12 +582,13 @@ class OutputFileType(Enum):
     DOCX = "docx"
     MARKDOWN = "md"
     PDF = "pdf"
+    PPTX = "pptx"
 ```
 
 **Format Usage Guidelines:**
 
-- **Tabular Data**: Use `save_data_to_storage()` for CSV, XLSX, XLS, PARQUET
-- **Document Data**: Use `save_document_to_storage()` for DOCX, MARKDOWN, PDF
+- **Tabular Data**: Use `save_data_to_storage()` for CSV, XLSX, PARQUET
+- **Document Data**: Use `save_document_to_storage()` for DOCX, MARKDOWN, PDF, PPTX
 - **Flexible Formats**: JSON and YAML can be used with either method:
   - Use `save_data_to_storage()` for DataFrame content
   - Use `save_document_to_storage()` for structured documents/configurations

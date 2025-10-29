@@ -184,6 +184,33 @@ loaded_content = file_utils.load_document_from_storage(
 
 **Note**: Document functionality requires optional dependencies. Install with `pip install 'FileUtils[documents]'`. Markdown works without additional dependencies.
 
+#### PPTX (PowerPoint) Quick Example
+
+```python
+from FileUtils import FileUtils, OutputFileType
+
+file_utils = FileUtils()
+
+# Save PPTX from bytes
+with open("slides.pptx", "rb") as f:
+    pptx_bytes = f.read()
+
+saved_path, _ = file_utils.save_document_to_storage(
+    content=pptx_bytes,
+    output_filetype=OutputFileType.PPTX,
+    output_type="processed",
+    file_name="team_update",
+    sub_path="presentations"
+)
+
+# Load PPTX as bytes
+pptx_bytes = file_utils.load_document_from_storage(
+    file_path="team_update.pptx",
+    input_type="processed",
+    sub_path="presentations"
+)
+```
+
 ### 8. Document Handling with JSON/YAML
 
 FileUtils supports JSON and YAML as both DataFrame storage and structured document formats:

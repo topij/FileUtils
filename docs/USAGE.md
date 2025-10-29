@@ -625,6 +625,37 @@ loaded_content = file_utils.load_document_from_storage(
 )
 ```
 
+### PPTX Files
+```python
+# Save PPTX from bytes
+with open("slides.pptx", "rb") as f:
+    pptx_bytes = f.read()
+
+saved_path, _ = file_utils.save_document_to_storage(
+    content=pptx_bytes,
+    output_filetype=OutputFileType.PPTX,
+    output_type="processed",
+    file_name="quarterly_review",
+    sub_path="presentations/2024/Q1"
+)
+
+# Or save PPTX from a local file path
+saved_path, _ = file_utils.save_document_to_storage(
+    content="/absolute/path/to/slides.pptx",
+    output_filetype=OutputFileType.PPTX,
+    output_type="processed",
+    file_name="quarterly_review",
+    sub_path="presentations/2024/Q1"
+)
+
+# Load PPTX (returns bytes)
+pptx_bytes = file_utils.load_document_from_storage(
+    file_path="quarterly_review.pptx",
+    input_type="processed",
+    sub_path="presentations/2024/Q1"
+)
+```
+
 ### Document Dependencies
 
 Document functionality requires optional dependencies:
@@ -638,6 +669,7 @@ pip install python-docx markdown PyMuPDF
 ```
 
 **Note**: Markdown functionality works without additional dependencies. DOCX and PDF require the optional packages.
+PPTX support operates on raw files and does not require additional dependencies.
 
 ## Directory Management
 

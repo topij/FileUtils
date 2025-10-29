@@ -17,6 +17,7 @@ class OutputFileType(Enum):
     DOCX = "docx"
     MARKDOWN = "md"
     PDF = "pdf"
+    PPTX = "pptx"
 
 
 class StorageType(Enum):

@@ -304,14 +304,15 @@ class LocalStorage(BaseStorage):
             raise StorageOperationError(f"Failed to save DataFrames: {e}") from e
 
     def save_document(
-        self, content: Union[str, Dict[str, Any]], file_path: Union[str, Path], file_type: str, **kwargs
+        self, content: Union[str, Dict[str, Any], bytes, Path], file_path: Union[str, Path], file_type: str, **kwargs
     ) -> str:
         """Save document content to local filesystem.
         
         Args:
-            content: Document content (string or dict)
+            content: Document content (string, dict, bytes, or Path).
+                    For PPTX: accepts bytes (file content) or Path/str (path to source .pptx file).
             file_path: Path to save to
-            file_type: Type of document (docx, md, pdf)
+            file_type: Type of document (docx, md, pdf, pptx)
             **kwargs: Additional arguments for saving
             
         Returns:
@@ -330,6 +331,8 @@ class LocalStorage(BaseStorage):
                 return self._save_markdown(content, path, **kwargs)
             elif suffix == ".pdf":
                 return self._save_pdf(content, path, **kwargs)
+            elif suffix == ".pptx":
+                return self._save_pptx(content, path, **kwargs)
             elif suffix == ".json":
                 return self._save_json(content, path, **kwargs)
             elif suffix in (".yaml", ".yml"):
@@ -340,7 +343,7 @@ class LocalStorage(BaseStorage):
         except Exception as e:
             raise StorageOperationError(f"Failed to save document: {e}") from e
 
-    def load_document(self, file_path: Union[str, Path], **kwargs) -> Union[str, Dict[str, Any]]:
+    def load_document(self, file_path: Union[str, Path], **kwargs) -> Union[str, Dict[str, Any], bytes]:
         """Load document content from local filesystem.
         
         Args:
@@ -348,7 +351,8 @@ class LocalStorage(BaseStorage):
             **kwargs: Additional arguments for loading
             
         Returns:
-            Document content (string or dict depending on file type)
+            Document content (string, dict, or bytes depending on file type).
+            For PPTX: returns bytes.
         """
         try:
             path = ensure_path(file_path)
@@ -360,6 +364,8 @@ class LocalStorage(BaseStorage):
                 return self._load_markdown(path, **kwargs)
             elif suffix == ".pdf":
                 return self._load_pdf(path, **kwargs)
+            elif suffix == ".pptx":
+                return self._load_pptx(path, **kwargs)
             elif suffix == ".json":
                 return self._load_json(path, **kwargs)
             elif suffix in (".yaml", ".yml"):
@@ -664,6 +670,57 @@ class LocalStorage(BaseStorage):
         doc.close()
         return str(path)
 
+    def _save_pptx(self, content: Union[bytes, Path, str], path: Path, **kwargs) -> str:
+        """Save PPTX content to local filesystem.
+        
+        Args:
+            content: PPTX file content as bytes, or Path/str to source .pptx file
+            path: Destination path where file will be saved
+            **kwargs: Additional arguments (not used for PPTX)
+            
+        Returns:
+            String path where the file was saved
+            
+        Raises:
+            StorageOperationError: If content type is invalid or file operations fail
+        """
+        try:
+            if isinstance(content, bytes):
+                # Write bytes directly to file
+                with open(path, "wb") as f:
+                    f.write(content)
+            elif isinstance(content, Path):
+                # Copy file from source path (Path object)
+                if not content.exists():
+                    raise StorageOperationError(f"Source PPTX file not found: {content}")
+                # Read and write in binary mode
+                with open(content, "rb") as src:
+                    with open(path, "wb") as dst:
+                        dst.write(src.read())
+            elif isinstance(content, str):
+                # String could be a file path - check if it's a valid path to an existing file
+                source_path = ensure_path(content)
+                if not source_path.exists():
+                    # Not a valid file path, raise error about invalid content type
+                    raise StorageOperationError(
+                        f"Invalid content type for PPTX: str (not a valid file path). "
+                        f"Expected bytes or Path/str to an existing source .pptx file. "
+                        f"Received string that doesn't point to an existing file: {content}"
+                    )
+                # Valid file path - copy the file
+                with open(source_path, "rb") as src:
+                    with open(path, "wb") as dst:
+                        dst.write(src.read())
+            else:
+                raise StorageOperationError(
+                    f"Invalid content type for PPTX: {type(content)}. "
+                    f"Expected bytes or Path/str to source .pptx file."
+                )
+            
+            return str(path)
+        except Exception as e:
+            raise StorageOperationError(f"Failed to save PPTX file: {e}") from e
+
     def _load_pdf(self, path: Path, **kwargs) -> str:
         """Load PDF file and extract text content."""
         try:
@@ -684,6 +741,22 @@ class LocalStorage(BaseStorage):
         
         doc.close()
         return "\n\n".join(text_content)
+
+    def _load_pptx(self, path: Path, **kwargs) -> bytes:
+        """Load PPTX file as bytes.
+        
+        Args:
+            path: Path to PPTX file
+            **kwargs: Additional arguments (not used for PPTX)
+            
+        Returns:
+            Bytes content of the PPTX file
+        """
+        try:
+            with open(path, "rb") as f:
+                return f.read()
+        except Exception as e:
+            raise StorageOperationError(f"Failed to load PPTX file: {e}") from e
 
     def _load_json(self, path: Path, **kwargs) -> Dict[str, Any]:
         """Load JSON file."""

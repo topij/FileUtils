@@ -797,7 +797,7 @@ class FileUtils:
 
     def save_document_to_storage(
         self,
-        content: Union[str, Dict[str, Any]],
+        content: Union[str, Dict[str, Any], bytes, Path],
         output_filetype: Union[OutputFileType, str],
         output_type: str = "processed",
         file_name: Optional[str] = None,
@@ -808,8 +808,9 @@ class FileUtils:
         """Save document content using configured storage backend.
 
         Args:
-            content: Document content (string, dict, or rich content)
-            output_filetype: Type of output file (DOCX, MARKDOWN, PDF)
+            content: Document content (string, dict, bytes, or Path).
+                    For PPTX: accepts bytes (file content) or Path/str (path to source .pptx file).
+            output_filetype: Type of output file (DOCX, MARKDOWN, PDF, PPTX, JSON, YAML)
             output_type: Type of output (e.g., "processed", "raw")
             file_name: Base name for output file
             sub_path: Optional subdirectory path relative to output_type directory
@@ -827,7 +828,7 @@ class FileUtils:
             output_filetype = OutputFileType(output_filetype.lower())
 
         # Validate document format
-        document_formats = {OutputFileType.DOCX, OutputFileType.MARKDOWN, OutputFileType.PDF, OutputFileType.JSON, OutputFileType.YAML}
+        document_formats = {OutputFileType.DOCX, OutputFileType.MARKDOWN, OutputFileType.PDF, OutputFileType.PPTX, OutputFileType.JSON, OutputFileType.YAML}
         if output_filetype not in document_formats:
             raise ValueError(
                 f"Invalid document format: {output_filetype}. "
@@ -870,7 +871,7 @@ class FileUtils:
         input_type: str = "raw",
         sub_path: Optional[Union[str, Path]] = None,
         **kwargs,
-    ) -> Union[str, Dict[str, Any]]:
+    ) -> Union[str, Dict[str, Any], bytes]:
         """Load document content from storage.
 
         Args:
@@ -881,7 +882,8 @@ class FileUtils:
             **kwargs: Additional arguments passed to storage backend
 
         Returns:
-            Document content (string or dict depending on file type)
+            Document content (string, dict, or bytes depending on file type).
+            For PPTX: returns bytes.
 
         Raises:
             StorageError: If loading fails
