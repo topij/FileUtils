@@ -25,6 +25,7 @@ python multi_format_reports.py
 | [`error_handling.py`](error_handling.py) | Robust error handling | Advanced | ~1-2min |
 | [`performance_optimization.py`](performance_optimization.py) | Large dataset optimization | Advanced | ~3-5min |
 | [`document_types.py`](document_types.py) | Document functionality | Beginner | ~1min |
+| [`pptx_handling.py`](pptx_handling.py) | PPTX file handling | Beginner | ~30s |
 | [`configuration.py`](configuration.py) | Configuration options | Beginner | ~30s |
 | [`azure_storage.py`](azure_storage.py) | Azure integration | Intermediate | ~1-2min |
 | [`FileUtils_tutorial.ipynb`](FileUtils_tutorial.ipynb) | Comprehensive tutorial | All levels | ~30-60min |
@@ -32,7 +33,7 @@ python multi_format_reports.py
 ## 🎯 Choose Your Example
 
 ### **Beginners**
-Start with: `basic_usage.py` → `document_types.py` → `configuration.py`
+Start with: `basic_usage.py` → `document_types.py` → `pptx_handling.py` → `configuration.py`
 
 ### **Data Scientists**
 Start with: `data_pipeline.py` → `multi_format_reports.py`
@@ -78,6 +79,7 @@ pip install "FileUtils[all]"
 python basic_usage.py
 python data_pipeline.py
 python ai_workflow.py
+python pptx_handling.py
 ```
 
 ### Batch Run All
@@ -143,6 +145,13 @@ jupyter notebook FileUtils_tutorial.ipynb
 - Markdown with YAML frontmatter
 - PDF document creation
 - Structured content handling
+
+### **PPTX Handling** (`pptx_handling.py`)
+- Save PPTX from bytes
+- Save PPTX from file path
+- Load PPTX as bytes
+- Subdirectory organization
+- **No additional dependencies required**
 
 ### **Configuration** (`configuration.py`)
 - Custom configuration files

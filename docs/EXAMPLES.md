@@ -16,6 +16,7 @@ FileUtils includes a comprehensive collection of example scripts that demonstrat
 | [`error_handling.py`](#error-handling) | Robust error handling | Advanced | Retry logic, fallbacks |
 | [`performance_optimization.py`](#performance-optimization) | Large dataset optimization | Advanced | Memory management, chunking |
 | [`document_types.py`](#document-types) | Document functionality | Beginner | DOCX, Markdown, PDF |
+| [`pptx_handling.py`](#pptx-handling) | PPTX file handling | Beginner | PPTX save/load, bytes handling |
 | [`configuration.py`](#configuration) | Configuration options | Beginner | Custom configs, settings |
 | [`azure_storage.py`](#azure-storage) | Azure integration | Intermediate | Cloud storage, Azure Blob |
 | [`configurable_directories.py`](#configurable-directories) | Domain-specific directory customization | Intermediate | Custom directory names, workflow examples |
@@ -406,6 +407,52 @@ Demonstrates FileUtils' document functionality including DOCX, Markdown, and PDF
 
 ---
 
+### PPTX Handling
+
+**File**: `pptx_handling.py`  
+**Level**: Beginner  
+**Duration**: ~30 seconds  
+
+#### Purpose
+Demonstrates FileUtils' PPTX file handling capabilities for saving and loading PowerPoint presentations.
+
+#### Key Features
+- ✅ Save PPTX from bytes
+- ✅ Save PPTX from file path
+- ✅ Load PPTX as bytes
+- ✅ Subdirectory organization
+- ✅ No additional dependencies required
+
+#### What It Does
+1. **Save from Bytes**: Reads a PPTX file and saves it using FileUtils
+2. **Save from Path**: Copies a PPTX file from a source location
+3. **Load PPTX**: Loads PPTX files as bytes for further processing
+4. **Organized Storage**: Demonstrates using `sub_path` for organization
+
+#### Important Notes
+
+**What PPTX Support Does:**
+- ✅ Save `.pptx` files from bytes or file paths
+- ✅ Load `.pptx` files as raw bytes
+- ✅ Support for `sub_path` and all FileUtils directory conventions
+- ✅ Works with Azure Blob Storage
+
+**What PPTX Support Does NOT Do:**
+- ❌ Does not create or edit PowerPoint slides programmatically
+- ❌ Does not extract text, images, or metadata from presentations
+- ❌ Does not render or modify slide content
+
+**For Programmatic Slide Creation:**
+Use a dedicated library like `python-pptx` to create/edit presentations, then use FileUtils to save/load them with proper directory structure.
+
+#### Use Cases
+- Presentation file management
+- Organizing PowerPoint files in workflows
+- Saving presentations from external sources
+- Loading presentations for distribution
+
+---
+
 ### Configuration
 
 **File**: `configuration.py`  
@@ -531,6 +578,9 @@ python performance_optimization.py
 
 # Document types
 python document_types.py
+
+# PPTX handling
+python pptx_handling.py
 
 # Configuration
 python configuration.py

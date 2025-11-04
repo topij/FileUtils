@@ -68,6 +68,51 @@ This adds:
 
 **Note**: Markdown functionality works without additional dependencies. DOCX and PDF require the optional packages.
 
+### PPTX (PowerPoint) Support
+
+PPTX support is built into the core package and requires **no additional dependencies**.
+
+**What PPTX Support Does:**
+- ✅ Save `.pptx` files from bytes or file paths
+- ✅ Load `.pptx` files as raw bytes
+- ✅ Support for `sub_path` and all FileUtils directory conventions
+- ✅ Works with Azure Blob Storage (same as other document formats)
+
+**What PPTX Support Does NOT Do:**
+- ❌ Does not create or edit PowerPoint slides programmatically
+- ❌ Does not extract text, images, or metadata from presentations
+- ❌ Does not render or modify slide content
+
+**For Programmatic Slide Creation:**
+If you need to create or edit PowerPoint presentations programmatically, use a dedicated library like `python-pptx` to generate your `.pptx` file, then use FileUtils to save/load it:
+
+```python
+# Example: Create slides with python-pptx, then save with FileUtils
+from pptx import Presentation
+from FileUtils import FileUtils, OutputFileType
+
+# Create presentation with python-pptx
+prs = Presentation()
+slide = prs.slides.add_slide(prs.slide_layouts[0])
+slide.shapes.title.text = "Hello, World!"
+
+# Save to bytes
+import io
+pptx_bytes = io.BytesIO()
+prs.save(pptx_bytes)
+pptx_bytes.seek(0)
+
+# Use FileUtils to save with proper directory structure
+file_utils = FileUtils()
+saved_path, _ = file_utils.save_document_to_storage(
+    content=pptx_bytes.read(),
+    output_filetype=OutputFileType.PPTX,
+    output_type="processed",
+    file_name="presentation",
+    sub_path="presentations/2024"
+)
+```
+
 ### All Features
 
 To install all optional dependencies:
