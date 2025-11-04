@@ -40,13 +40,27 @@ jobs:
         auto-activate-base: false
         use-only-tar-bz2: false
 
-    - name: Install package with extras
-      shell: ${{ runner.os == 'Windows' && 'cmd /C call {0}' || 'bash -l {0}' }}
+    - name: Install package with extras (Linux/macOS)
+      if: matrix.os != 'windows-latest'
+      shell: bash -l {0}
       run: |
         pip install -e .${{ matrix.extras }}
 
-    - name: Run unit tests
-      shell: ${{ runner.os == 'Windows' && 'cmd /C call {0}' || 'bash -l {0}' }}
+    - name: Install package with extras (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: cmd /C call {0}
+      run: |
+        pip install -e .${{ matrix.extras }}
+
+    - name: Run unit tests (Linux/macOS)
+      if: matrix.os != 'windows-latest'
+      shell: bash -l {0}
+      run: |
+        pytest tests/unit/ -v --cov=FileUtils --cov-report=xml --cov-report=term-missing
+
+    - name: Run unit tests (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: cmd /C call {0}
       run: |
         pytest tests/unit/ -v --cov=FileUtils --cov-report=xml --cov-report=term-missing
 
