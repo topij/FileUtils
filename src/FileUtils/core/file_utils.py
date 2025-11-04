@@ -8,12 +8,14 @@ from .base import BaseStorage
 import pandas as pd
 import yaml
 
-from ..config import load_config, validate_config
+from ..config import load_config, validate_config, get_default_config
 from ..core.base import StorageError
-from ..core.enums import OutputFileType, StorageType
+from ..core.types import SaveResult
+from ..core.enums import OutputFileType, StorageType, InputType, OutputArea
 from ..storage.local import LocalStorage
 from ..utils.common import get_logger, format_file_path
 from ..utils.logging import setup_logger
+from ..utils.pathing import find_project_root
 
 
 class FileUtils:
@@ -91,7 +93,7 @@ class FileUtils:
             config = load_config(config_file)
         else:
             # Load default config if no file provided
-            config = self._get_default_config()
+            config = get_default_config()
 
         # Override directory structure if provided
         if directory_structure:
@@ -104,22 +106,16 @@ class FileUtils:
         return config
 
     def _get_default_config(self) -> Dict[str, Any]:
-        """Get minimal default configuration."""
-        return {
-            "directories": {
-                "data_directory": "data",
-                "subdirectories": {
-                    "raw": "raw",
-                    "processed": "processed",
-                    "templates": "templates"
-                }
-            },
-            "directory_structure": {"data": ["raw", "processed"]},  # Legacy support
-            "csv_delimiter": ";",
-            "encoding": "utf-8",
-            "quoting": 0,
-            "include_timestamp": True,
-        }
+        """Deprecated: use config.get_default_config().
+
+        Kept for backward compatibility and emits a deprecation warning.
+        """
+        warnings.warn(
+            "FileUtils._get_default_config is deprecated; using config.get_default_config()",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return get_default_config()
 
     def _deep_merge(self, dict1: Dict[str, Any], dict2: Dict[str, Any]) -> None:
         """Recursively merge two dictionaries."""
@@ -142,16 +138,9 @@ class FileUtils:
         return self.config.copy()
 
     def _get_project_root(self) -> Path:
-        """Determine project root directory."""
-        current_dir = Path.cwd()
-        root_indicators = [".git", "pyproject.toml", "setup.py"]
-
-        while current_dir != current_dir.parent:
-            if any((current_dir / indicator).exists() for indicator in root_indicators):
-                return current_dir
-            current_dir = current_dir.parent
-
-        return Path.cwd()
+        """Determine project root directory using shared helper."""
+        root = find_project_root()
+        return root or Path.cwd()
 
     def _setup_directory_structure(self) -> None:
         """Create project directory structure."""
@@ -215,7 +204,7 @@ class FileUtils:
             "templates": templates_dir
         }
 
-    def get_data_path(self, data_type: str = "raw") -> Path:
+    def get_data_path(self, data_type: Union[str, InputType] = "raw") -> Path:
         """Get the path for a specific data directory.
 
         Args:
@@ -228,20 +217,23 @@ class FileUtils:
         data_directory = dir_config["data_directory"]
         
         # Map data_type to configured subdirectory name
+        # Coerce enums to string values
+        data_type_str = data_type.value if hasattr(data_type, "value") else str(data_type)
+
         subdirectory_mapping = {
             "raw": dir_config["raw"],
             "processed": dir_config["processed"],
-            "templates": dir_config["templates"]
+            "templates": dir_config["templates"],
         }
         
         # Use configured subdirectory name or fallback to data_type
-        subdirectory = subdirectory_mapping.get(data_type, data_type)
+        subdirectory = subdirectory_mapping.get(data_type_str, data_type_str)
         
         path = self.project_root / data_directory / subdirectory
         path.mkdir(parents=True, exist_ok=True)
         return path
 
-    def _get_base_path(self, directory_type: Optional[str] = None, root_level: bool = False) -> Path:
+    def _get_base_path(self, directory_type: Optional[Union[str, InputType, OutputArea]] = None, root_level: bool = False) -> Path:
         """Get base path for file operations, supporting both data directory and root-level directories.
 
         Args:
@@ -258,7 +250,8 @@ class FileUtils:
                 path = self.project_root
             else:
                 # Directory at project root level
-                path = self.project_root / directory_type
+                dir_name = directory_type.value if hasattr(directory_type, "value") else str(directory_type)
+                path = self.project_root / dir_name
         else:
             # Data directory (current behavior)
             if directory_type is None:
@@ -326,6 +319,7 @@ class FileUtils:
         sub_path: Optional[Union[str, Path]] = None,
         include_timestamp: Optional[bool] = None,
         root_level: bool = False,
+        structured_result: bool = False,
         **kwargs,
     ) -> Tuple[Dict[str, str], Optional[str]]:
         """Save data using configured storage backend.
@@ -397,6 +391,14 @@ class FileUtils:
                 )
 
             self.logger.info(f"Data saved successfully: {saved_files}")
+            if structured_result:
+                # Map paths to SaveResult with optional url for azure
+                def to_res(p: str) -> SaveResult:
+                    url = p if str(p).startswith("azure://") else None
+                    return SaveResult(path=str(p), url=url)
+
+                saved_struct = {k: to_res(v) for k, v in saved_files.items()}
+                return saved_struct, None
             return saved_files, None
 
         except Exception as e:
@@ -850,8 +852,9 @@ class FileUtils:
         sub_path: Optional[Union[str, Path]] = None,
         include_timestamp: Optional[bool] = None,
         root_level: bool = False,
+        structured_result: bool = False,
         **kwargs,
-    ) -> Tuple[str, Optional[str]]:
+    ) -> Tuple[Union[str, SaveResult], Optional[str]]:
         """Save document content using configured storage backend.
 
         Args:
@@ -908,11 +911,55 @@ class FileUtils:
         try:
             saved_path = self.storage.save_document(content, full_file_path, output_filetype.value, **kwargs)
             self.logger.info(f"Document saved successfully: {saved_path}")
+            if structured_result:
+                url = saved_path if str(saved_path).startswith("azure://") else None
+                return SaveResult(path=str(saved_path), url=url), None
             return saved_path, None
 
         except Exception as e:
             self.logger.error(f"Failed to save document: {e}")
             raise StorageError(f"Failed to save document: {e}") from e
+
+    def save_bytes(
+        self,
+        content: bytes,
+        file_stem: str,
+        *,
+        sub_path: Optional[Union[str, Path]] = None,
+        output_type: Union[str, OutputArea] = "processed",
+        file_ext: str = "png",
+        include_timestamp: Optional[bool] = None,
+        root_level: bool = False,
+        **kwargs,
+    ) -> str:
+        """Convenience method to save raw bytes with standardized pathing.
+
+        Returns the saved path or azure URL.
+        """
+        base_dir = self._get_base_path(output_type, root_level=root_level)
+        full_file_path_str = format_file_path(
+            base_dir,
+            file_stem,
+            file_ext,
+            (
+                include_timestamp
+                if include_timestamp is not None
+                else self.config.get("include_timestamp", True)
+            ),
+        )
+
+        full_file_path = Path(full_file_path_str)
+        if sub_path:
+            safe_sub_path = (
+                Path(sub_path).relative_to(Path(sub_path).anchor)
+                if Path(sub_path).is_absolute()
+                else Path(sub_path)
+            )
+            full_file_path = base_dir / safe_sub_path / full_file_path.name
+
+        saved_path = self.storage.save_bytes(content, full_file_path)
+        self.logger.info(f"Bytes saved successfully: {saved_path}")
+        return saved_path
 
     def load_document_from_storage(
         self,
@@ -1297,3 +1344,15 @@ class FileUtils:
                 raise
             self.logger.error(f"Failed to convert CSV files to Excel workbook: {e}")
             raise StorageError(f"Failed to convert CSV files to Excel workbook: {e}") from e
+
+    def open_run(
+        self,
+        sub_path_prefix: str,
+        customer: str,
+        *,
+        fmt: str = "%Y%m%d-%H%M%S",
+    ) -> Tuple[str, str]:
+        """Create a standardized run sub_path and return (sub_path, run_id)."""
+        run_id = pd.Timestamp.now().strftime(fmt)
+        sub_path = f"{sub_path_prefix}/{customer}/{run_id}"
+        return sub_path, run_id

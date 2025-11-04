@@ -9,6 +9,7 @@ from typing import Dict, Any, Optional, Union
 import yaml
 
 from ..utils.common import get_logger
+from ..utils.pathing import find_project_root
 
 
 class DocxTemplateManager:
@@ -79,16 +80,8 @@ class DocxTemplateManager:
         return default_mappings
     
     def _find_project_root(self) -> Optional[Path]:
-        """Find project root directory by looking for indicators."""
-        current_dir = Path.cwd()
-        root_indicators = [".git", "pyproject.toml", "setup.py", "environment.yaml"]
-        
-        while current_dir != current_dir.parent:
-            if any((current_dir / indicator).exists() for indicator in root_indicators):
-                return current_dir
-            current_dir = current_dir.parent
-        
-        return None
+        """Find project root directory using shared helper."""
+        return find_project_root()
     
     def get_template_path(self, template_name: Optional[str] = None) -> Optional[Path]:
         """Get the path to a specific template.

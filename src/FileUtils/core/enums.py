@@ -25,3 +25,23 @@ class StorageType(Enum):
 
     LOCAL = "local"
     AZURE = "azure"
+
+
+class InputType(Enum):
+    """Typed input directory areas to avoid magic strings."""
+
+    RAW = "raw"
+    PROCESSED = "processed"
+    TEMPLATES = "templates"
+    CONFIG = "config"
+    LOGS = "logs"
+
+
+class OutputArea(Enum):
+    """Typed output directory areas to avoid magic strings."""
+
+    RAW = "raw"
+    PROCESSED = "processed"
+    TEMPLATES = "templates"
+    CONFIG = "config"
+    LOGS = "logs"

@@ -1,3 +1,33 @@
+# API Reference
+
+## New and Updated APIs (v0.8)
+
+- Storage interfaces
+  - `BaseStorage.save_dataframe(df, file_path, **kwargs)` infers format from `file_path` suffix.
+  - `BaseStorage.save_dataframes(dataframes, file_path, file_format: Optional[str] = None, **kwargs)` infers format from suffix; `file_format` is deprecated.
+
+- Convenience
+  - `FileUtils.save_bytes(content: bytes, file_stem: str, *, sub_path: str | Path | None = None, output_type: str | OutputArea = 'processed', file_ext: str = 'png', include_timestamp: bool | None = None, root_level: bool = False) -> str`
+  - `FileUtils.open_run(sub_path_prefix: str, customer: str, *, fmt: str = '%Y%m%d-%H%M%S') -> tuple[str, str]`
+
+- Structured results
+  - `SaveResult`: dataclass with fields `path`, `url`, `checksum`, `mimetype`.
+  - `FileUtils.save_data_to_storage(..., structured_result=True)` returns `dict[str, SaveResult]`.
+  - `FileUtils.save_document_to_storage(..., structured_result=True)` returns `SaveResult`.
+
+- Typed enums for directories
+  - `InputType` and `OutputArea` can be passed anywhere a directory type is accepted; strings still work.
+
+## Deprecations
+
+- Passing `file_format=` to `BaseStorage.save_dataframes` is deprecated and ignored if it disagrees with the path suffix.
+- `utils.common.get_logger` is deprecated, use `utils.logging.setup_logger`.
+- `FileUtils._get_default_config()` is deprecated; configuration defaults come from `config/default_config.yaml`.
+
+## Python Version
+
+- Official support: Python 3.11+.
+
 # FileUtils API Reference
 
 This document provides detailed information about the classes, methods, and options available in the FileUtils package.

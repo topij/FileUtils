@@ -14,7 +14,7 @@ df_excel = file_utils.load_single_file("data.xlsx", input_type="raw")
 df_parquet = file_utils.load_single_file("data.parquet", input_type="raw")
 df_json = file_utils.load_single_file("data.json", input_type="raw")
 df_yaml = file_utils.load_single_file("data.yaml", input_type="raw")
-v
+#
 # Save data
 file_utils.save_data_to_storage(
     data=df,  # Single DataFrame
@@ -82,6 +82,45 @@ multi_loaded = file_utils.load_multiple_files(
     input_type="raw",
     sub_path="source_x/files"
 )
+```
+
+## New conveniences
+
+### Saving bytes (artifacts)
+
+```python
+from FileUtils.core.enums import OutputArea
+
+chart_path = file_utils.save_bytes(
+    content=png_bytes,
+    file_stem="chart_q1",
+    sub_path="runs/acme/images",
+    output_type=OutputArea.PROCESSED,  # or "processed"
+    file_ext="png",
+)
+```
+
+### Structured results
+
+```python
+from FileUtils import SaveResult
+
+res_map, _ = file_utils.save_data_to_storage(
+    data={"Sheet1": df1, "Sheet2": df2},
+    output_filetype=OutputFileType.XLSX,
+    file_name="multi_sheet",
+    structured_result=True,
+)
+assert isinstance(next(iter(res_map.values())), SaveResult)
+```
+
+### Using typed enums for directories
+
+```python
+from FileUtils.core.enums import InputType, OutputArea
+
+file_utils.load_document_from_storage("readme.md", input_type=InputType.RAW)
+file_utils.save_document_to_storage("# notes", OutputFileType.MARKDOWN, output_type=OutputArea.PROCESSED)
 ```
 
 ## File Format Support

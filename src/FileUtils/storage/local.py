@@ -1,6 +1,7 @@
 """Local filesystem storage implementation."""
 
 import csv
+import warnings
 from pathlib import Path
 import yaml
 import json
@@ -11,6 +12,13 @@ import pandas as pd
 
 from ..core.base import BaseStorage, StorageOperationError
 from ..utils.common import ensure_path
+from ..utils.dataframe_io import (
+    read_csv_with_inference,
+    json_to_dataframe,
+    yaml_to_dataframe,
+    dataframe_to_json,
+    dataframe_to_yaml,
+)
 
 
 class LocalStorage(BaseStorage):
@@ -56,30 +64,17 @@ class LocalStorage(BaseStorage):
                     df.to_excel(writer, sheet_name=sheet_name, index=False)
             elif suffix == ".json":
                 orient = kwargs.get("orient", "records")
-                df.to_json(path, orient=orient, indent=2)
+                dataframe_to_json(path, df, orient=orient, indent=2)
             elif suffix == ".yaml" or suffix == ".yml":
                 yaml_options = kwargs.get("yaml_options", {})
-                default_flow_style = yaml_options.pop("default_flow_style", False)
-                sort_keys = yaml_options.pop("sort_keys", False)
-                
-                # Convert DataFrame to dict based on orient
                 orient = kwargs.get("orient", "records")
-                if orient == "records":
-                    data = df.to_dict(orient="records")
-                elif orient == "index":
-                    data = df.to_dict(orient="index")
-                else:
-                    raise ValueError(f"Unsupported YAML orientation: {orient}")
-                
-                with open(path, "w", encoding=self.config["encoding"]) as f:
-                    yaml.safe_dump(
-                        data,
-                        f,
-                        default_flow_style=default_flow_style,
-                        sort_keys=sort_keys,
-                        encoding=self.config["encoding"],
-                        **yaml_options
-                    )
+                dataframe_to_yaml(
+                    path,
+                    df,
+                    orient=orient,
+                    yaml_options=yaml_options,
+                    encoding=self.config["encoding"],
+                )
             else:
                 raise ValueError(f"Unsupported file format: {suffix}")
 
@@ -113,25 +108,12 @@ class LocalStorage(BaseStorage):
 
     def _load_csv_with_inference(self, path: Path) -> pd.DataFrame:
         """Load CSV with delimiter inference."""
-        with open(path, "r", encoding=self.config["encoding"]) as f:
-            content = f.read(1024)
-            f.seek(0)
-            try:
-                dialect = csv.Sniffer().sniff(content)
-                return pd.read_csv(
-                    f,
-                    dialect=dialect,
-                    encoding=self.config["encoding"],
-                    quoting=self.config["quoting"],
-                )
-            except:
-                f.seek(0)
-                return pd.read_csv(
-                    f,
-                    sep=self.config["csv_delimiter"],
-                    encoding=self.config["encoding"],
-                    quoting=self.config["quoting"],
-                )
+        return read_csv_with_inference(
+            path=path,
+            encoding=self.config["encoding"],
+            quoting=self.config["quoting"],
+            fallback_sep=self.config["csv_delimiter"],
+        )
 
     def _load_json_as_dataframe(self, path: Path) -> pd.DataFrame:
         """Load JSON file as DataFrame.
@@ -139,23 +121,8 @@ class LocalStorage(BaseStorage):
         Supports both list of records and dictionary formats.
         """
         try:
-            with open(path, "r", encoding=self.config["encoding"]) as f:
-                try:
-                    data = json.load(f)
-                except json.JSONDecodeError as e:
-                    raise StorageOperationError(f"Invalid JSON format: {e}")
-
-                if isinstance(data, list):
-                    df = pd.DataFrame(data)
-                    return df.reindex(sorted(df.columns), axis=1)
-                elif isinstance(data, dict):
-                    df = pd.DataFrame.from_dict(data, orient="index")
-                    return df.reindex(sorted(df.columns), axis=1)
-                else:
-                    raise ValueError("JSON must contain list of records or dictionary")
+            return json_to_dataframe(path, self.config["encoding"])
         except Exception as e:
-            if isinstance(e, StorageOperationError):
-                raise
             raise StorageOperationError(f"Failed to load JSON file: {e}") from e
 
     def _load_yaml_as_dataframe(self, path: Path) -> pd.DataFrame:
@@ -165,23 +132,8 @@ class LocalStorage(BaseStorage):
         Handles YAML-specific errors separately for better error messages.
         """
         try:
-            with open(path, "r", encoding=self.config["encoding"]) as f:
-                try:
-                    data = yaml.safe_load(f)
-                except yaml.YAMLError as e:
-                    raise StorageOperationError(f"Invalid YAML format: {e}")
-
-                if isinstance(data, list):
-                    df = pd.DataFrame(data)
-                    return df.reindex(sorted(df.columns), axis=1)
-                elif isinstance(data, dict):
-                    df = pd.DataFrame.from_dict(data, orient="index")
-                    return df.reindex(sorted(df.columns), axis=1)
-                else:
-                    raise ValueError("YAML must contain list of records or dictionary")
+            return yaml_to_dataframe(path, self.config["encoding"])
         except Exception as e:
-            if isinstance(e, StorageOperationError):
-                raise
             raise StorageOperationError(f"Failed to load YAML file: {e}") from e
 
     def exists(self, file_path: Union[str, Path]) -> bool:
@@ -200,6 +152,17 @@ class LocalStorage(BaseStorage):
             raise StorageOperationError(
                 f"Failed to delete file from local filesystem: {e}"
             ) from e
+
+    def save_bytes(self, content: bytes, file_path: Union[str, Path]) -> str:
+        """Save raw bytes to a local file path."""
+        try:
+            path = ensure_path(file_path)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with open(path, "wb") as f:
+                f.write(content)
+            return str(path)
+        except Exception as e:
+            raise StorageOperationError(f"Failed to save bytes: {e}") from e
 
     def load_yaml(self, file_path: Union[str, Path], **kwargs) -> Any:
         """Load YAML file from local filesystem."""
@@ -254,7 +217,7 @@ class LocalStorage(BaseStorage):
             raise StorageOperationError(f"Failed to load JSON file: {e}") from e
 
     def save_dataframes(
-        self, data: Dict[str, pd.DataFrame], file_path: Union[str, Path], file_format: str, **kwargs
+        self, data: Dict[str, pd.DataFrame], file_path: Union[str, Path], file_format: Optional[str] = None, **kwargs
     ) -> Dict[str, str]:
         """Save multiple DataFrames to local filesystem.
         
@@ -274,7 +237,17 @@ class LocalStorage(BaseStorage):
             # Ensure parent directory exists
             path.parent.mkdir(parents=True, exist_ok=True)
 
-            if file_format.lower() in ("xlsx", "xls"):
+            inferred_ext = path.suffix.lstrip(".").lower()
+            fmt = inferred_ext
+
+            if file_format is not None and file_format.lower() != inferred_ext:
+                warnings.warn(
+                    "save_dataframes(file_format=...) is deprecated; format is inferred from file_path",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+
+            if fmt in ("xlsx", "xls"):
                 # Save all DataFrames to a single Excel file
                 with pd.ExcelWriter(path, engine=kwargs.get("engine", "openpyxl")) as writer:
                     for sheet_name, df in data.items():
@@ -295,7 +268,7 @@ class LocalStorage(BaseStorage):
                 saved_files = {}
                 for sheet_name, df in data.items():
                     # Create unique file name for each sheet
-                    sheet_path = path.parent / f"{path.stem}_{sheet_name}.{file_format}"
+                    sheet_path = path.parent / f"{path.stem}_{sheet_name}.{fmt}"
                     saved_path = self.save_dataframe(df, sheet_path, **kwargs)
                     saved_files[sheet_name] = saved_path
                 return saved_files

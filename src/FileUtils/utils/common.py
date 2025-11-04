@@ -2,6 +2,9 @@
 from pathlib import Path
 from typing import Union, Optional
 import logging
+import warnings
+
+from .logging import setup_logger
 
 def ensure_path(path: Union[str, Path]) -> Path:
     """Convert string to Path and ensure it exists."""
@@ -10,18 +13,16 @@ def ensure_path(path: Union[str, Path]) -> Path:
     return path
 
 def get_logger(name: str, level: Optional[str] = None) -> logging.Logger:
-    """Get or create a logger with consistent formatting."""
-    logger = logging.getLogger(name)
-    if level:
-        logger.setLevel(getattr(logging, level.upper()))
-    if not logger.handlers:
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-    return logger
+    """Deprecated: use utils.logging.setup_logger.
+
+    Kept for backward compatibility and emits a deprecation warning.
+    """
+    warnings.warn(
+        "utils.common.get_logger is deprecated; use utils.logging.setup_logger",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return setup_logger(name=name, level=level)
 
 def format_file_path(
     base_path: Union[str, Path],

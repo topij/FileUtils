@@ -8,7 +8,6 @@ import yaml
 from jsonschema import validate
 
 from .schema import CONFIG_SCHEMA
-from .defaults import DEFAULT_CONFIG
 
 
 def validate_config(config: Dict[str, Any]) -> None:
@@ -68,4 +67,4 @@ def load_config(
     return config
 
 
-__all__ = ["DEFAULT_CONFIG", "get_default_config", "validate_config", "load_config"]
+__all__ = ["get_default_config", "validate_config", "load_config"]

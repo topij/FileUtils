@@ -1,5 +1,26 @@
 # Development Guide
 
+## Versions
+
+- Python 3.11+ is required for development.
+
+## Architecture notes
+
+- Configuration defaults are centralized in `src/FileUtils/config/default_config.yaml`.
+- Logging should use `utils.logging.setup_logger`.
+- Shared I/O helpers:
+  - DataFrames: `utils.dataframe_io`
+  - Documents: `utils.document_io`
+- Project root detection: `utils.pathing.find_project_root`.
+
+## Deprecation policy
+
+- Minor releases may deprecate APIs with warnings for at least one minor version.
+- Current deprecations:
+  - `BaseStorage.save_dataframes(file_format=...)` parameter is deprecated; format is inferred from the path suffix.
+  - `utils.common.get_logger` → use `utils.logging.setup_logger`.
+  - `FileUtils._get_default_config()` → use `config.get_default_config()`.
+
 This guide explains how to set up the development environment and package the FileUtils project.
 
 ## Project Structure

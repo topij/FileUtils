@@ -63,7 +63,7 @@ class BaseStorage(ABC):
 
     @abstractmethod
     def save_dataframe(
-        self, df: pd.DataFrame, file_path: Union[str, Path], file_format: str, **kwargs
+        self, df: pd.DataFrame, file_path: Union[str, Path], **kwargs
     ) -> str:
         """Save a single DataFrame.
 
@@ -95,14 +95,29 @@ class BaseStorage(ABC):
         self,
         dataframes: Dict[str, pd.DataFrame],
         file_path: Union[str, Path],
-        file_format: str,
+        file_format: Optional[str] = None,
         **kwargs,
     ) -> Dict[str, str]:
-        """Save multiple DataFrames."""
+        """Save multiple DataFrames.
+
+        file_format is deprecated; format is inferred from file_path suffix.
+        """
         saved_files = {}
         base_path = Path(file_path)
 
-        if file_format == "xlsx":
+        # Determine format
+        inferred_ext = base_path.suffix.lstrip(".").lower()
+        fmt = inferred_ext
+
+        if file_format is not None and file_format.lower() != inferred_ext:
+            import warnings
+            warnings.warn(
+                "save_dataframes(file_format=...) is deprecated; format is inferred from file_path",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
+        if fmt in ("xlsx", "xls"):
             # Special handling for Excel files with proper engine and sheet names
             engine = kwargs.get("engine", "openpyxl")
             try:
@@ -118,8 +133,8 @@ class BaseStorage(ABC):
         else:
             # Save individual files
             for name, df in dataframes.items():
-                file_path = base_path.parent / f"{base_path.stem}_{name}.{file_format}"
-                saved_path = self.save_dataframe(df, file_path, file_format)
+                file_path = base_path.parent / f"{base_path.stem}_{name}.{fmt}"
+                saved_path = self.save_dataframe(df, file_path)
                 saved_files[name] = saved_path
 
         return saved_files
@@ -136,7 +151,8 @@ class BaseStorage(ABC):
             return pd.read_excel(path, sheet_name=None, engine="openpyxl")
 
         # For other formats, assume multiple files with pattern
-        pattern = f"{path.stem}_*.{path.suffix}"
+        ext = path.suffix.lstrip(".")
+        pattern = f"{path.stem}_*.{ext}"
         dataframes = {}
         for file in path.parent.glob(pattern):
             name = file.stem.replace(f"{path.stem}_", "")
@@ -263,4 +279,9 @@ class BaseStorage(ABC):
     @abstractmethod
     def delete(self, file_path: Union[str, Path]) -> bool:
         """Delete file from storage."""
+        pass
+
+    @abstractmethod
+    def save_bytes(self, content: bytes, file_path: Union[str, Path]) -> str:
+        """Save raw bytes to storage at the given path."""
         pass
