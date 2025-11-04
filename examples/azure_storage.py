@@ -1,6 +1,7 @@
 """Example showing Azure Storage integration with FileUtils."""
 
 import pandas as pd
+
 from FileUtils import FileUtils
 from FileUtils.core.base import StorageConnectionError, StorageOperationError
 from FileUtils.core.enums import OutputFileType
@@ -73,6 +74,7 @@ def demonstrate_azure_operations(file_utils: FileUtils):
 if __name__ == "__main__":
     # Get connection string from environment or config
     import os
+
     from dotenv import load_dotenv
 
     load_dotenv()

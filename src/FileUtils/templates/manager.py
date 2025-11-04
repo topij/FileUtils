@@ -5,7 +5,8 @@ Manages DOCX templates, style mappings, and template configuration.
 
 import os
 from pathlib import Path
-from typing import Dict, Any, Optional, Union
+from typing import Any, Dict, Optional, Union
+
 import yaml
 
 from ..utils.common import get_logger

@@ -18,10 +18,11 @@ Features demonstrated:
 - Error handling for missing files
 """
 
+import json
 import sys
 from pathlib import Path
+
 import pandas as pd
-import json
 
 # Add project src directory to path (for local development)
 project_root = Path(__file__).resolve().parent.parent

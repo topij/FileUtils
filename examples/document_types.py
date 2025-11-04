@@ -1,6 +1,7 @@
 """Example demonstrating new document file types (DOCX, Markdown, PDF)."""
 
 import pandas as pd
+
 from FileUtils import FileUtils, OutputFileType
 
 

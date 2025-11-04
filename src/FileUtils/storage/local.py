@@ -1,24 +1,20 @@
 """Local filesystem storage implementation."""
 
 import csv
-import warnings
-from pathlib import Path
-import yaml
 import json
 import tempfile
-from typing import Dict, Optional, Union, Any
+import warnings
+from pathlib import Path
+from typing import Any, Dict, Optional, Union
 
 import pandas as pd
+import yaml
 
 from ..core.base import BaseStorage, StorageOperationError
 from ..utils.common import ensure_path
-from ..utils.dataframe_io import (
-    read_csv_with_inference,
-    json_to_dataframe,
-    yaml_to_dataframe,
-    dataframe_to_json,
-    dataframe_to_yaml,
-)
+from ..utils.dataframe_io import (dataframe_to_json, dataframe_to_yaml,
+                                  json_to_dataframe, read_csv_with_inference,
+                                  yaml_to_dataframe)
 
 
 class LocalStorage(BaseStorage):
@@ -463,11 +459,8 @@ class LocalStorage(BaseStorage):
     ) -> str:
         """Save markdown content as DOCX using template system."""
         try:
-            from ..templates import (
-                DocxTemplateManager,
-                MarkdownToDocxConverter,
-                StyleMapper,
-            )
+            from ..templates import (DocxTemplateManager,
+                                     MarkdownToDocxConverter, StyleMapper)
 
             # Initialize template system
             template_manager = DocxTemplateManager(self.config)
@@ -517,6 +510,7 @@ class LocalStorage(BaseStorage):
         """Save content using a specific template."""
         try:
             from docx import Document
+
             from ..templates import DocxTemplateManager
 
             template_manager = DocxTemplateManager(self.config)

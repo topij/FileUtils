@@ -13,11 +13,12 @@ Examples covered:
 4. Backward compatibility demonstration
 """
 
-import sys
-from pathlib import Path
-import pandas as pd
-import tempfile
 import os
+import sys
+import tempfile
+from pathlib import Path
+
+import pandas as pd
 
 # Add project src directory to path (for local development)
 project_root = Path(__file__).resolve().parent.parent

@@ -1,6 +1,7 @@
 """Example showing basic usage of FileUtils for local storage operations."""
 
 import pandas as pd
+
 from FileUtils import FileUtils, OutputFileType
 
 

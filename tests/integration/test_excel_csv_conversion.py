@@ -2,10 +2,11 @@
 
 """Integration tests for Excel ↔ CSV conversion functionality."""
 
-import pytest
-import pandas as pd
-from pathlib import Path
 import json
+from pathlib import Path
+
+import pandas as pd
+import pytest
 
 from FileUtils import FileUtils
 from FileUtils.core.enums import OutputFileType

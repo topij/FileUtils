@@ -1,8 +1,9 @@
 """Example demonstrating PPTX file handling with FileUtils."""
 
-import zipfile
 import io
+import zipfile
 from pathlib import Path
+
 from FileUtils import FileUtils, OutputFileType
 
 

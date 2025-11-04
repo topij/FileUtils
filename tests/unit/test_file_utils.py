@@ -1,15 +1,16 @@
 # tests / unit / test_file_utils.py
 
-import pytest
-import pandas as pd
-from pathlib import Path
 import csv
-import yaml
 import json
+from pathlib import Path
+
+import pandas as pd
+import pytest
+import yaml
 
 from FileUtils import FileUtils
-from FileUtils.core.enums import OutputFileType, StorageType
 from FileUtils.core.base import StorageError
+from FileUtils.core.enums import OutputFileType, StorageType
 
 
 def test_initialization(temp_dir, sample_config):
@@ -877,7 +878,7 @@ def test_json_yaml_document_with_subpath(file_utils):
     )
 
     assert Path(saved_path).exists()
-    assert "configs/app" in str(saved_path)
+    assert "configs/app" in str(saved_path).replace("\\", "/")
 
     # Load and verify
     loaded_config = file_utils.load_json(
@@ -1017,8 +1018,9 @@ def test_multiindex_dataframe_excel(file_utils):
 
 def test_enhanced_json_encoder_edge_cases(file_utils):
     """Test enhanced JSON encoder with edge cases."""
-    import numpy as np
     from datetime import datetime
+
+    import numpy as np
 
     # Test various edge cases
     edge_case_data = {
@@ -1286,8 +1288,8 @@ def test_configurable_directory_default(file_utils, sample_df):
     raw_path = file_utils.get_data_path("raw")
     processed_path = file_utils.get_data_path("processed")
 
-    assert "data/raw" in str(raw_path)
-    assert "data/processed" in str(processed_path)
+    assert "data/raw" in str(raw_path).replace("\\", "/")
+    assert "data/processed" in str(processed_path).replace("\\", "/")
     assert raw_path.exists()
     assert processed_path.exists()
 
@@ -1320,8 +1322,8 @@ def test_configurable_directory_custom(temp_dir, sample_df):
     raw_path = file_utils.get_data_path("raw")
     processed_path = file_utils.get_data_path("processed")
 
-    assert "documents/product_docs" in str(raw_path)
-    assert "documents/cs_documents" in str(processed_path)
+    assert "documents/product_docs" in str(raw_path).replace("\\", "/")
+    assert "documents/cs_documents" in str(processed_path).replace("\\", "/")
     assert raw_path.exists()
     assert processed_path.exists()
 
@@ -1352,7 +1354,7 @@ def test_configurable_directory_file_operations(temp_dir, sample_df):
 
     # Verify file was saved in custom directory
     saved_path = list(saved_files.values())[0]
-    assert "documents/product_docs" in str(saved_path)
+    assert "documents/product_docs" in str(saved_path).replace("\\", "/")
     assert Path(saved_path).exists()
 
     # Test loading data
@@ -1369,7 +1371,7 @@ def test_configurable_directory_file_operations(temp_dir, sample_df):
 
     # Verify file was saved in custom processed directory
     saved_path = list(saved_files.values())[0]
-    assert "documents/cs_documents" in str(saved_path)
+    assert "documents/cs_documents" in str(saved_path).replace("\\", "/")
     assert Path(saved_path).exists()
 
 
@@ -1400,7 +1402,7 @@ def test_configurable_directory_excel_csv_conversion(temp_dir, sample_df):
     )
 
     excel_file_path = list(saved_files.values())[0]
-    assert "documents/product_docs" in str(excel_file_path)
+    assert "documents/product_docs" in str(excel_file_path).replace("\\", "/")
 
     # Convert Excel to CSV
     csv_files, structure_file = file_utils.convert_excel_to_csv_with_structure(
@@ -1413,11 +1415,11 @@ def test_configurable_directory_excel_csv_conversion(temp_dir, sample_df):
     # Verify CSV files were created in custom processed directory
     assert len(csv_files) == 2
     for sheet_name, csv_path in csv_files.items():
-        assert "documents/cs_documents" in str(csv_path)
+        assert "documents/cs_documents" in str(csv_path).replace("\\", "/")
         assert Path(csv_path).exists()
 
     # Verify structure file was created in custom processed directory
-    assert "documents/cs_documents" in str(structure_file)
+    assert "documents/cs_documents" in str(structure_file).replace("\\", "/")
     assert Path(structure_file).exists()
 
     # Test CSV to Excel reconstruction
@@ -1452,13 +1454,13 @@ def test_configurable_directory_create_directory(temp_dir):
     # Test creating directory with default parent (should use configured data directory)
     custom_dir = file_utils.create_directory("ai_plans")
 
-    assert "documents/ai_plans" in str(custom_dir)
+    assert "documents/ai_plans" in str(custom_dir).replace("\\", "/")
     assert custom_dir.exists()
 
     # Test creating directory with explicit parent
     custom_dir2 = file_utils.create_directory("reports", parent_dir="documents")
 
-    assert "documents/reports" in str(custom_dir2)
+    assert "documents/reports" in str(custom_dir2).replace("\\", "/")
     assert custom_dir2.exists()
 
 
@@ -1469,8 +1471,8 @@ def test_configurable_directory_backward_compatibility(file_utils, sample_df):
     processed_path = file_utils.get_data_path("processed")
 
     # Should still use "data" directory
-    assert "data/raw" in str(raw_path)
-    assert "data/processed" in str(processed_path)
+    assert "data/raw" in str(raw_path).replace("\\", "/")
+    assert "data/processed" in str(processed_path).replace("\\", "/")
 
     # Test file operations still work
     saved_files, _ = file_utils.save_data_to_storage(
@@ -1481,7 +1483,7 @@ def test_configurable_directory_backward_compatibility(file_utils, sample_df):
     )
 
     saved_path = list(saved_files.values())[0]
-    assert "data/raw" in str(saved_path)
+    assert "data/raw" in str(saved_path).replace("\\", "/")
     assert Path(saved_path).exists()
 
 
@@ -1509,8 +1511,8 @@ def test_configurable_directory_partial_config(temp_dir, sample_df):
     raw_path = file_utils.get_data_path("raw")
     processed_path = file_utils.get_data_path("processed")
 
-    assert "documents/raw" in str(raw_path)
-    assert "documents/processed" in str(processed_path)
+    assert "documents/raw" in str(raw_path).replace("\\", "/")
+    assert "documents/processed" in str(processed_path).replace("\\", "/")
     assert raw_path.exists()
     assert processed_path.exists()
 
@@ -1590,7 +1592,7 @@ def test_root_level_with_subpath(temp_dir, sample_df):
     )
 
     saved_path = list(saved_files.values())[0]
-    assert "config/environments/production" in str(saved_path)
+    assert "config/environments/production" in str(saved_path).replace("\\", "/")
     assert Path(saved_path).exists()
     assert (temp_dir / "config" / "environments" / "production").exists()
 

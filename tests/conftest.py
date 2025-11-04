@@ -9,14 +9,14 @@ warnings.filterwarnings(
 )
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="fitz")
 
+import csv
 import os
 import sys
 import tempfile
 from pathlib import Path
-import csv
 
-import pytest
 import pandas as pd
+import pytest
 
 # Add the src directory to Python path
 pkg_root = str(Path(__file__).parent.parent / "src")

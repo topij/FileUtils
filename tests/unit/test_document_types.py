@@ -1,11 +1,12 @@
 """Tests for new document file types (DOCX, Markdown, PDF)."""
 
-import pytest
-import pandas as pd
-from pathlib import Path
-import tempfile
 import os
+import tempfile
 import warnings
+from pathlib import Path
+
+import pandas as pd
+import pytest
 
 # Suppress PyMuPDF deprecation warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning, message=".*SwigPy.*")
@@ -15,8 +16,8 @@ warnings.filterwarnings(
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="fitz")
 
 from FileUtils import FileUtils
-from FileUtils.core.enums import OutputFileType, StorageType
 from FileUtils.core.base import StorageError
+from FileUtils.core.enums import OutputFileType, StorageType
 
 
 # Helper to check if PyMuPDF is available
@@ -270,8 +271,8 @@ class TestDocumentTypes:
     def test_save_pptx_from_bytes(self, file_utils, temp_dir):
         """Test saving PPTX file from bytes."""
         # Create a minimal PPTX file in memory (PPTX is a ZIP archive with XML)
-        import zipfile
         import io
+        import zipfile
 
         pptx_buffer = io.BytesIO()
         with zipfile.ZipFile(pptx_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
@@ -301,8 +302,8 @@ class TestDocumentTypes:
 
     def test_save_pptx_from_file_path(self, file_utils, temp_dir):
         """Test saving PPTX file from source file path."""
-        import zipfile
         import io
+        import zipfile
 
         # Create a source PPTX file
         source_pptx = temp_dir / "source.pptx"
@@ -336,8 +337,8 @@ class TestDocumentTypes:
 
     def test_load_pptx(self, file_utils, temp_dir):
         """Test loading PPTX file."""
-        import zipfile
         import io
+        import zipfile
 
         # Create a PPTX file
         pptx_buffer = io.BytesIO()
@@ -375,8 +376,8 @@ class TestDocumentTypes:
 
     def test_save_pptx_with_subpath(self, file_utils, temp_dir):
         """Test saving PPTX with sub_path."""
-        import zipfile
         import io
+        import zipfile
 
         pptx_buffer = io.BytesIO()
         with zipfile.ZipFile(pptx_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
@@ -397,7 +398,7 @@ class TestDocumentTypes:
         )
 
         assert Path(saved_path).exists()
-        assert "presentations/2024" in str(saved_path)
+        assert "presentations/2024" in str(saved_path).replace("\\", "/")
         assert saved_path.endswith(".pptx")
 
     def test_save_pptx_invalid_content_type(self, file_utils):
@@ -443,7 +444,7 @@ class TestDocumentTypes:
         )
 
         assert Path(saved_path).exists()
-        assert "documents/test" in str(saved_path)
+        assert "documents/test" in str(saved_path).replace("\\", "/")
         assert saved_path.endswith(".md")
 
     def test_load_document_with_subpath(self, file_utils):
@@ -576,8 +577,8 @@ class TestDocumentFormatIntegration:
 
     def test_document_with_pandas_types(self, file_utils):
         """Test document saving with pandas types."""
-        import pandas as pd
         import numpy as np
+        import pandas as pd
 
         # Create data with pandas types
         df = pd.DataFrame(

@@ -1,8 +1,10 @@
 """Example showing configuration options and customization in FileUtils."""
 
-import yaml
 from pathlib import Path
+
 import pandas as pd
+import yaml
+
 from FileUtils import FileUtils, OutputFileType
 
 

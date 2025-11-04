@@ -1,13 +1,11 @@
-import pandas as pd
 from pathlib import Path
 
-from FileUtils.utils.dataframe_io import (
-    read_csv_with_inference,
-    json_to_dataframe,
-    yaml_to_dataframe,
-    dataframe_to_json,
-    dataframe_to_yaml,
-)
+import pandas as pd
+
+from FileUtils.utils.dataframe_io import (dataframe_to_json, dataframe_to_yaml,
+                                          json_to_dataframe,
+                                          read_csv_with_inference,
+                                          yaml_to_dataframe)
 
 
 def test_json_yaml_roundtrip(tmp_path: Path):

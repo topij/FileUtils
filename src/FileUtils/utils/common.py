@@ -1,9 +1,9 @@
 """Common utility functions."""
 
-from pathlib import Path
-from typing import Union, Optional
 import logging
 import warnings
+from pathlib import Path
+from typing import Optional, Union
 
 from .logging import setup_logger
 

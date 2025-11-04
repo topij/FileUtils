@@ -1,6 +1,6 @@
 """Style mapping utilities for DOCX templates."""
 
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 
 class StyleMapper:

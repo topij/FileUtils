@@ -6,11 +6,12 @@ Enhanced markdown conversion with template support and comprehensive formatting.
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Optional, Union, List
+from typing import Any, Dict, List, Optional, Union
+
 from docx import Document
-from docx.shared import Inches, Pt
-from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.style import WD_STYLE_TYPE
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Inches, Pt
 
 from ..utils.common import get_logger
 from .styles import StyleMapper

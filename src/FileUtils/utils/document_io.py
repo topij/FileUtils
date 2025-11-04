@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, Any, Union
+from typing import Any, Dict, Union
 
 
 def save_markdown(

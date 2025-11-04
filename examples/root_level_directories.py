@@ -5,8 +5,9 @@ This example demonstrates how to use FileUtils to work with directories
 outside the data directory, such as config, logs, or other project-level folders.
 """
 
-from FileUtils import FileUtils, OutputFileType
 import pandas as pd
+
+from FileUtils import FileUtils, OutputFileType
 
 # Initialize FileUtils
 file_utils = FileUtils()
