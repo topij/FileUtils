@@ -43,14 +43,12 @@ jobs:
     - name: Install package with extras
       shell: bash -l {0}
       run: |
-        conda activate fileutils
-        pip install -e .${{ matrix.extras }}
+        conda run -n fileutils pip install -e .${{ matrix.extras }}
 
     - name: Run unit tests
       shell: bash -l {0}
       run: |
-        conda activate fileutils
-        pytest tests/unit/ -v --cov=FileUtils --cov-report=xml --cov-report=term-missing
+        conda run -n fileutils pytest tests/unit/ -v --cov=FileUtils --cov-report=xml --cov-report=term-missing
 
     - name: Upload coverage to Codecov
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12' && matrix.extras == ''
@@ -84,14 +82,12 @@ jobs:
     - name: Install package with all extras
       shell: bash -l {0}
       run: |
-        conda activate fileutils
-        pip install -e .[all]
+        conda run -n fileutils pip install -e .[all]
 
     - name: Run integration tests (excluding Azure)
       shell: bash -l {0}
       run: |
-        conda activate fileutils
-        pytest tests/integration/ -v -k "not azure" --tb=short
+        conda run -n fileutils pytest tests/integration/ -v -k "not azure" --tb=short
 
     - name: Run Azure integration tests
       if: false  # Set to true and add Azure credentials if needed
@@ -99,8 +95,7 @@ jobs:
       env:
         AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
       run: |
-        conda activate fileutils
-        pytest tests/integration/test_azure_storage.py -v --tb=short
+        conda run -n fileutils pytest tests/integration/test_azure_storage.py -v --tb=short
 
   lint:
     runs-on: ubuntu-latest
@@ -125,33 +120,28 @@ jobs:
     - name: Install linting dependencies (already in environment.yaml)
       shell: bash -l {0}
       run: |
-        conda activate fileutils
         # Linting dependencies are already in environment.yaml
 
     - name: Check code formatting with black
       shell: bash -l {0}
       run: |
-        conda activate fileutils
-        black --check src/ tests/ examples/
+        conda run -n fileutils black --check src/ tests/ examples/
 
     - name: Check import sorting with isort
       shell: bash -l {0}
       run: |
-        conda activate fileutils
-        isort --check-only src/ tests/ examples/
+        conda run -n fileutils isort --check-only src/ tests/ examples/
 
     - name: Lint with flake8
       shell: bash -l {0}
       run: |
-        conda activate fileutils
-        flake8 src/ tests/ examples/ --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 src/ tests/ examples/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        conda run -n fileutils flake8 src/ tests/ examples/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        conda run -n fileutils flake8 src/ tests/ examples/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
     - name: Type check with mypy
       shell: bash -l {0}
       run: |
-        conda activate fileutils
-        mypy src/ --ignore-missing-imports --no-strict-optional || true
+        conda run -n fileutils mypy src/ --ignore-missing-imports --no-strict-optional || true
 
   build:
     runs-on: ubuntu-latest
@@ -175,18 +165,15 @@ jobs:
     - name: Install build dependencies (already in environment.yaml)
       shell: bash -l {0}
       run: |
-        conda activate fileutils
         # Build dependencies are already in environment.yaml
 
     - name: Build package
       shell: bash -l {0}
       run: |
-        conda activate fileutils
-        python -m build
+        conda run -n fileutils python -m build
 
     - name: Check package
       shell: bash -l {0}
       run: |
-        conda activate fileutils
-        twine check dist/*
+        conda run -n fileutils twine check dist/*
 

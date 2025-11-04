@@ -561,8 +561,13 @@ def test_save_multiple_csv_with_subpath(file_utils, sample_df):
 
 def test_save_with_absolute_subpath(file_utils, sample_df):
     """Test that an absolute sub_path is handled correctly (made relative)."""
+    import os
     # Create an absolute path unlikely to exist, but valid structure
-    abs_sub_path = Path("/abs/path/to/reports")
+    # Use platform-appropriate absolute path
+    if os.name == 'nt':  # Windows
+        abs_sub_path = Path("C:/abs/path/to/reports")
+    else:  # Unix-like
+        abs_sub_path = Path("/abs/path/to/reports")
     relative_equivalent = "abs/path/to/reports" # How it should be treated
     file_name = "abs_subpath_test"
     output_type = "processed"
