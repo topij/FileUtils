@@ -29,6 +29,15 @@ A Python utility package for consistent file operations across local and Azure s
   - Detailed logging with configurable levels
   - Type hints throughout the codebase
 
+### New in v0.8
+
+- Python 3.11+ support (required)
+- Convenience: `FileUtils.save_bytes(...)` for saving raw bytes (e.g., images)
+- Typed enums for directories: `InputType`, `OutputArea`
+- Optional structured results via `structured_result=True` returning `SaveResult`
+- Helper: `FileUtils.open_run(prefix, customer) -> (sub_path, run_id)`
+- Deprecations: `save_dataframes(file_format=...)`, `utils.common.get_logger`, `FileUtils._get_default_config()`
+
 ## Installation
 
 <!-- Choose the installation option that best suits your needs:
@@ -108,6 +117,35 @@ loaded_report = file_utils.load_single_file(
     input_type="processed",
     sub_path="analysis_run_1/summaries" # Specify the sub_path
 )
+
+# Save raw bytes (e.g., PNG) and get the path/URL if cloud-backed
+from FileUtils.core.enums import OutputArea
+chart_path = file_utils.save_bytes(
+    content=png_bytes,
+    file_stem="chart_q1",
+    sub_path="runs/acme/images",
+    output_type=OutputArea.PROCESSED,  # or "processed"
+    file_ext="png",
+)
+
+# Structured results (SaveResult) for easier downstream handling
+from FileUtils import SaveResult
+res_map, _ = file_utils.save_data_to_storage(
+    data={"Sheet1": df1, "Sheet2": df2},
+    output_filetype=OutputFileType.XLSX,
+    file_name="multi_sheet",
+    structured_result=True,
+)
+first: SaveResult = next(iter(res_map.values()))
+print(first.path, first.url)
+
+# Typed enums for directories
+from FileUtils.core.enums import InputType
+doc = file_utils.load_document_from_storage("readme.md", input_type=InputType.RAW)
+
+# Standardize run folders
+sub_path, run_id = file_utils.open_run(sub_path_prefix="presentations", customer="ACME")
+print(sub_path, run_id)
 ```
 
 ## Document Handling
@@ -522,7 +560,7 @@ For a practical example, check out my [semantic text analyzer](https://www.githu
 ## Requirements
 
 ### Core Dependencies (automatically installed)
-- Python 3.9+
+- Python 3.11+
 - pandas
 - pyyaml
 - python-dotenv
