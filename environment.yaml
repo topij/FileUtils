@@ -21,6 +21,10 @@ dependencies:
     - python-docx>=0.8.11
     - markdown>=3.4.0
     - PyMuPDF>=1.23.0
+    # Build tools (via pip for better Python 3.11+ compatibility)
+    - build>=1.0.0
+    - twine>=4.0.0
+    - wheel>=0.40.0
   # Development dependencies
   - black
   - isort
@@ -32,10 +36,6 @@ dependencies:
   - pytest-cov>=4.1.0
   - pytest-asyncio>=0.21.0
   - pytest-mock>=3.11.1
-  # Build tools
-  - build
-  - twine
-  - wheel
   # Documentation
   - mkdocs
   - mkdocs-material

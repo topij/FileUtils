@@ -38,6 +38,7 @@ jobs:
         activate-environment: fileutils
         auto-update-conda: true
         auto-activate-base: false
+        use-only-tar-bz2: false
 
     - name: Install package with extras
       shell: bash -l {0}
@@ -78,6 +79,7 @@ jobs:
         activate-environment: fileutils
         auto-update-conda: true
         auto-activate-base: false
+        use-only-tar-bz2: false
 
     - name: Install package with all extras
       shell: bash -l {0}
@@ -118,6 +120,7 @@ jobs:
         activate-environment: fileutils
         auto-update-conda: true
         auto-activate-base: false
+        use-only-tar-bz2: false
 
     - name: Install linting dependencies (already in environment.yaml)
       shell: bash -l {0}
@@ -167,6 +170,7 @@ jobs:
         activate-environment: fileutils
         auto-update-conda: true
         auto-activate-base: false
+        use-only-tar-bz2: false
 
     - name: Install build dependencies (already in environment.yaml)
       shell: bash -l {0}
