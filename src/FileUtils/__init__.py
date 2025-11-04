@@ -7,8 +7,11 @@ from FileUtils.version import __author__, __version__
 
 # Template system imports (optional)
 try:
-    from FileUtils.templates import (DocxTemplateManager,
-                                     MarkdownToDocxConverter, StyleMapper)
+    from FileUtils.templates import (
+        DocxTemplateManager,
+        MarkdownToDocxConverter,
+        StyleMapper,
+    )
 
     __all__ = [
         "FileUtils",

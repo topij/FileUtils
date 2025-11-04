@@ -1431,7 +1431,7 @@ def test_configurable_directory_excel_csv_conversion(temp_dir, sample_df):
     )
 
     # Verify reconstructed Excel was created in custom processed directory
-    assert "documents/cs_documents" in str(reconstructed_excel)
+    assert "documents/cs_documents" in str(reconstructed_excel).replace("\\", "/")
     assert Path(reconstructed_excel).exists()
 
 

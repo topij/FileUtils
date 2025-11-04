@@ -12,9 +12,13 @@ import yaml
 
 from ..core.base import BaseStorage, StorageOperationError
 from ..utils.common import ensure_path
-from ..utils.dataframe_io import (dataframe_to_json, dataframe_to_yaml,
-                                  json_to_dataframe, read_csv_with_inference,
-                                  yaml_to_dataframe)
+from ..utils.dataframe_io import (
+    dataframe_to_json,
+    dataframe_to_yaml,
+    json_to_dataframe,
+    read_csv_with_inference,
+    yaml_to_dataframe,
+)
 
 
 class LocalStorage(BaseStorage):
@@ -459,8 +463,11 @@ class LocalStorage(BaseStorage):
     ) -> str:
         """Save markdown content as DOCX using template system."""
         try:
-            from ..templates import (DocxTemplateManager,
-                                     MarkdownToDocxConverter, StyleMapper)
+            from ..templates import (
+                DocxTemplateManager,
+                MarkdownToDocxConverter,
+                StyleMapper,
+            )
 
             # Initialize template system
             template_manager = DocxTemplateManager(self.config)

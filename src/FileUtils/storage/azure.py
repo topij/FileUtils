@@ -14,14 +14,23 @@ import yaml
 from azure.core.exceptions import ResourceExistsError
 from azure.storage.blob import BlobServiceClient
 
-from ..core.base import (BaseStorage, StorageConnectionError,
-                         StorageOperationError)
-from ..utils.dataframe_io import (dataframe_to_json, dataframe_to_yaml,
-                                  json_to_dataframe, read_csv_with_inference,
-                                  yaml_to_dataframe)
-from ..utils.document_io import (load_docx_text, load_markdown, load_pdf_text,
-                                 save_docx_simple, save_markdown,
-                                 save_pdf_text, save_pptx)
+from ..core.base import BaseStorage, StorageConnectionError, StorageOperationError
+from ..utils.dataframe_io import (
+    dataframe_to_json,
+    dataframe_to_yaml,
+    json_to_dataframe,
+    read_csv_with_inference,
+    yaml_to_dataframe,
+)
+from ..utils.document_io import (
+    load_docx_text,
+    load_markdown,
+    load_pdf_text,
+    save_docx_simple,
+    save_markdown,
+    save_pdf_text,
+    save_pptx,
+)
 
 
 class AzureStorage(BaseStorage):
