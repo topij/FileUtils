@@ -29,20 +29,26 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+    - name: Set up Conda
+      uses: conda-incubator/setup-miniconda@v3
       with:
+        miniconda-version: 'latest'
         python-version: ${{ matrix.python-version }}
-        cache: 'pip'
+        environment-file: environment.yaml
+        activate-environment: fileutils
+        auto-update-conda: true
+        auto-activate-base: false
 
-    - name: Install dependencies
+    - name: Install package with extras
+      shell: bash -l {0}
       run: |
-        python -m pip install --upgrade pip wheel setuptools
+        conda activate fileutils
         pip install -e .${{ matrix.extras }}
-        pip install pytest pytest-cov pytest-mock
 
     - name: Run unit tests
+      shell: bash -l {0}
       run: |
+        conda activate fileutils
         pytest tests/unit/ -v --cov=FileUtils --cov-report=xml --cov-report=term-missing
 
     - name: Upload coverage to Codecov
@@ -63,27 +69,35 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+    - name: Set up Conda
+      uses: conda-incubator/setup-miniconda@v3
       with:
+        miniconda-version: 'latest'
         python-version: ${{ matrix.python-version }}
-        cache: 'pip'
+        environment-file: environment.yaml
+        activate-environment: fileutils
+        auto-update-conda: true
+        auto-activate-base: false
 
-    - name: Install dependencies
+    - name: Install package with all extras
+      shell: bash -l {0}
       run: |
-        python -m pip install --upgrade pip wheel setuptools
+        conda activate fileutils
         pip install -e .[all]
-        pip install pytest pytest-cov pytest-mock
 
     - name: Run integration tests (excluding Azure)
+      shell: bash -l {0}
       run: |
+        conda activate fileutils
         pytest tests/integration/ -v -k "not azure" --tb=short
 
     - name: Run Azure integration tests
       if: false  # Set to true and add Azure credentials if needed
+      shell: bash -l {0}
       env:
         AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
       run: |
+        conda activate fileutils
         pytest tests/integration/test_azure_storage.py -v --tb=short
 
   lint:
@@ -95,32 +109,45 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+    - name: Set up Conda
+      uses: conda-incubator/setup-miniconda@v3
       with:
+        miniconda-version: 'latest'
         python-version: ${{ matrix.python-version }}
-        cache: 'pip'
+        environment-file: environment.yaml
+        activate-environment: fileutils
+        auto-update-conda: true
+        auto-activate-base: false
 
-    - name: Install linting dependencies
+    - name: Install linting dependencies (already in environment.yaml)
+      shell: bash -l {0}
       run: |
-        python -m pip install --upgrade pip
-        pip install black isort flake8 mypy
+        conda activate fileutils
+        # Linting dependencies are already in environment.yaml
 
     - name: Check code formatting with black
+      shell: bash -l {0}
       run: |
+        conda activate fileutils
         black --check src/ tests/ examples/
 
     - name: Check import sorting with isort
+      shell: bash -l {0}
       run: |
+        conda activate fileutils
         isort --check-only src/ tests/ examples/
 
     - name: Lint with flake8
+      shell: bash -l {0}
       run: |
+        conda activate fileutils
         flake8 src/ tests/ examples/ --count --select=E9,F63,F7,F82 --show-source --statistics
         flake8 src/ tests/ examples/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
     - name: Type check with mypy
+      shell: bash -l {0}
       run: |
+        conda activate fileutils
         mypy src/ --ignore-missing-imports --no-strict-optional || true
 
   build:
@@ -131,21 +158,31 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
+    - name: Set up Conda
+      uses: conda-incubator/setup-miniconda@v3
       with:
+        miniconda-version: 'latest'
         python-version: "3.12"
-        cache: 'pip'
+        environment-file: environment.yaml
+        activate-environment: fileutils
+        auto-update-conda: true
+        auto-activate-base: false
 
-    - name: Install build dependencies
+    - name: Install build dependencies (already in environment.yaml)
+      shell: bash -l {0}
       run: |
-        python -m pip install --upgrade pip wheel setuptools build twine
+        conda activate fileutils
+        # Build dependencies are already in environment.yaml
 
     - name: Build package
+      shell: bash -l {0}
       run: |
+        conda activate fileutils
         python -m build
 
     - name: Check package
+      shell: bash -l {0}
       run: |
+        conda activate fileutils
         twine check dist/*
 
