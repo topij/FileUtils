@@ -17,6 +17,16 @@ from FileUtils.core.enums import OutputFileType, StorageType
 from FileUtils.core.base import StorageError
 
 
+# Helper to check if PyMuPDF is available
+def _pymupdf_available():
+    """Check if PyMuPDF (fitz) is available."""
+    try:
+        import fitz  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
 class TestDocumentTypes:
     """Test document file type functionality."""
 
@@ -194,6 +204,7 @@ class TestDocumentTypes:
         assert isinstance(loaded_content, str)
         assert "test document" in loaded_content.lower()
 
+    @pytest.mark.skipif(not _pymupdf_available(), reason="PyMuPDF not installed")
     def test_save_pdf_simple_text(self, file_utils):
         """Test saving simple text to PDF."""
         content = "This is a test document for PDF format."
@@ -209,6 +220,7 @@ class TestDocumentTypes:
         assert Path(saved_path).exists()
         assert saved_path.endswith(".pdf")
 
+    @pytest.mark.skipif(not _pymupdf_available(), reason="PyMuPDF not installed")
     def test_save_pdf_structured(self, file_utils):
         """Test saving structured content to PDF."""
         content = {
@@ -236,6 +248,7 @@ class TestDocumentTypes:
         assert Path(saved_path).exists()
         assert saved_path.endswith(".pdf")
 
+    @pytest.mark.skipif(not _pymupdf_available(), reason="PyMuPDF not installed")
     def test_load_pdf(self, file_utils):
         """Test loading PDF file."""
         content = "This is a test document for PDF format."
