@@ -12,7 +12,7 @@ class OutputFileType(Enum):
     PARQUET = "parquet"
     JSON = "json"
     YAML = "yaml"
-    
+
     # Document formats
     DOCX = "docx"
     MARKDOWN = "md"

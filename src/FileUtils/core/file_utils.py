@@ -163,7 +163,9 @@ class FileUtils:
                     "pip install 'FileUtils[azure]'"
                 )
                 if kwargs.get("connection_string"):
-                    self.logger.warning("Falling back to local storage despite connection string being provided.")
+                    self.logger.warning(
+                        "Falling back to local storage despite connection string being provided."
+                    )
                 return LocalStorage(self.config)
 
             try:
@@ -182,26 +184,26 @@ class FileUtils:
 
     def _get_directory_config(self) -> Dict[str, str]:
         """Get directory configuration with fallback to defaults.
-        
+
         Returns:
             Dictionary with directory configuration
         """
         directories_config = self.config.get("directories", {})
-        
+
         # Get data directory name with fallback
         data_directory = directories_config.get("data_directory", "data")
-        
+
         # Get subdirectory names with fallbacks
         subdirectories = directories_config.get("subdirectories", {})
         raw_dir = subdirectories.get("raw", "raw")
         processed_dir = subdirectories.get("processed", "processed")
         templates_dir = subdirectories.get("templates", "templates")
-        
+
         return {
             "data_directory": data_directory,
             "raw": raw_dir,
             "processed": processed_dir,
-            "templates": templates_dir
+            "templates": templates_dir,
         }
 
     def get_data_path(self, data_type: Union[str, InputType] = "raw") -> Path:
@@ -215,25 +217,31 @@ class FileUtils:
         """
         dir_config = self._get_directory_config()
         data_directory = dir_config["data_directory"]
-        
+
         # Map data_type to configured subdirectory name
         # Coerce enums to string values
-        data_type_str = data_type.value if hasattr(data_type, "value") else str(data_type)
+        data_type_str = (
+            data_type.value if hasattr(data_type, "value") else str(data_type)
+        )
 
         subdirectory_mapping = {
             "raw": dir_config["raw"],
             "processed": dir_config["processed"],
             "templates": dir_config["templates"],
         }
-        
+
         # Use configured subdirectory name or fallback to data_type
         subdirectory = subdirectory_mapping.get(data_type_str, data_type_str)
-        
+
         path = self.project_root / data_directory / subdirectory
         path.mkdir(parents=True, exist_ok=True)
         return path
 
-    def _get_base_path(self, directory_type: Optional[Union[str, InputType, OutputArea]] = None, root_level: bool = False) -> Path:
+    def _get_base_path(
+        self,
+        directory_type: Optional[Union[str, InputType, OutputArea]] = None,
+        root_level: bool = False,
+    ) -> Path:
         """Get base path for file operations, supporting both data directory and root-level directories.
 
         Args:
@@ -250,14 +258,18 @@ class FileUtils:
                 path = self.project_root
             else:
                 # Directory at project root level
-                dir_name = directory_type.value if hasattr(directory_type, "value") else str(directory_type)
+                dir_name = (
+                    directory_type.value
+                    if hasattr(directory_type, "value")
+                    else str(directory_type)
+                )
                 path = self.project_root / dir_name
         else:
             # Data directory (current behavior)
             if directory_type is None:
                 directory_type = "raw"  # Default fallback
             path = self.get_data_path(directory_type)
-        
+
         path.mkdir(parents=True, exist_ok=True)
         return path
 
@@ -282,7 +294,10 @@ class FileUtils:
                 parent_dir = dir_config["data_directory"]
             else:
                 # Validate parent directory exists in config (legacy support)
-                if "directory_structure" in self.config and parent_dir not in self.config["directory_structure"]:
+                if (
+                    "directory_structure" in self.config
+                    and parent_dir not in self.config["directory_structure"]
+                ):
                     valid_parents = list(self.config["directory_structure"].keys())
                     raise ValueError(
                         f"Invalid parent directory: {parent_dir}. "
@@ -296,7 +311,11 @@ class FileUtils:
             new_dir.mkdir(parents=True, exist_ok=True)
 
             # Add to config structure if not exists (legacy support)
-            if "directory_structure" in self.config and directory_name not in self.config["directory_structure"].get(parent_dir, []):
+            if (
+                "directory_structure" in self.config
+                and directory_name
+                not in self.config["directory_structure"].get(parent_dir, [])
+            ):
                 if parent_dir not in self.config["directory_structure"]:
                     self.config["directory_structure"][parent_dir] = []
                 self.config["directory_structure"][parent_dir].append(directory_name)
@@ -368,7 +387,11 @@ class FileUtils:
         full_file_path = Path(full_file_path_str)
         if sub_path:
             # Ensure sub_path is relative
-            safe_sub_path = Path(sub_path).relative_to(Path(sub_path).anchor) if Path(sub_path).is_absolute() else Path(sub_path)
+            safe_sub_path = (
+                Path(sub_path).relative_to(Path(sub_path).anchor)
+                if Path(sub_path).is_absolute()
+                else Path(sub_path)
+            )
             # Construct the full path: base_dir / sub_path / filename
             full_file_path = base_dir / safe_sub_path / full_file_path.name
 
@@ -444,7 +467,9 @@ class FileUtils:
             # Handle potential Azure paths (which should not be combined with input_type/sub_path)
             if str(file_path).startswith("azure://"):
                 if sub_path:
-                     raise ValueError("Cannot use sub_path with an absolute Azure path in file_path.")
+                    raise ValueError(
+                        "Cannot use sub_path with an absolute Azure path in file_path."
+                    )
                 # Azure path is handled directly by storage backend
                 full_path = file_path
             else:
@@ -454,10 +479,14 @@ class FileUtils:
 
                 if sub_path:
                     # Ensure sub_path is relative
-                    safe_sub_path = Path(sub_path).relative_to(Path(sub_path).anchor) if Path(sub_path).is_absolute() else Path(sub_path)
+                    safe_sub_path = (
+                        Path(sub_path).relative_to(Path(sub_path).anchor)
+                        if Path(sub_path).is_absolute()
+                        else Path(sub_path)
+                    )
 
                     # Check if file_path also contains directory structure
-                    if file_path_obj.parent != Path('.'):
+                    if file_path_obj.parent != Path("."):
                         raise ValueError(
                             f"Cannot provide sub_path ('{sub_path}') when file_path "
                             f"('{file_path}') already contains directory separators."
@@ -474,7 +503,7 @@ class FileUtils:
                     # Look for files matching the pattern (with timestamp)
                     pattern = f"{file_path_obj.stem}_*{file_path_obj.suffix}"
                     matching_files = list(search_dir.glob(pattern))
-                    
+
                     if matching_files:
                         # Use the most recent file (by modification time)
                         full_path = max(matching_files, key=lambda f: f.stat().st_mtime)
@@ -518,9 +547,11 @@ class FileUtils:
         try:
             # Handle potential Azure paths
             if str(file_path).startswith("azure://"):
-                 if sub_path:
-                     raise ValueError("Cannot use sub_path with an absolute Azure path in file_path.")
-                 full_path = file_path
+                if sub_path:
+                    raise ValueError(
+                        "Cannot use sub_path with an absolute Azure path in file_path."
+                    )
+                full_path = file_path
             else:
                 # Construct local path
                 base_dir = self._get_base_path(input_type, root_level=root_level)
@@ -528,14 +559,18 @@ class FileUtils:
 
                 if sub_path:
                     # Ensure sub_path is relative
-                    safe_sub_path = Path(sub_path).relative_to(Path(sub_path).anchor) if Path(sub_path).is_absolute() else Path(sub_path)
+                    safe_sub_path = (
+                        Path(sub_path).relative_to(Path(sub_path).anchor)
+                        if Path(sub_path).is_absolute()
+                        else Path(sub_path)
+                    )
 
                     # Check if file_path also contains directory structure
-                    if file_path_obj.parent != Path('.'):
-                         raise ValueError(
+                    if file_path_obj.parent != Path("."):
+                        raise ValueError(
                             f"Cannot provide sub_path ('{sub_path}') when file_path "
                             f"('{file_path}') already contains directory separators."
-                         )
+                        )
                     full_path = base_dir / safe_sub_path / file_path_obj
                 else:
                     # No sub_path, use file_path relative to base_dir
@@ -579,16 +614,22 @@ class FileUtils:
                         also contains path separators.
         """
         loaded_data = {}
-        base_dir = self._get_base_path(input_type, root_level=root_level) # Base path for the input type
+        base_dir = self._get_base_path(
+            input_type, root_level=root_level
+        )  # Base path for the input type
 
         # Prepare safe_sub_path once if provided
         safe_sub_path = None
         if sub_path:
-            safe_sub_path = Path(sub_path).relative_to(Path(sub_path).anchor) if Path(sub_path).is_absolute() else Path(sub_path)
+            safe_sub_path = (
+                Path(sub_path).relative_to(Path(sub_path).anchor)
+                if Path(sub_path).is_absolute()
+                else Path(sub_path)
+            )
             # --- Pre-validation loop ---
             for file_path_item in file_paths:
                 file_path_obj = Path(file_path_item)
-                if file_path_obj.parent != Path('.'):
+                if file_path_obj.parent != Path("."):
                     raise ValueError(
                         f"Cannot provide sub_path ('{sub_path}') when a file_path in the list "
                         f"('{file_path_item}') already contains directory separators."
@@ -604,23 +645,27 @@ class FileUtils:
                 load_path_arg = safe_sub_path / file_path_obj
             else:
                 # No sub_path, file_path_item is relative to base_dir
-                load_path_arg = file_path_obj # Pass the relative path as is
+                load_path_arg = file_path_obj  # Pass the relative path as is
 
             # Validate file type suffix if needed (using the constructed or original relative path)
             current_full_path_for_check = base_dir / load_path_arg
-            if file_type and current_full_path_for_check.suffix.lstrip(".") != file_type.value:
-                raise ValueError(f"File {current_full_path_for_check} does not match type: {file_type.value}")
+            if (
+                file_type
+                and current_full_path_for_check.suffix.lstrip(".") != file_type.value
+            ):
+                raise ValueError(
+                    f"File {current_full_path_for_check} does not match type: {file_type.value}"
+                )
 
             # Call load_single_file - it will handle combining base_dir and load_path_arg correctly now
             # Pass down any extra kwargs including root_level
             loaded_data[file_path_obj.stem] = self.load_single_file(
-                file_path=load_path_arg, # Pass the path relative to input_type
+                file_path=load_path_arg,  # Pass the path relative to input_type
                 input_type=input_type,
-                sub_path=None, # sub_path logic is handled above for the list context
+                sub_path=None,  # sub_path logic is handled above for the list context
                 root_level=root_level,
-                **kwargs
+                **kwargs,
             )
-
 
         return loaded_data
 
@@ -688,7 +733,9 @@ class FileUtils:
             # Handle potential Azure paths
             if str(file_path).startswith("azure://"):
                 if sub_path:
-                     raise ValueError("Cannot use sub_path with an absolute Azure path in file_path.")
+                    raise ValueError(
+                        "Cannot use sub_path with an absolute Azure path in file_path."
+                    )
                 full_path = file_path
             else:
                 # Construct local path
@@ -696,18 +743,22 @@ class FileUtils:
                 file_path_obj = Path(file_path)
 
                 if sub_path:
-                     # Ensure sub_path is relative
-                    safe_sub_path = Path(sub_path).relative_to(Path(sub_path).anchor) if Path(sub_path).is_absolute() else Path(sub_path)
+                    # Ensure sub_path is relative
+                    safe_sub_path = (
+                        Path(sub_path).relative_to(Path(sub_path).anchor)
+                        if Path(sub_path).is_absolute()
+                        else Path(sub_path)
+                    )
 
                     # Check if file_path also contains directory structure
-                    if file_path_obj.parent != Path('.'):
+                    if file_path_obj.parent != Path("."):
                         raise ValueError(
                             f"Cannot provide sub_path ('{sub_path}') when file_path "
                             f"('{file_path}') already contains directory separators."
                         )
                     full_path = base_dir / safe_sub_path / file_path_obj
                 else:
-                     # No sub_path, use file_path relative to base_dir
+                    # No sub_path, use file_path relative to base_dir
                     full_path = base_dir / file_path_obj
 
             return self.storage.load_yaml(full_path, **kwargs)
@@ -744,10 +795,12 @@ class FileUtils:
             ValueError: If sub_path is provided and file_path also contains path separators
         """
         try:
-             # Handle potential Azure paths
+            # Handle potential Azure paths
             if str(file_path).startswith("azure://"):
                 if sub_path:
-                     raise ValueError("Cannot use sub_path with an absolute Azure path in file_path.")
+                    raise ValueError(
+                        "Cannot use sub_path with an absolute Azure path in file_path."
+                    )
                 full_path = file_path
             else:
                 # Construct local path
@@ -756,14 +809,18 @@ class FileUtils:
 
                 if sub_path:
                     # Ensure sub_path is relative
-                    safe_sub_path = Path(sub_path).relative_to(Path(sub_path).anchor) if Path(sub_path).is_absolute() else Path(sub_path)
+                    safe_sub_path = (
+                        Path(sub_path).relative_to(Path(sub_path).anchor)
+                        if Path(sub_path).is_absolute()
+                        else Path(sub_path)
+                    )
 
                     # Check if file_path also contains directory structure
-                    if file_path_obj.parent != Path('.'):
-                         raise ValueError(
+                    if file_path_obj.parent != Path("."):
+                        raise ValueError(
                             f"Cannot provide sub_path ('{sub_path}') when file_path "
                             f"('{file_path}') already contains directory separators."
-                         )
+                        )
                     full_path = base_dir / safe_sub_path / file_path_obj
                 else:
                     # No sub_path, use file_path relative to base_dir
@@ -880,7 +937,14 @@ class FileUtils:
             output_filetype = OutputFileType(output_filetype.lower())
 
         # Validate document format
-        document_formats = {OutputFileType.DOCX, OutputFileType.MARKDOWN, OutputFileType.PDF, OutputFileType.PPTX, OutputFileType.JSON, OutputFileType.YAML}
+        document_formats = {
+            OutputFileType.DOCX,
+            OutputFileType.MARKDOWN,
+            OutputFileType.PDF,
+            OutputFileType.PPTX,
+            OutputFileType.JSON,
+            OutputFileType.YAML,
+        }
         if output_filetype not in document_formats:
             raise ValueError(
                 f"Invalid document format: {output_filetype}. "
@@ -904,12 +968,18 @@ class FileUtils:
         full_file_path = Path(full_file_path_str)
         if sub_path:
             # Ensure sub_path is relative
-            safe_sub_path = Path(sub_path).relative_to(Path(sub_path).anchor) if Path(sub_path).is_absolute() else Path(sub_path)
+            safe_sub_path = (
+                Path(sub_path).relative_to(Path(sub_path).anchor)
+                if Path(sub_path).is_absolute()
+                else Path(sub_path)
+            )
             # Construct the full path: base_dir / sub_path / filename
             full_file_path = base_dir / safe_sub_path / full_file_path.name
 
         try:
-            saved_path = self.storage.save_document(content, full_file_path, output_filetype.value, **kwargs)
+            saved_path = self.storage.save_document(
+                content, full_file_path, output_filetype.value, **kwargs
+            )
             self.logger.info(f"Document saved successfully: {saved_path}")
             if structured_result:
                 url = saved_path if str(saved_path).startswith("azure://") else None
@@ -992,7 +1062,9 @@ class FileUtils:
             # Handle potential Azure paths
             if str(file_path).startswith("azure://"):
                 if sub_path:
-                    raise ValueError("Cannot use sub_path with an absolute Azure path in file_path.")
+                    raise ValueError(
+                        "Cannot use sub_path with an absolute Azure path in file_path."
+                    )
                 full_path = file_path
             else:
                 # Construct local path
@@ -1001,10 +1073,14 @@ class FileUtils:
 
                 if sub_path:
                     # Ensure sub_path is relative
-                    safe_sub_path = Path(sub_path).relative_to(Path(sub_path).anchor) if Path(sub_path).is_absolute() else Path(sub_path)
+                    safe_sub_path = (
+                        Path(sub_path).relative_to(Path(sub_path).anchor)
+                        if Path(sub_path).is_absolute()
+                        else Path(sub_path)
+                    )
 
                     # Check if file_path also contains directory structure
-                    if file_path_obj.parent != Path('.'):
+                    if file_path_obj.parent != Path("."):
                         raise ValueError(
                             f"Cannot provide sub_path ('{sub_path}') when file_path "
                             f"('{file_path}') already contains directory separators."
@@ -1021,7 +1097,7 @@ class FileUtils:
                     # Look for files matching the pattern (with timestamp)
                     pattern = f"{file_path_obj.stem}_*{file_path_obj.suffix}"
                     matching_files = list(search_dir.glob(pattern))
-                    
+
                     if matching_files:
                         # Use the most recent file (by modification time)
                         full_path = max(matching_files, key=lambda f: f.stat().st_mtime)
@@ -1048,10 +1124,10 @@ class FileUtils:
         **kwargs,
     ) -> Tuple[Dict[str, str], str]:
         """Convert Excel file with multiple worksheets to CSV files while maintaining workbook structure.
-        
+
         This method loads all sheets from an Excel file, converts each sheet to a separate CSV file,
         and creates a JSON file containing the workbook structure and metadata.
-        
+
         Args:
             excel_file_path: Path to Excel file, relative to input_type/sub_path directory
             input_type: Type of input directory (e.g., "raw", "processed", "config", "logs")
@@ -1062,20 +1138,20 @@ class FileUtils:
             root_level: If True, input_type and output_type are directories at project root level.
                        If False (default), they are under the data directory.
             **kwargs: Additional arguments for CSV saving (encoding, delimiter, etc.)
-            
+
         Returns:
             Tuple of (csv_files_dict, structure_json_path):
             - csv_files_dict: Dictionary mapping sheet names to CSV file paths
             - structure_json_path: Path to the structure JSON file (empty string if preserve_structure=False)
-            
+
         Raises:
             StorageError: If conversion fails
             ValueError: If sub_path is provided and file_path also contains path separators
-            
+
         Example:
             >>> file_utils = FileUtils()
             >>> csv_files, structure_file = file_utils.convert_excel_to_csv_with_structure(
-            ...     "workbook.xlsx", 
+            ...     "workbook.xlsx",
             ...     file_name="converted_workbook"
             ... )
             >>> # Result:
@@ -1089,21 +1165,21 @@ class FileUtils:
             # Load all sheets from Excel file
             self.logger.info(f"Loading Excel file: {excel_file_path}")
             sheets_dict = self.load_excel_sheets(
-                excel_file_path, 
-                input_type=input_type, 
+                excel_file_path,
+                input_type=input_type,
                 sub_path=sub_path,
                 root_level=root_level,
-                **kwargs
+                **kwargs,
             )
-            
+
             if not sheets_dict:
                 raise StorageError(f"No sheets found in Excel file: {excel_file_path}")
-            
+
             # Determine output file name
             if file_name is None:
                 excel_path = Path(excel_file_path)
                 file_name = excel_path.stem
-            
+
             # Convert each sheet to CSV
             csv_files = {}
             structure_data = {
@@ -1111,17 +1187,17 @@ class FileUtils:
                     "source_file": str(excel_file_path),
                     "conversion_timestamp": pd.Timestamp.now().isoformat(),
                     "total_sheets": len(sheets_dict),
-                    "sheet_names": list(sheets_dict.keys())
+                    "sheet_names": list(sheets_dict.keys()),
                 },
-                "sheets": {}
+                "sheets": {},
             }
-            
+
             self.logger.info(f"Converting {len(sheets_dict)} sheets to CSV format")
-            
+
             for sheet_name, df in sheets_dict.items():
                 # Create CSV file name
                 csv_file_name = f"{file_name}_{sheet_name}"
-                
+
                 # Save sheet as CSV
                 saved_files, _ = self.save_data_to_storage(
                     data=df,
@@ -1130,37 +1206,36 @@ class FileUtils:
                     file_name=csv_file_name,
                     sub_path=sub_path,
                     root_level=root_level,
-                    **kwargs
+                    **kwargs,
                 )
-                
+
                 # Get the CSV file path (should be single file)
                 csv_file_path = list(saved_files.values())[0]
                 csv_files[sheet_name] = csv_file_path
-                
+
                 # Collect sheet metadata for structure file
                 if preserve_structure:
                     structure_data["sheets"][sheet_name] = {
                         "csv_file": csv_file_path,
                         "csv_filename": Path(csv_file_path).name,
-                        "dimensions": {
-                            "rows": len(df),
-                            "columns": len(df.columns)
-                        },
+                        "dimensions": {"rows": len(df), "columns": len(df.columns)},
                         "columns": {
                             "names": df.columns.tolist(),
                             "dtypes": df.dtypes.astype(str).to_dict(),
-                            "count": len(df.columns)
+                            "count": len(df.columns),
                         },
                         "data_info": {
                             "has_index": df.index.name is not None,
                             "index_name": df.index.name,
                             "memory_usage": df.memory_usage(deep=True).sum(),
-                            "null_counts": df.isnull().sum().to_dict()
-                        }
+                            "null_counts": df.isnull().sum().to_dict(),
+                        },
                     }
-                
-                self.logger.debug(f"Converted sheet '{sheet_name}' to CSV: {csv_file_path}")
-            
+
+                self.logger.debug(
+                    f"Converted sheet '{sheet_name}' to CSV: {csv_file_path}"
+                )
+
             # Save structure JSON file if requested
             structure_json_path = ""
             if preserve_structure:
@@ -1171,19 +1246,23 @@ class FileUtils:
                     output_type=output_type,
                     file_name=structure_file_name,
                     sub_path=sub_path,
-                    root_level=root_level
+                    root_level=root_level,
                 )
                 structure_json_path = saved_path
                 self.logger.info(f"Created structure file: {structure_json_path}")
-            
-            self.logger.info(f"Successfully converted Excel file to {len(csv_files)} CSV files")
+
+            self.logger.info(
+                f"Successfully converted Excel file to {len(csv_files)} CSV files"
+            )
             return csv_files, structure_json_path
-            
+
         except Exception as e:
             if isinstance(e, (ValueError, StorageError)):
                 raise
             self.logger.error(f"Failed to convert Excel file {excel_file_path}: {e}")
-            raise StorageError(f"Failed to convert Excel file {excel_file_path}: {e}") from e
+            raise StorageError(
+                f"Failed to convert Excel file {excel_file_path}: {e}"
+            ) from e
 
     def convert_csv_to_excel_workbook(
         self,
@@ -1196,11 +1275,11 @@ class FileUtils:
         **kwargs,
     ) -> str:
         """Convert CSV files back to Excel workbook using structure JSON.
-        
+
         This method reconstructs an Excel workbook from CSV files that were previously
         created using convert_excel_to_csv_with_structure(). It uses the structure JSON
         to determine which CSV files to load and how to organize them into sheets.
-        
+
         Args:
             structure_json_path: Path to the structure JSON file created during CSV conversion
             input_type: Type of input directory where CSV files are located
@@ -1210,14 +1289,14 @@ class FileUtils:
             root_level: If True, input_type and output_type are directories at project root level.
                        If False (default), they are under the data directory.
             **kwargs: Additional arguments for Excel saving (engine, etc.)
-            
+
         Returns:
             Path to the created Excel workbook file
-            
+
         Raises:
             StorageError: If conversion fails
             ValueError: If structure JSON is invalid or CSV files are missing
-            
+
         Example:
             >>> file_utils = FileUtils()
             >>> # First convert Excel to CSV
@@ -1232,60 +1311,74 @@ class FileUtils:
         """
         try:
             import json
-            
+
             # Load structure JSON
             self.logger.info(f"Loading structure file: {structure_json_path}")
             structure_path = Path(structure_json_path)
-            
+
             if not structure_path.exists():
                 raise StorageError(f"Structure file not found: {structure_json_path}")
-            
-            with open(structure_path, 'r') as f:
+
+            with open(structure_path, "r") as f:
                 structure_data = json.load(f)
-            
+
             # Validate structure data
-            if 'sheets' not in structure_data:
+            if "sheets" not in structure_data:
                 raise ValueError("Invalid structure JSON: missing 'sheets' key")
-            
+
             # Determine output file name
             if file_name is None:
-                file_name = structure_path.stem.replace('_structure', '') + '_reconstructed'
-            
+                file_name = (
+                    structure_path.stem.replace("_structure", "") + "_reconstructed"
+                )
+
             # Load CSV files and reconstruct workbook
             workbook_data = {}
             missing_files = []
-            
-            self.logger.info(f"Reconstructing workbook from {len(structure_data['sheets'])} CSV files")
-            
-            for sheet_name, sheet_info in structure_data['sheets'].items():
-                csv_filename = sheet_info.get('csv_filename')
+
+            self.logger.info(
+                f"Reconstructing workbook from {len(structure_data['sheets'])} CSV files"
+            )
+
+            for sheet_name, sheet_info in structure_data["sheets"].items():
+                csv_filename = sheet_info.get("csv_filename")
                 if not csv_filename:
-                    self.logger.warning(f"No CSV filename found for sheet '{sheet_name}', skipping")
+                    self.logger.warning(
+                        f"No CSV filename found for sheet '{sheet_name}', skipping"
+                    )
                     continue
-                
+
                 try:
                     # Load CSV file
                     df = self.load_single_file(
                         csv_filename,
                         input_type=input_type,
                         sub_path=sub_path,
-                        root_level=root_level
+                        root_level=root_level,
                     )
                     workbook_data[sheet_name] = df
-                    self.logger.debug(f"Loaded sheet '{sheet_name}' from {csv_filename}")
-                    
+                    self.logger.debug(
+                        f"Loaded sheet '{sheet_name}' from {csv_filename}"
+                    )
+
                 except Exception as e:
                     missing_files.append(f"{sheet_name}: {csv_filename}")
-                    self.logger.warning(f"Failed to load CSV file for sheet '{sheet_name}': {e}")
-            
+                    self.logger.warning(
+                        f"Failed to load CSV file for sheet '{sheet_name}': {e}"
+                    )
+
             if not workbook_data:
-                raise StorageError(f"No CSV files could be loaded. Missing files: {missing_files}")
-            
+                raise StorageError(
+                    f"No CSV files could be loaded. Missing files: {missing_files}"
+                )
+
             if missing_files:
                 self.logger.warning(f"Some CSV files were missing: {missing_files}")
-            
+
             # Save as Excel workbook
-            self.logger.info(f"Saving reconstructed workbook with {len(workbook_data)} sheets")
+            self.logger.info(
+                f"Saving reconstructed workbook with {len(workbook_data)} sheets"
+            )
             saved_files, _ = self.save_data_to_storage(
                 data=workbook_data,
                 output_filetype=OutputFileType.XLSX,
@@ -1293,38 +1386,35 @@ class FileUtils:
                 file_name=file_name,
                 sub_path=sub_path,
                 root_level=root_level,
-                **kwargs
+                **kwargs,
             )
-            
+
             # Get the Excel file path (should be single file)
             excel_file_path = list(saved_files.values())[0]
-            
+
             # Create reconstruction metadata
             reconstruction_info = {
                 "reconstruction_info": {
                     "source_structure_file": str(structure_json_path),
                     "reconstruction_timestamp": pd.Timestamp.now().isoformat(),
-                    "original_workbook_info": structure_data.get('workbook_info', {}),
+                    "original_workbook_info": structure_data.get("workbook_info", {}),
                     "sheets_reconstructed": len(workbook_data),
-                    "sheets_original": len(structure_data['sheets']),
-                    "missing_files": missing_files
+                    "sheets_original": len(structure_data["sheets"]),
+                    "missing_files": missing_files,
                 },
                 "sheets": {
                     sheet_name: {
-                        "csv_source": sheet_info.get('csv_filename'),
-                        "dimensions": {
-                            "rows": len(df),
-                            "columns": len(df.columns)
-                        },
+                        "csv_source": sheet_info.get("csv_filename"),
+                        "dimensions": {"rows": len(df), "columns": len(df.columns)},
                         "columns": {
                             "names": df.columns.tolist(),
-                            "count": len(df.columns)
-                        }
+                            "count": len(df.columns),
+                        },
                     }
                     for sheet_name, df in workbook_data.items()
-                }
+                },
             }
-            
+
             # Save reconstruction metadata
             metadata_file_name = f"{file_name}_reconstruction_metadata"
             self.save_document_to_storage(
@@ -1333,17 +1423,21 @@ class FileUtils:
                 output_type=output_type,
                 file_name=metadata_file_name,
                 sub_path=sub_path,
-                root_level=root_level
+                root_level=root_level,
             )
-            
-            self.logger.info(f"Successfully reconstructed Excel workbook: {excel_file_path}")
+
+            self.logger.info(
+                f"Successfully reconstructed Excel workbook: {excel_file_path}"
+            )
             return excel_file_path
-            
+
         except Exception as e:
             if isinstance(e, (ValueError, StorageError)):
                 raise
             self.logger.error(f"Failed to convert CSV files to Excel workbook: {e}")
-            raise StorageError(f"Failed to convert CSV files to Excel workbook: {e}") from e
+            raise StorageError(
+                f"Failed to convert CSV files to Excel workbook: {e}"
+            ) from e
 
     def open_run(
         self,

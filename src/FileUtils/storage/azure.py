@@ -77,7 +77,7 @@ class AzureStorage(BaseStorage):
         """Parse azure:// URL into container and blob names."""
         if not file_path.startswith("azure://"):
             raise ValueError("Invalid Azure path format")
-        
+
         parts = file_path.split("/")
         container_name = parts[2]
         blob_name = "/".join(parts[3:])
@@ -129,7 +129,7 @@ class AzureStorage(BaseStorage):
 
     def _load_json_as_dataframe(self, path: Path) -> pd.DataFrame:
         """Load JSON file as DataFrame.
-        
+
         Supports both list of records and dictionary formats.
         """
         try:
@@ -139,7 +139,7 @@ class AzureStorage(BaseStorage):
 
     def _load_yaml_as_dataframe(self, path: Path) -> pd.DataFrame:
         """Load YAML file as DataFrame.
-        
+
         Supports both list of records and dictionary formats.
         Handles YAML-specific errors separately for better error messages.
         """
@@ -152,7 +152,7 @@ class AzureStorage(BaseStorage):
         self, df: pd.DataFrame, file_path: Union[str, Path], **kwargs
     ) -> str:
         """Save DataFrame to Azure Blob Storage.
-        
+
         Args:
             df: DataFrame to save
             file_path: Path to save to (azure:// URL)
@@ -161,7 +161,7 @@ class AzureStorage(BaseStorage):
                 - orient: Orientation for JSON files ("records", "index", etc.)
                 - yaml_options: Dict of options for yaml.safe_dump
                 - compression: Compression options for parquet files
-            
+
         Returns:
             Azure URL where the file was saved
         """
@@ -183,7 +183,12 @@ class AzureStorage(BaseStorage):
                         df.to_parquet(temp_path, index=False, compression=compression)
                     elif suffix in (".xlsx", ".xls"):
                         sheet_name = kwargs.get("sheet_name", "Sheet1")
-                        df.to_excel(temp_path, sheet_name=sheet_name, index=False, engine="openpyxl")
+                        df.to_excel(
+                            temp_path,
+                            sheet_name=sheet_name,
+                            index=False,
+                            engine="openpyxl",
+                        )
                     elif suffix == ".json":
                         orient = kwargs.get("orient", "records")
                         dataframe_to_json(temp_path, df, orient=orient, indent=2)
@@ -209,7 +214,9 @@ class AzureStorage(BaseStorage):
             return f"azure://{container_name}/{blob_name}"
 
         except yaml.YAMLError as e:
-            raise StorageOperationError(f"Failed to save YAML file - YAML error: {e}") from e
+            raise StorageOperationError(
+                f"Failed to save YAML file - YAML error: {e}"
+            ) from e
         except Exception as e:
             raise StorageOperationError(
                 f"Failed to save DataFrame to Azure: {e}"
@@ -248,7 +255,9 @@ class AzureStorage(BaseStorage):
         """Save raw bytes to Azure Blob Storage at the given azure:// path."""
         try:
             container_name, blob_name = self._parse_azure_url(str(file_path))
-            blob_client = self.client.get_blob_client(container=container_name, blob=blob_name)
+            blob_client = self.client.get_blob_client(
+                container=container_name, blob=blob_name
+            )
             blob_client.upload_blob(content, overwrite=True)
             return f"azure://{container_name}/{blob_name}"
         except Exception as e:
@@ -359,16 +368,20 @@ class AzureStorage(BaseStorage):
             raise StorageOperationError(f"Failed to load JSON from Azure: {e}") from e
 
     def save_dataframes(
-        self, data: Dict[str, pd.DataFrame], file_path: Union[str, Path], file_format: Optional[str] = None, **kwargs
+        self,
+        data: Dict[str, pd.DataFrame],
+        file_path: Union[str, Path],
+        file_format: Optional[str] = None,
+        **kwargs,
     ) -> Dict[str, str]:
         """Save multiple DataFrames to Azure Blob Storage.
-        
+
         Args:
             data: Dictionary of DataFrames to save
             file_path: Path to save to (azure:// URL)
             file_format: File format to save as
             **kwargs: Additional arguments for saving (e.g., engine for Excel)
-            
+
         Returns:
             Dictionary mapping sheet names to Azure URLs. For Excel files,
             all sheets will map to the same URL.
@@ -389,21 +402,36 @@ class AzureStorage(BaseStorage):
             if fmt in ("xlsx", "xls"):
                 # Save all DataFrames to a single Excel file
                 suffix = f".{fmt}"
-                with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as temp_file:
+                with tempfile.NamedTemporaryFile(
+                    suffix=suffix, delete=False
+                ) as temp_file:
                     temp_path = Path(temp_file.name)
                     try:
-                        with pd.ExcelWriter(temp_path, engine=kwargs.get("engine", "openpyxl")) as writer:
+                        with pd.ExcelWriter(
+                            temp_path, engine=kwargs.get("engine", "openpyxl")
+                        ) as writer:
                             for sheet_name, df in data.items():
                                 # Handle MultiIndex columns by flattening them
                                 if isinstance(df.columns, pd.MultiIndex):
                                     df_to_save = df.copy()
-                                    df_to_save.columns = ['_'.join(col).strip() if isinstance(col, tuple) else col for col in df_to_save.columns]
+                                    df_to_save.columns = [
+                                        (
+                                            "_".join(col).strip()
+                                            if isinstance(col, tuple)
+                                            else col
+                                        )
+                                        for col in df_to_save.columns
+                                    ]
                                 else:
                                     df_to_save = df
-                                
+
                                 # Use index=True for MultiIndex columns, otherwise use index=False
-                                include_index = isinstance(df.columns, pd.MultiIndex) or isinstance(df.index, pd.MultiIndex)
-                                df_to_save.to_excel(writer, sheet_name=sheet_name, index=include_index)
+                                include_index = isinstance(
+                                    df.columns, pd.MultiIndex
+                                ) or isinstance(df.index, pd.MultiIndex)
+                                df_to_save.to_excel(
+                                    writer, sheet_name=sheet_name, index=include_index
+                                )
 
                         # Upload the Excel file
                         blob_client = self.client.get_blob_client(
@@ -434,17 +462,21 @@ class AzureStorage(BaseStorage):
             ) from e
 
     def save_document(
-        self, content: Union[str, Dict[str, Any], bytes, Path], file_path: Union[str, Path], file_type: str, **kwargs
+        self,
+        content: Union[str, Dict[str, Any], bytes, Path],
+        file_path: Union[str, Path],
+        file_type: str,
+        **kwargs,
     ) -> str:
         """Save document content to Azure Blob Storage.
-        
+
         Args:
             content: Document content (string, dict, bytes, or Path).
                     For PPTX: accepts bytes (file content) or Path/str (path to source .pptx file).
             file_path: Path to save to (azure:// URL)
             file_type: Type of document (docx, md, pdf, pptx)
             **kwargs: Additional arguments for saving
-            
+
         Returns:
             Azure URL where the file was saved
         """
@@ -488,13 +520,15 @@ class AzureStorage(BaseStorage):
         except Exception as e:
             raise StorageOperationError(f"Failed to save document to Azure: {e}") from e
 
-    def load_document(self, file_path: Union[str, Path], **kwargs) -> Union[str, Dict[str, Any], bytes]:
+    def load_document(
+        self, file_path: Union[str, Path], **kwargs
+    ) -> Union[str, Dict[str, Any], bytes]:
         """Load document content from Azure Blob Storage.
-        
+
         Args:
             file_path: Path to file (azure:// URL)
             **kwargs: Additional arguments for loading
-            
+
         Returns:
             Document content (string, dict, or bytes depending on file type).
             For PPTX: returns bytes.
@@ -525,14 +559,22 @@ class AzureStorage(BaseStorage):
                         return temp_path.read_bytes()
                     elif suffix == ".json":
                         import json
-                        return json.loads(temp_path.read_text(encoding=self.config["encoding"]))
+
+                        return json.loads(
+                            temp_path.read_text(encoding=self.config["encoding"])
+                        )
                     elif suffix in (".yaml", ".yml"):
                         import yaml
-                        return yaml.safe_load(temp_path.read_text(encoding=self.config["encoding"]))
+
+                        return yaml.safe_load(
+                            temp_path.read_text(encoding=self.config["encoding"])
+                        )
                     else:
                         raise ValueError(f"Unsupported document format: {suffix}")
                 finally:
                     temp_path.unlink(missing_ok=True)
 
         except Exception as e:
-            raise StorageOperationError(f"Failed to load document from Azure: {e}") from e
+            raise StorageOperationError(
+                f"Failed to load document from Azure: {e}"
+            ) from e

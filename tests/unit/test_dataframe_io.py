@@ -19,8 +19,12 @@ def test_json_yaml_roundtrip(tmp_path: Path):
     pd.testing.assert_frame_equal(df.reindex(sorted(df.columns), axis=1), df_json)
 
     yaml_path = tmp_path / "data.yaml"
-    dataframe_to_yaml(yaml_path, df, orient="records", yaml_options={"sort_keys": True}, encoding="utf-8")
+    dataframe_to_yaml(
+        yaml_path,
+        df,
+        orient="records",
+        yaml_options={"sort_keys": True},
+        encoding="utf-8",
+    )
     df_yaml = yaml_to_dataframe(yaml_path, encoding="utf-8")
     pd.testing.assert_frame_equal(df.reindex(sorted(df.columns), axis=1), df_yaml)
-
-

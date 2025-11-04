@@ -8,5 +8,3 @@ def test_find_project_root_current_dir(tmp_path: Path, monkeypatch):
     (tmp_path / "pyproject.toml").write_text("[build-system]\n")
     root = find_project_root()
     assert root == tmp_path
-
-

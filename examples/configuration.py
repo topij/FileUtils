@@ -14,7 +14,6 @@ def create_custom_config():
         "quoting": 0,  # csv.QUOTE_MINIMAL
         "include_timestamp": True,
         "logging_level": "DEBUG",
-        
         # Directory structure
         "directory_structure": {
             "data": ["raw", "interim", "processed", "external"],
@@ -22,7 +21,6 @@ def create_custom_config():
             "models": ["trained", "evaluations"],
             "docs": ["api", "guides"],
         },
-        
         # Storage settings
         "storage": {
             "default_type": "local",
@@ -37,9 +35,9 @@ def create_custom_config():
                     "max_retries": 3,
                     "retry_delay": 1,
                     "max_delay": 30,
-                }
-            }
-        }
+                },
+            },
+        },
     }
 
     config_path = Path("custom_config.yaml")
@@ -66,17 +64,14 @@ def demonstrate_configuration():
             print(f"  ├── {sub_dir}/")
 
     # Test with sample data
-    df = pd.DataFrame({
-        "name": ["Alice", "Bob"],
-        "score": [95, 87]
-    })
+    df = pd.DataFrame({"name": ["Alice", "Bob"], "score": [95, 87]})
 
     # Save with custom delimiter
     saved_files, metadata = file_utils.save_data_to_storage(
         data=df,
         output_filetype=OutputFileType.CSV,
         output_type="processed",
-        file_name="custom_delim_test"
+        file_name="custom_delim_test",
     )
 
     # Show file contents

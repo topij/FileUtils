@@ -6,6 +6,7 @@ __all__ = ["LocalStorage"]
 
 try:
     from .azure import AzureStorage
+
     __all__.append("AzureStorage")
 except ImportError:
     # Azure storage is optional

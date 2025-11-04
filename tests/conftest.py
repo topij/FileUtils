@@ -4,7 +4,9 @@ import warnings
 
 # Suppress PyMuPDF deprecation warnings globally
 warnings.filterwarnings("ignore", category=DeprecationWarning, message=".*SwigPy.*")
-warnings.filterwarnings("ignore", category=DeprecationWarning, message=".*swigvarlink.*")
+warnings.filterwarnings(
+    "ignore", category=DeprecationWarning, message=".*swigvarlink.*"
+)
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="fitz")
 
 import os

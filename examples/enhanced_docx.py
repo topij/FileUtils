@@ -19,7 +19,7 @@ from FileUtils import FileUtils, OutputFileType
 def demonstrate_enhanced_docx():
     """Demonstrate enhanced DOCX functionality."""
     print("=== Enhanced DOCX Template System Demo ===\n")
-    
+
     # Initialize FileUtils with template configuration
     file_utils = FileUtils(
         config_override={
@@ -30,8 +30,8 @@ def demonstrate_enhanced_docx():
                     "default": "style-template-doc.docx",
                     "review": "style-template-doc.docx",
                     "report": "style-template-doc.docx",
-                    "ip_template": "IP-template-doc.docx"  # Personal IP template
-                }
+                    "ip_template": "IP-template-doc.docx",  # Personal IP template
+                },
             },
             "style_mapping": {
                 "table": "IP-table_light",
@@ -39,14 +39,14 @@ def demonstrate_enhanced_docx():
                 "table_default": "Table Grid",
                 "heading_1": "Heading 1",
                 "list_bullet": "List Bullet",
-                "list_number": "List Number"
-            }
+                "list_number": "List Number",
+            },
         }
     )
-    
+
     # Example 1: Convert Markdown to DOCX with template
     print("1. Converting Markdown to DOCX with template...")
-    
+
     markdown_content = """# Project Report
 
 ## Executive Summary
@@ -90,7 +90,7 @@ Code example: `python main.py --config production`
 
 *Generated on 2024-01-15*
 """
-    
+
     saved_path, _ = file_utils.save_document_to_storage(
         content=markdown_content,
         output_filetype=OutputFileType.DOCX,
@@ -99,25 +99,25 @@ Code example: `python main.py --config production`
         template="review",  # Use review template
         add_provenance=True,
         add_reviewer_instructions=True,
-        source_file="project_report.md"
+        source_file="project_report.md",
     )
     print(f"✓ Markdown converted to DOCX: {saved_path}")
-    
+
     # Example 2: Structured content with template
     print("\n2. Creating structured DOCX with template...")
-    
+
     structured_content = {
         "title": "Technical Specification",
         "sections": [
             {
                 "heading": "Overview",
                 "level": 1,
-                "text": "This document outlines the technical specifications for the new system."
+                "text": "This document outlines the technical specifications for the new system.",
             },
             {
                 "heading": "System Requirements",
                 "level": 2,
-                "text": "The system must meet the following requirements:"
+                "text": "The system must meet the following requirements:",
             },
             {
                 "heading": "Performance Metrics",
@@ -126,29 +126,29 @@ Code example: `python main.py --config production`
                     ["Metric", "Target", "Current"],
                     ["Response Time", "< 2s", "1.8s"],
                     ["Throughput", "> 1000 req/s", "1200 req/s"],
-                    ["Uptime", "> 99.9%", "99.95%"]
-                ]
+                    ["Uptime", "> 99.9%", "99.95%"],
+                ],
             },
             {
                 "heading": "Implementation Plan",
                 "level": 2,
-                "text": "The implementation will be completed in three phases."
-            }
-        ]
+                "text": "The implementation will be completed in three phases.",
+            },
+        ],
     }
-    
+
     saved_path, _ = file_utils.save_document_to_storage(
         content=structured_content,
         output_filetype=OutputFileType.DOCX,
         output_type="processed",
         file_name="technical_spec",
-        template="report"  # Use report template
+        template="report",  # Use report template
     )
     print(f"✓ Structured DOCX created: {saved_path}")
-    
+
     # Example 3: Simple text with default template
     print("\n3. Creating simple DOCX...")
-    
+
     simple_content = """Simple Document
 
 This is a basic document without complex formatting.
@@ -159,61 +159,61 @@ Key points:
 - Point 3
 
 End of document."""
-    
+
     saved_path, _ = file_utils.save_document_to_storage(
         content=simple_content,
         output_filetype=OutputFileType.DOCX,
         output_type="processed",
-        file_name="simple_doc"
+        file_name="simple_doc",
     )
     print(f"✓ Simple DOCX created: {saved_path}")
-    
+
     # Example 4: Template management
     print("\n4. Template management...")
-    
+
     try:
         from FileUtils.templates import DocxTemplateManager
-        
+
         template_manager = DocxTemplateManager(file_utils.config)
-        
+
         # List available templates
         available_templates = template_manager.list_available_templates()
         print(f"Available templates: {list(available_templates.keys())}")
-        
+
         # Get template info including headers/footers
         template_info = template_manager.get_template_info("default")
         print(f"Default template info: {template_info}")
-        
+
         # Check for headers and footers
         if "headers_footers" in template_info:
             hf_info = template_info["headers_footers"]
             print(f"Template has headers: {hf_info.get('has_headers', False)}")
             print(f"Template has footers: {hf_info.get('has_footers', False)}")
-            if hf_info.get('has_headers'):
+            if hf_info.get("has_headers"):
                 print(f"Header count: {hf_info.get('header_count', 0)}")
-            if hf_info.get('has_footers'):
+            if hf_info.get("has_footers"):
                 print(f"Footer count: {hf_info.get('footer_count', 0)}")
-        
+
     except ImportError:
         print("Template management not available (templates module not found)")
-    
+
     print("\n=== Enhanced DOCX Demo Complete ===")
     print("✓ Markdown conversion with template")
     print("✓ Structured content with template")
     print("✓ Simple document creation")
     print("✓ Template management")
-    
+
     return {
         "markdown_docx": saved_path,
         "structured_docx": saved_path,
-        "simple_docx": saved_path
+        "simple_docx": saved_path,
     }
 
 
 def demonstrate_template_configuration():
     """Demonstrate template configuration options."""
     print("\n=== Template Configuration Demo ===\n")
-    
+
     # Custom template configuration
     custom_config = {
         "docx_templates": {
@@ -221,39 +221,38 @@ def demonstrate_template_configuration():
             "templates": {
                 "corporate": "corporate-template.docx",
                 "technical": "technical-template.docx",
-                "simple": None  # Use default
-            }
+                "simple": None,  # Use default
+            },
         },
         "style_mapping": {
             "table": "Corporate-Table",
             "heading_1": "Corporate-Heading-1",
-            "list_bullet": "Corporate-List"
+            "list_bullet": "Corporate-List",
         },
         "markdown_options": {
             "add_provenance": True,
             "add_reviewer_instructions": True,
-            "checkbox_symbols": {
-                "unchecked": "□",
-                "checked": "■"
-            }
-        }
+            "checkbox_symbols": {"unchecked": "□", "checked": "■"},
+        },
     }
-    
+
     file_utils = FileUtils(config_override=custom_config)
-    
+
     print("Custom configuration applied:")
     print(f"- Template directory: {custom_config['docx_templates']['template_dir']}")
-    print(f"- Available templates: {list(custom_config['docx_templates']['templates'].keys())}")
+    print(
+        f"- Available templates: {list(custom_config['docx_templates']['templates'].keys())}"
+    )
     print(f"- Custom table style: {custom_config['style_mapping']['table']}")
-    
+
     return file_utils
 
 
 if __name__ == "__main__":
     # Run the main demonstration
     results = demonstrate_enhanced_docx()
-    
+
     # Demonstrate configuration
     demonstrate_template_configuration()
-    
+
     print(f"\nDemo results: {results}")

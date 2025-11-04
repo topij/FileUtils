@@ -4,7 +4,9 @@ from pathlib import Path
 from typing import Dict, Any, Union
 
 
-def save_markdown(content: Union[str, Dict[str, Any]], path: Path, *, encoding: str = "utf-8") -> str:
+def save_markdown(
+    content: Union[str, Dict[str, Any]], path: Path, *, encoding: str = "utf-8"
+) -> str:
     if isinstance(content, str):
         markdown_content = content
     elif isinstance(content, dict):
@@ -12,6 +14,7 @@ def save_markdown(content: Union[str, Dict[str, Any]], path: Path, *, encoding: 
         body = content.get("body", "")
         if frontmatter:
             import yaml
+
             frontmatter_yaml = yaml.safe_dump(frontmatter, default_flow_style=False)
             markdown_content = f"---\n{frontmatter_yaml}---\n\n{body}"
         else:
@@ -30,6 +33,7 @@ def load_markdown(path: Path, *, encoding: str = "utf-8") -> Union[str, Dict[str
     if content.startswith("---\n"):
         try:
             import yaml
+
             parts = content.split("---\n", 2)
             if len(parts) >= 3:
                 frontmatter = yaml.safe_load(parts[1])
@@ -57,8 +61,14 @@ def save_docx_simple(content: Union[str, Dict[str, Any]], path: Path) -> str:
                 doc.add_heading(section["heading"], level=section.get("level", 1))
             if "text" in section:
                 doc.add_paragraph(section["text"])
-            if "table" in section and isinstance(section["table"], list) and section["table"]:
-                table = doc.add_table(rows=len(section["table"]), cols=len(section["table"][0]))
+            if (
+                "table" in section
+                and isinstance(section["table"], list)
+                and section["table"]
+            ):
+                table = doc.add_table(
+                    rows=len(section["table"]), cols=len(section["table"][0])
+                )
                 for i, row in enumerate(section["table"]):
                     for j, cell in enumerate(row):
                         table.cell(i, j).text = str(cell)
@@ -141,5 +151,3 @@ def save_pptx(content: Union[bytes, Path, str], path: Path) -> str:
         raise RuntimeError("Source PPTX file not found")
     path.write_bytes(src.read_bytes())
     return str(path)
-
-

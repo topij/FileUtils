@@ -6,11 +6,13 @@ from FileUtils.storage.local import LocalStorage
 
 
 def test_save_dataframes_infers_format_from_suffix(tmp_path: Path):
-    storage = LocalStorage({
-        "encoding": "utf-8",
-        "csv_delimiter": ",",
-        "quoting": 0,
-    })
+    storage = LocalStorage(
+        {
+            "encoding": "utf-8",
+            "csv_delimiter": ",",
+            "quoting": 0,
+        }
+    )
 
     df = pd.DataFrame({"x": [1, 2]})
     data = {"a": df, "b": df}
@@ -27,11 +29,13 @@ def test_save_dataframes_infers_format_from_suffix(tmp_path: Path):
 
 
 def test_save_dataframes_excel_single_file(tmp_path: Path):
-    storage = LocalStorage({
-        "encoding": "utf-8",
-        "csv_delimiter": ",",
-        "quoting": 0,
-    })
+    storage = LocalStorage(
+        {
+            "encoding": "utf-8",
+            "csv_delimiter": ",",
+            "quoting": 0,
+        }
+    )
     df = pd.DataFrame({"x": [1, 2]})
     data = {"sheet1": df, "sheet2": df}
     base = tmp_path / "book.xlsx"
@@ -45,11 +49,13 @@ def test_save_dataframes_excel_single_file(tmp_path: Path):
 
 
 def test_save_dataframes_deprecation_file_format_kwarg(tmp_path: Path):
-    storage = LocalStorage({
-        "encoding": "utf-8",
-        "csv_delimiter": ",",
-        "quoting": 0,
-    })
+    storage = LocalStorage(
+        {
+            "encoding": "utf-8",
+            "csv_delimiter": ",",
+            "quoting": 0,
+        }
+    )
     df = pd.DataFrame({"x": [1, 2]})
     data = {"a": df}
     base = tmp_path / "multi.csv"
@@ -61,4 +67,3 @@ def test_save_dataframes_deprecation_file_format_kwarg(tmp_path: Path):
     p = Path(next(iter(saved.values())))
     assert p.exists()
     assert p.suffix == ".csv"
-

@@ -111,6 +111,7 @@ class BaseStorage(ABC):
 
         if file_format is not None and file_format.lower() != inferred_ext:
             import warnings
+
             warnings.warn(
                 "save_dataframes(file_format=...) is deprecated; format is inferred from file_path",
                 DeprecationWarning,
@@ -241,30 +242,36 @@ class BaseStorage(ABC):
 
     @abstractmethod
     def save_document(
-        self, content: Union[str, Dict[str, Any], bytes, Path], file_path: Union[str, Path], file_type: str, **kwargs
+        self,
+        content: Union[str, Dict[str, Any], bytes, Path],
+        file_path: Union[str, Path],
+        file_type: str,
+        **kwargs,
     ) -> str:
         """Save document content to storage.
-        
+
         Args:
             content: Document content (string, dict, bytes, or Path).
                     For PPTX: accepts bytes (file content) or Path/str (path to source .pptx file).
             file_path: Path to save to
             file_type: Type of document (docx, md, pdf, pptx)
             **kwargs: Additional arguments for saving
-            
+
         Returns:
             String path where the file was saved
         """
         pass
 
     @abstractmethod
-    def load_document(self, file_path: Union[str, Path], **kwargs) -> Union[str, Dict[str, Any], bytes]:
+    def load_document(
+        self, file_path: Union[str, Path], **kwargs
+    ) -> Union[str, Dict[str, Any], bytes]:
         """Load document content from storage.
-        
+
         Args:
             file_path: Path to file
             **kwargs: Additional arguments for loading
-            
+
         Returns:
             Document content (string, dict, or bytes depending on file type).
             For PPTX: returns bytes.

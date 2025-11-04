@@ -9,7 +9,9 @@ import pandas as pd
 import yaml
 
 
-def read_csv_with_inference(path: Path, encoding: str, quoting: int, fallback_sep: str) -> pd.DataFrame:
+def read_csv_with_inference(
+    path: Path, encoding: str, quoting: int, fallback_sep: str
+) -> pd.DataFrame:
     with open(path, "r", encoding=encoding) as f:
         content = f.read(1024)
         f.seek(0)
@@ -55,11 +57,19 @@ def yaml_to_dataframe(path: Path, encoding: str) -> pd.DataFrame:
         raise ValueError(f"Invalid YAML format: {e}") from e
 
 
-def dataframe_to_json(path: Path, df: pd.DataFrame, orient: str = "records", indent: int = 2) -> None:
+def dataframe_to_json(
+    path: Path, df: pd.DataFrame, orient: str = "records", indent: int = 2
+) -> None:
     df.to_json(path, orient=orient, indent=indent)
 
 
-def dataframe_to_yaml(path: Path, df: pd.DataFrame, orient: str = "records", yaml_options: Dict[str, Any] | None = None, encoding: str = "utf-8") -> None:
+def dataframe_to_yaml(
+    path: Path,
+    df: pd.DataFrame,
+    orient: str = "records",
+    yaml_options: Dict[str, Any] | None = None,
+    encoding: str = "utf-8",
+) -> None:
     yaml_options = yaml_options or {}
     default_flow_style = yaml_options.pop("default_flow_style", False)
     sort_keys = yaml_options.pop("sort_keys", False)
@@ -80,5 +90,3 @@ def dataframe_to_yaml(path: Path, df: pd.DataFrame, orient: str = "records", yam
             encoding=encoding,
             **yaml_options,
         )
-
-

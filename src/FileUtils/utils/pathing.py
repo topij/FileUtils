@@ -16,5 +16,3 @@ def find_project_root(start_dir: Optional[Path] = None) -> Optional[Path]:
         current_dir = current_dir.parent
 
     return None
-
-

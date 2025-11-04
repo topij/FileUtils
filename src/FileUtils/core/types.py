@@ -8,5 +8,3 @@ class SaveResult:
     url: Optional[str] = None
     checksum: Optional[str] = None
     mimetype: Optional[str] = None
-
-

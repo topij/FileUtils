@@ -10,11 +10,13 @@ def demonstrate_basic_operations():
     file_utils = FileUtils()
 
     # Create sample data
-    df = pd.DataFrame({
-        "name": ["Alice", "Bob", "Charlie"],
-        "age": [25, 30, 35],
-        "city": ["New York", "London", "Paris"],
-    })
+    df = pd.DataFrame(
+        {
+            "name": ["Alice", "Bob", "Charlie"],
+            "age": [25, 30, 35],
+            "city": ["New York", "London", "Paris"],
+        }
+    )
 
     # Save as CSV
     saved_files, metadata = file_utils.save_data_to_storage(
@@ -37,21 +39,16 @@ def demonstrate_basic_operations():
     # Save multiple DataFrames to Excel with metadata
     df2 = df.copy()
     df2["age"] = df2["age"] + 1
-    
+
     # Create summary without multi-index
-    summary_df = (df.groupby("city")
-                   .agg({"age": ["mean", "count"]})
-                   .reset_index())
+    summary_df = df.groupby("city").agg({"age": ["mean", "count"]}).reset_index()
     # Flatten column names
-    summary_df.columns = [f"{col[0]}_{col[1]}" if col[1] else col[0] 
-                         for col in summary_df.columns]
-    
-    multi_df = {
-        "original": df,
-        "modified": df2,
-        "summary": summary_df
-    }
-    
+    summary_df.columns = [
+        f"{col[0]}_{col[1]}" if col[1] else col[0] for col in summary_df.columns
+    ]
+
+    multi_df = {"original": df, "modified": df2, "summary": summary_df}
+
     saved_files, metadata = file_utils.save_with_metadata(
         data=multi_df,
         output_filetype=OutputFileType.XLSX,
