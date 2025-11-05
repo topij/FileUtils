@@ -217,6 +217,9 @@ def run_performance_optimization():
     print("\n5. Memory cleanup...")
     start_memory = monitor_memory()
 
+    # Capture data length before deletion
+    processed_data_len = len(processed_data)
+
     # Delete large objects
     del large_data
     del optimized_data
@@ -252,7 +255,7 @@ def run_performance_optimization():
 - **Original Size**: {original_memory:.1f}MB
 - **Optimized Size**: {optimized_memory:.1f}MB
 - **Memory Savings**: {memory_savings:.1f}MB ({memory_savings/original_memory*100:.1f}%)
-- **Total Records**: {len(processed_data):,}
+- **Total Records**: {processed_data_len:,}
 
 ## Performance Metrics
 
@@ -389,7 +392,7 @@ def run_performance_optimization():
     print(f"   ✓ Performance configuration saved: {saved_path}")
 
     print("\n=== Performance Optimization Complete ===")
-    print(f"✓ Processed {len(processed_data):,} records")
+    print(f"✓ Processed {processed_data_len:,} records")
     print(
         f"✓ Saved {memory_savings:.1f}MB memory ({memory_savings/original_memory*100:.1f}%)"
     )
@@ -410,7 +413,7 @@ def run_performance_optimization():
             + save_time,
             "memory_savings": memory_savings,
             "memory_freed": memory_freed,
-            "records_processed": len(processed_data),
+            "records_processed": processed_data_len,
         },
     }
 

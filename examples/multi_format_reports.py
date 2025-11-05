@@ -213,7 +213,7 @@ This report provides a comprehensive analysis of quarterly sales performance acr
                 "total_revenue": float(total_revenue),
                 "average_margin": float(avg_margin),
                 "total_records": len(report_data),
-                "quarters_analyzed": len(quarters),
+                "quarters_analyzed": len(summary),
             },
             "quarterly_performance": summary.to_dict("records"),
             "product_performance": product_performance.to_dict("records"),

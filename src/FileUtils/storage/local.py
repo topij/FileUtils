@@ -498,6 +498,12 @@ class LocalStorage(BaseStorage):
             self.logger.warning(
                 f"Template system not available, using simple conversion: {e}"
             )
+            try:
+                from docx import Document
+            except ImportError:
+                raise StorageOperationError(
+                    "python-docx not installed. Install with: pip install 'FileUtils[documents]'"
+                ) from e
             doc = Document()
             doc.add_paragraph(markdown_content)
             doc.save(path)
