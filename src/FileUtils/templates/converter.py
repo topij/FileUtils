@@ -13,7 +13,7 @@ from docx.enum.style import WD_STYLE_TYPE
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Inches, Pt
 
-from ..utils.common import get_logger
+from ..utils.logging import setup_logger
 from .styles import StyleMapper
 
 
@@ -29,7 +29,7 @@ class MarkdownToDocxConverter:
         """
         self.template_manager = template_manager
         self.style_mapper = style_mapper or StyleMapper()
-        self.logger = get_logger(self.__class__.__name__)
+        self.logger = setup_logger(self.__class__.__name__)
 
     def convert_markdown_to_docx(
         self,

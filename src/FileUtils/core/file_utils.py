@@ -12,7 +12,7 @@ from ..core.base import StorageError
 from ..core.enums import InputType, OutputArea, OutputFileType, StorageType
 from ..core.types import SaveResult
 from ..storage.local import LocalStorage
-from ..utils.common import format_file_path, get_logger
+from ..utils.common import format_file_path
 from ..utils.logging import setup_logger
 from ..utils.pathing import find_project_root
 from .base import BaseStorage

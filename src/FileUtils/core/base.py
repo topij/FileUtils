@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional, Tuple, Union
 
 import pandas as pd
 
-from ..utils.common import get_logger
+from ..utils.logging import setup_logger
 
 
 class StorageError(Exception):
@@ -59,7 +59,7 @@ class BaseStorage(ABC):
             config: Configuration dictionary
         """
         self.config = config
-        self.logger = get_logger(self.__class__.__name__)
+        self.logger = setup_logger(self.__class__.__name__)
 
     @abstractmethod
     def save_dataframe(

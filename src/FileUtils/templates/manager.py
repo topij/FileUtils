@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional, Union
 
 import yaml
 
-from ..utils.common import get_logger
+from ..utils.logging import setup_logger
 from ..utils.pathing import find_project_root
 
 
@@ -25,7 +25,7 @@ class DocxTemplateManager:
         """
         self.config = config
         self.project_root = project_root or self._find_project_root()
-        self.logger = get_logger(self.__class__.__name__)
+        self.logger = setup_logger(self.__class__.__name__)
         self.template_config = self._load_template_config()
         self.style_mappings = self._load_style_mappings()
 
