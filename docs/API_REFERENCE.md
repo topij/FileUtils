@@ -18,6 +18,11 @@
 - Typed enums for directories
   - `InputType` and `OutputArea` can be passed anywhere a directory type is accepted; strings still work.
 
+- File system operations (v0.8.3+)
+  - `FileUtils.file_exists(file_path, input_type=None, sub_path=None, root_level=False) -> bool`: Check if a file exists. Never raises exceptions.
+  - `FileUtils.list_directory(directory_path=None, input_type=None, sub_path=None, pattern=None, root_level=False, files_only=False, directories_only=False) -> List[str]`: List files and directories. Never raises exceptions.
+  - `FileUtils.create_directory(directory_path, input_type=None, sub_path=None, exist_ok=True, root_level=False, parent_dir=None) -> str`: Enhanced directory creation with new signature while maintaining backward compatibility.
+
 ## Deprecations
 
 - Passing `file_format=` to `BaseStorage.save_dataframes` is deprecated and ignored if it disagrees with the path suffix.
@@ -463,25 +468,151 @@ get_data_path(data_type: str = "raw") -> Path
 
 - Path object for the specified directory.
 
-##### `create_directory`
+##### `file_exists`
 
-Create a new directory within the configured structure.
+Check if a file exists in storage. This method never raises exceptions - it returns `False` on any error.
 
 ```python
-create_directory(
-    directory_name: str,
-    parent_dir: str = "data"
-) -> Path
+file_exists(
+    file_path: str,
+    input_type: str = None,
+    sub_path: str = None,
+    root_level: bool = False
+) -> bool
 ```
 
 **Parameters:**
 
-- `directory_name`: Name of the directory to create.
-- `parent_dir`: Parent directory name.
+- `file_path`: Path to file (relative to input_type/sub_path or absolute).
+- `input_type`: Type of input directory (e.g., "raw", "config", "processed", "templates").
+- `sub_path`: Optional subdirectory path relative to input_type directory.
+- `root_level`: If True, input_type is a directory at project root level. If False (default), input_type is under the data directory.
 
 **Returns:**
 
-- Path to the created directory.
+- `bool`: True if file exists, False otherwise. Never raises exceptions.
+
+**Examples:**
+
+```python
+# Check config file
+exists = file_utils.file_exists("ACME.config-defaults.yml", input_type="config", sub_path="ACME")
+
+# Check template file (root level)
+exists = file_utils.file_exists("ADP-template_ADM.pptx", input_type="templates", sub_path="ADM", root_level=True)
+
+# Check absolute path
+exists = file_utils.file_exists("/absolute/path/to/file.yml")
+```
+
+##### `list_directory`
+
+List files and directories in a storage path. This method never raises exceptions - it returns an empty list on any error.
+
+```python
+list_directory(
+    directory_path: str = None,
+    input_type: str = None,
+    sub_path: str = None,
+    pattern: str = None,
+    root_level: bool = False,
+    files_only: bool = False,
+    directories_only: bool = False
+) -> List[str]
+```
+
+**Parameters:**
+
+- `directory_path`: Path to directory (relative to input_type/sub_path or absolute). If None and input_type provided, lists input_type directory.
+- `input_type`: Type of input directory (e.g., "raw", "config", "processed", "templates").
+- `sub_path`: Optional subdirectory path relative to input_type directory.
+- `pattern`: Optional glob pattern to filter results (e.g., "*.yml", "*.pptx", "ACME.*").
+- `root_level`: If True, input_type is a directory at project root level. If False (default), input_type is under the data directory.
+- `files_only`: If True, return only files (exclude directories).
+- `directories_only`: If True, return only directories (exclude files).
+
+**Returns:**
+
+- `List[str]`: List of file/directory names in the directory (not full paths). Returns empty list if directory doesn't exist or on error.
+
+**Examples:**
+
+```python
+# List all config files for a customer
+config_files = file_utils.list_directory(
+    input_type="config", 
+    sub_path="ACME", 
+    pattern="*.yml"
+)
+
+# List templates in customer directory (root level)
+templates = file_utils.list_directory(
+    input_type="templates", 
+    sub_path="ADM", 
+    root_level=True, 
+    pattern="*.pptx"
+)
+
+# List all files in a directory
+files = file_utils.list_directory("/absolute/path/to/dir", files_only=True)
+
+# List only directories
+dirs = file_utils.list_directory(input_type="raw", directories_only=True)
+```
+
+##### `create_directory`
+
+Create a directory in storage. Supports both new signature and legacy signature for backward compatibility.
+
+```python
+create_directory(
+    directory_path: str = None,
+    input_type: str = None,
+    sub_path: str = None,
+    exist_ok: bool = True,
+    root_level: bool = False,
+    parent_dir: str = None  # Legacy parameter
+) -> str
+```
+
+**Parameters:**
+
+- `directory_path`: Path to directory (relative to input_type/sub_path or absolute). For backward compatibility, can also be called as positional first argument.
+- `input_type`: Type of directory (e.g., "processed", "logs", "charts").
+- `sub_path`: Optional subdirectory path.
+- `exist_ok`: If True, don't raise error if directory exists (default: True).
+- `root_level`: If True, input_type is a directory at project root level. If False (default), input_type is under the data directory.
+- `parent_dir`: Legacy parameter - parent directory (use input_type/sub_path instead).
+
+**Returns:**
+
+- `str`: Path to created directory.
+
+**Raises:**
+
+- `StorageError`: If directory creation fails (and exist_ok=False if exists).
+- `ValueError`: If invalid parent directory (legacy mode).
+
+**Examples:**
+
+```python
+# New signature: Create chart directory in run folder
+dir_path = file_utils.create_directory(
+    "charts", 
+    input_type="processed", 
+    sub_path="presentations/ACME/run123"
+)
+
+# Create directory at root level
+dir_path = file_utils.create_directory(
+    "output", 
+    input_type="reports", 
+    root_level=True
+)
+
+# Legacy usage (still supported)
+dir_path = file_utils.create_directory("features", parent_dir="data")
+```
 
 ##### `get_config`
 

@@ -273,27 +273,54 @@ class FileUtils:
         path.mkdir(parents=True, exist_ok=True)
         return path
 
-    def create_directory(self, directory_name: str, parent_dir: str = None) -> Path:
-        """Create a new directory within the configured directory structure.
+    def create_directory(
+        self,
+        directory_path: str = None,
+        input_type: str = None,
+        sub_path: str = None,
+        exist_ok: bool = True,
+        root_level: bool = False,
+        parent_dir: str = None,  # Legacy parameter for backward compatibility
+    ) -> str:
+        """Create a directory in storage.
 
         Args:
-            directory_name: Name of the new directory to create
-            parent_dir: Parent directory under project root. If None, uses configured data directory.
+            directory_path: Path to directory (relative to input_type/sub_path or absolute).
+                           For backward compatibility, can also be called as positional first argument.
+            input_type: Type of directory (e.g., "processed", "logs", "charts")
+            sub_path: Optional subdirectory path
+            exist_ok: If True, don't raise error if directory exists (default: True)
+            root_level: If True, input_type is a directory at project root level.
+                       If False (default), input_type is under the data directory.
+            parent_dir: Legacy parameter - parent directory (use input_type/sub_path instead)
 
         Returns:
-            Path: Path to the created directory
+            str: Path to created directory
 
         Raises:
-            ValueError: If parent_dir is not in configured directory structure
-            StorageError: If directory creation fails
+            StorageError: If directory creation fails (and exist_ok=False if exists)
+
+        Examples:
+            # Create chart directory in run folder
+            fu.create_directory("charts", input_type="processed", sub_path="presentations/ACME/run123")
+
+            # Create directory at root level
+            fu.create_directory("output", input_type="reports", root_level=True)
+
+            # Legacy usage (still supported)
+            fu.create_directory("features", parent_dir="data")
         """
         try:
-            if parent_dir is None:
-                # Use configured data directory
-                dir_config = self._get_directory_config()
-                parent_dir = dir_config["data_directory"]
-            else:
-                # Validate parent directory exists in config (legacy support)
+            if directory_path is None:
+                raise ValueError("directory_path must be provided")
+
+            if parent_dir is not None:
+                # Legacy mode: parent_dir is at project root level
+                # Map parent_dir to input_type with root_level=True
+                if input_type is None:
+                    input_type = parent_dir
+                    root_level = True  # Legacy parent_dir is at root level
+                # Check if parent_dir is in configured structure (legacy validation)
                 if (
                     "directory_structure" in self.config
                     and parent_dir not in self.config["directory_structure"]
@@ -304,29 +331,70 @@ class FileUtils:
                         f"Must be one of: {', '.join(valid_parents)}"
                     )
 
-            # Create new directory path
-            new_dir = self.project_root / parent_dir / directory_name
+            # Determine the directory path
+            if Path(directory_path).is_absolute():
+                # Absolute path
+                target_dir = Path(directory_path)
+            else:
+                # Relative path - construct using input_type/sub_path
+                if input_type is None:
+                    # Legacy behavior: if parent_dir was None, use data directory
+                    # Otherwise, assume relative to project root
+                    if parent_dir is None:
+                        # Legacy: default to data directory
+                        dir_config = self._get_directory_config()
+                        target_dir = self.project_root / dir_config["data_directory"] / directory_path
+                    else:
+                        # New behavior: relative to project root
+                        target_dir = self.project_root / directory_path
+                else:
+                    base_dir = self._get_base_path(input_type, root_level=root_level)
+                    if sub_path:
+                        safe_sub_path = (
+                            Path(sub_path).relative_to(Path(sub_path).anchor)
+                            if Path(sub_path).is_absolute()
+                            else Path(sub_path)
+                        )
+                        target_dir = base_dir / safe_sub_path / directory_path
+                    else:
+                        target_dir = base_dir / directory_path
 
             # Create directory
-            new_dir.mkdir(parents=True, exist_ok=True)
+            target_dir.mkdir(parents=True, exist_ok=exist_ok)
 
-            # Add to config structure if not exists (legacy support)
-            if (
-                "directory_structure" in self.config
-                and directory_name
-                not in self.config["directory_structure"].get(parent_dir, [])
-            ):
-                if parent_dir not in self.config["directory_structure"]:
-                    self.config["directory_structure"][parent_dir] = []
-                self.config["directory_structure"][parent_dir].append(directory_name)
+            # Legacy: Add to config structure if not exists (for backward compatibility)
+            # This handles both explicit parent_dir and implicit data directory
+            if directory_path:
+                dir_name_to_add = Path(directory_path).name
+                # Determine which parent directory to use for config update
+                config_parent_dir = parent_dir
+                if config_parent_dir is None and input_type is None:
+                    # Legacy: default to data directory
+                    dir_config = self._get_directory_config()
+                    config_parent_dir = dir_config["data_directory"]
+                
+                if config_parent_dir is not None:
+                    if (
+                        "directory_structure" in self.config
+                        and dir_name_to_add
+                        not in self.config["directory_structure"].get(config_parent_dir, [])
+                    ):
+                        if config_parent_dir not in self.config["directory_structure"]:
+                            self.config["directory_structure"][config_parent_dir] = []
+                        self.config["directory_structure"][config_parent_dir].append(
+                            dir_name_to_add
+                        )
 
-            self.logger.info(f"Created directory: {new_dir}")
-            return new_dir
+            self.logger.info(f"Created directory: {target_dir}")
+            return str(target_dir)
 
         except Exception as e:
+            # Preserve ValueError and FileExistsError (when exist_ok=False)
             if isinstance(e, ValueError):
                 raise
-            self.logger.error(f"Failed to create directory {directory_name}: {e}")
+            if isinstance(e, FileExistsError) and not exist_ok:
+                raise
+            self.logger.error(f"Failed to create directory {directory_path}: {e}")
             raise StorageError(f"Failed to create directory: {e}") from e
 
     def save_data_to_storage(
@@ -1438,6 +1506,169 @@ class FileUtils:
             raise StorageError(
                 f"Failed to convert CSV files to Excel workbook: {e}"
             ) from e
+
+    def file_exists(
+        self,
+        file_path: str,
+        input_type: str = None,
+        sub_path: str = None,
+        root_level: bool = False,
+    ) -> bool:
+        """Check if a file exists in storage.
+
+        Args:
+            file_path: Path to file (relative to input_type/sub_path or absolute)
+            input_type: Type of input directory (e.g., "raw", "config", "processed", "templates")
+            sub_path: Optional subdirectory path relative to input_type directory
+            root_level: If True, input_type is a directory at project root level.
+                       If False (default), input_type is under the data directory.
+
+        Returns:
+            bool: True if file exists, False otherwise. Never raises exceptions.
+
+        Examples:
+            # Check config file
+            fu.file_exists("ACME.config-defaults.yml", input_type="config", sub_path="ACME")
+
+            # Check template file (root level)
+            fu.file_exists("ADP-template_ADM.pptx", input_type="templates", sub_path="ADM", root_level=True)
+
+            # Check absolute path
+            fu.file_exists("/absolute/path/to/file.yml")
+        """
+        try:
+            # Handle Azure paths
+            if str(file_path).startswith("azure://"):
+                if sub_path:
+                    # Can't use sub_path with absolute Azure path
+                    return False
+                return self.storage.exists(file_path)
+
+            # Handle absolute paths
+            if Path(file_path).is_absolute():
+                return self.storage.exists(file_path)
+
+            # Construct path using input_type/sub_path
+            if input_type is None:
+                # If no input_type, assume relative to project root
+                full_path = self.project_root / file_path
+            else:
+                base_dir = self._get_base_path(input_type, root_level=root_level)
+                file_path_obj = Path(file_path)
+
+                if sub_path:
+                    # Ensure sub_path is relative
+                    safe_sub_path = (
+                        Path(sub_path).relative_to(Path(sub_path).anchor)
+                        if Path(sub_path).is_absolute()
+                        else Path(sub_path)
+                    )
+                    full_path = base_dir / safe_sub_path / file_path_obj
+                else:
+                    full_path = base_dir / file_path_obj
+
+            return self.storage.exists(full_path)
+        except Exception:
+            # Return False on any error (per requirements)
+            return False
+
+    def list_directory(
+        self,
+        directory_path: str = None,
+        input_type: str = None,
+        sub_path: str = None,
+        pattern: str = None,
+        root_level: bool = False,
+        files_only: bool = False,
+        directories_only: bool = False,
+    ) -> List[str]:
+        """List files and directories in a storage path.
+
+        Args:
+            directory_path: Path to directory (relative to input_type/sub_path or absolute).
+                            If None and input_type provided, lists input_type directory.
+            input_type: Type of input directory (e.g., "raw", "config", "processed", "templates")
+            sub_path: Optional subdirectory path relative to input_type directory
+            pattern: Optional glob pattern to filter results (e.g., "*.yml", "*.pptx", "ACME.*")
+            root_level: If True, input_type is a directory at project root level.
+                       If False (default), input_type is under the data directory.
+            files_only: If True, return only files (exclude directories)
+            directories_only: If True, return only directories (exclude files)
+
+        Returns:
+            List[str]: List of file/directory names in the directory (not full paths).
+                      Returns empty list if directory doesn't exist or on error.
+
+        Examples:
+            # List all config files for a customer
+            fu.list_directory(input_type="config", sub_path="ACME", pattern="*.yml")
+
+            # List templates in customer directory (root level)
+            fu.list_directory(input_type="templates", sub_path="ADM", root_level=True, pattern="*.pptx")
+
+            # List all files in a directory
+            fu.list_directory("/absolute/path/to/dir", files_only=True)
+        """
+        try:
+            # Handle Azure paths
+            if directory_path and str(directory_path).startswith("azure://"):
+                if sub_path:
+                    # Can't use sub_path with absolute Azure path
+                    return []
+                return self.storage.list_directory(
+                    directory_path,
+                    pattern=pattern,
+                    files_only=files_only,
+                    directories_only=directories_only,
+                )
+
+            # Determine the directory to list
+            if directory_path is None:
+                # If no directory_path but input_type provided, list input_type directory
+                if input_type is None:
+                    return []
+                base_dir = self._get_base_path(input_type, root_level=root_level)
+                if sub_path:
+                    safe_sub_path = (
+                        Path(sub_path).relative_to(Path(sub_path).anchor)
+                        if Path(sub_path).is_absolute()
+                        else Path(sub_path)
+                    )
+                    target_dir = base_dir / safe_sub_path
+                else:
+                    target_dir = base_dir
+            else:
+                # Handle absolute paths
+                if Path(directory_path).is_absolute():
+                    target_dir = Path(directory_path)
+                else:
+                    # Relative path - construct using input_type/sub_path
+                    if input_type is None:
+                        # Assume relative to project root
+                        target_dir = self.project_root / directory_path
+                    else:
+                        base_dir = self._get_base_path(
+                            input_type, root_level=root_level
+                        )
+                        if sub_path:
+                            safe_sub_path = (
+                                Path(sub_path).relative_to(Path(sub_path).anchor)
+                                if Path(sub_path).is_absolute()
+                                else Path(sub_path)
+                            )
+                            target_dir = base_dir / safe_sub_path / directory_path
+                        else:
+                            target_dir = base_dir / directory_path
+
+            return self.storage.list_directory(
+                target_dir,
+                pattern=pattern,
+                files_only=files_only,
+                directories_only=directories_only,
+            )
+        except Exception:
+            # Return empty list on any error (per requirements)
+            return []
 
     def open_run(
         self,

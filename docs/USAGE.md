@@ -84,6 +84,98 @@ multi_loaded = file_utils.load_multiple_files(
 )
 ```
 
+## File System Operations
+
+### Checking file existence
+
+The `file_exists()` method provides a safe way to check if files exist without raising exceptions:
+
+```python
+# Check if a config file exists
+if file_utils.file_exists("ACME.config-defaults.yml", input_type="config", sub_path="ACME"):
+    config = file_utils.load_yaml("ACME.config-defaults.yml", input_type="config", sub_path="ACME")
+
+# Check template file at root level
+if file_utils.file_exists("template.pptx", input_type="templates", sub_path="ADM", root_level=True):
+    template = file_utils.load_document_from_storage("template.pptx", input_type="templates", sub_path="ADM", root_level=True)
+
+# Check absolute path
+if file_utils.file_exists("/absolute/path/to/file.yml"):
+    data = file_utils.load_yaml("/absolute/path/to/file.yml")
+```
+
+**Note**: `file_exists()` never raises exceptions - it returns `False` on any error (file not found, permission errors, etc.).
+
+### Listing directories
+
+The `list_directory()` method allows you to scan directories and filter results:
+
+```python
+# List all config files for a customer
+config_files = file_utils.list_directory(
+    input_type="config", 
+    sub_path="ACME", 
+    pattern="*.yml"
+)
+# Returns: ["ACME.config-defaults.yml", "ACME.settings.yml", ...]
+
+# List templates in customer directory (root level)
+templates = file_utils.list_directory(
+    input_type="templates", 
+    sub_path="ADM", 
+    root_level=True, 
+    pattern="*.pptx"
+)
+# Returns: ["ADP-template_ADM.pptx", "report-template_ADM.pptx", ...]
+
+# List only files (exclude directories)
+files = file_utils.list_directory(
+    input_type="raw", 
+    files_only=True
+)
+
+# List only directories
+dirs = file_utils.list_directory(
+    input_type="raw", 
+    directories_only=True
+)
+
+# List using absolute path
+items = file_utils.list_directory("/absolute/path/to/dir", pattern="*.csv")
+```
+
+**Note**: `list_directory()` never raises exceptions - it returns an empty list on any error.
+
+### Enhanced directory creation
+
+The `create_directory()` method now supports more flexible directory creation:
+
+```python
+# Create directory with new signature
+dir_path = file_utils.create_directory(
+    "charts", 
+    input_type="processed", 
+    sub_path="presentations/ACME/run123"
+)
+
+# Create directory at root level
+dir_path = file_utils.create_directory(
+    "output", 
+    input_type="reports", 
+    root_level=True
+)
+
+# Create nested directories (parent directories created automatically)
+dir_path = file_utils.create_directory(
+    "level3",
+    input_type="processed",
+    sub_path="level1/level2"
+)
+
+# Legacy usage still works
+dir_path = file_utils.create_directory("features", parent_dir="data")
+```
+
 ## New conveniences
 
 ### Saving bytes (artifacts)

@@ -872,3 +872,59 @@ class LocalStorage(BaseStorage):
             return str(path)
         except Exception as e:
             raise StorageOperationError(f"Failed to save YAML file: {e}") from e
+
+    def list_directory(
+        self,
+        directory_path: Union[str, Path],
+        pattern: Optional[str] = None,
+        files_only: bool = False,
+        directories_only: bool = False,
+    ) -> list:
+        """List files and directories in a local filesystem path.
+
+        Args:
+            directory_path: Path to directory
+            pattern: Optional glob pattern to filter results (e.g., "*.yml", "*.pptx")
+            files_only: If True, return only files (exclude directories)
+            directories_only: If True, return only directories (exclude files)
+
+        Returns:
+            List[str]: List of file/directory names (not full paths).
+                     Returns empty list if directory doesn't exist or on error.
+        """
+        try:
+            path = Path(directory_path)
+            if not path.exists() or not path.is_dir():
+                return []
+
+            # Get all items
+            items = []
+            if pattern:
+                # Use glob pattern matching
+                import fnmatch
+
+                for item in path.iterdir():
+                    if fnmatch.fnmatch(item.name, pattern):
+                        items.append(item)
+            else:
+                items = list(path.iterdir())
+
+            # Filter by type
+            result = []
+            for item in items:
+                # Skip hidden files/directories
+                if item.name.startswith("."):
+                    continue
+
+                if files_only and not item.is_file():
+                    continue
+                if directories_only and not item.is_dir():
+                    continue
+
+                # Return just the name (not full path)
+                result.append(item.name)
+
+            return sorted(result)
+        except Exception:
+            # Return empty list on any error (per requirements)
+            return []

@@ -292,3 +292,25 @@ class BaseStorage(ABC):
     def save_bytes(self, content: bytes, file_path: Union[str, Path]) -> str:
         """Save raw bytes to storage at the given path."""
         pass
+
+    @abstractmethod
+    def list_directory(
+        self,
+        directory_path: Union[str, Path],
+        pattern: Optional[str] = None,
+        files_only: bool = False,
+        directories_only: bool = False,
+    ) -> list:
+        """List files and directories in a storage path.
+
+        Args:
+            directory_path: Path to directory
+            pattern: Optional glob pattern to filter results (e.g., "*.yml", "*.pptx")
+            files_only: If True, return only files (exclude directories)
+            directories_only: If True, return only directories (exclude files)
+
+        Returns:
+            List[str]: List of file/directory names (not full paths).
+                     Returns empty list if directory doesn't exist or on error.
+        """
+        pass

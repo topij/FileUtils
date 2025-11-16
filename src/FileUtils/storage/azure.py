@@ -579,3 +579,98 @@ class AzureStorage(BaseStorage):
             raise StorageOperationError(
                 f"Failed to load document from Azure: {e}"
             ) from e
+
+    def list_directory(
+        self,
+        directory_path: Union[str, Path],
+        pattern: Optional[str] = None,
+        files_only: bool = False,
+        directories_only: bool = False,
+    ) -> list:
+        """List files and directories in Azure Blob Storage.
+
+        Args:
+            directory_path: Path to directory (azure:// URL or blob prefix)
+            pattern: Optional glob pattern to filter results (e.g., "*.yml", "*.pptx")
+            files_only: If True, return only files (exclude directories)
+            directories_only: If True, return only directories (exclude files)
+
+        Returns:
+            List[str]: List of file/directory names (not full paths).
+                     Returns empty list if directory doesn't exist or on error.
+        """
+        try:
+            import fnmatch
+
+            # Handle Azure paths
+            if str(directory_path).startswith("azure://"):
+                container_name, blob_prefix = self._parse_azure_url(
+                    str(directory_path)
+                )
+                # Ensure prefix ends with / if it's a directory
+                if blob_prefix and not blob_prefix.endswith("/"):
+                    blob_prefix += "/"
+            else:
+                # Assume it's a blob prefix within default container
+                container_name = self.config["azure"]["container_mapping"].get(
+                    "default", "data"
+                )
+                blob_prefix = str(directory_path)
+                if blob_prefix and not blob_prefix.endswith("/"):
+                    blob_prefix += "/"
+
+            container_client = self.client.get_container_client(container_name)
+
+            # List blobs with the prefix
+            items = []
+            seen_dirs = set()
+            seen_files = set()
+
+            for blob in container_client.list_blobs(name_starts_with=blob_prefix):
+                # Remove the prefix to get relative path
+                relative_path = blob.name[len(blob_prefix) :] if blob_prefix else blob.name
+
+                # Skip empty names
+                if not relative_path:
+                    continue
+
+                # Check if this is a "directory" (blob name ending with /) or a file
+                if relative_path.endswith("/"):
+                    # This is a directory marker
+                    dir_name = relative_path.rstrip("/")
+                    if "/" not in dir_name:  # Only top-level directories
+                        if dir_name not in seen_dirs:
+                            seen_dirs.add(dir_name)
+                            if not files_only:
+                                items.append(("dir", dir_name))
+                else:
+                    # This is a file
+                    # Check if it's directly under the prefix (not in a subdirectory)
+                    if "/" not in relative_path:
+                        file_name = relative_path
+                        if file_name not in seen_files:
+                            seen_files.add(file_name)
+                            if not directories_only:
+                                items.append(("file", file_name))
+
+            # Apply pattern filtering if provided
+            if pattern:
+                filtered_items = []
+                for item_type, item_name in items:
+                    if fnmatch.fnmatch(item_name, pattern):
+                        filtered_items.append((item_type, item_name))
+                items = filtered_items
+
+            # Filter by type
+            result = []
+            for item_type, item_name in items:
+                if files_only and item_type != "file":
+                    continue
+                if directories_only and item_type != "dir":
+                    continue
+                result.append(item_name)
+
+            return sorted(result)
+        except Exception:
+            # Return empty list on any error (per requirements)
+            return []

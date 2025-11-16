@@ -220,16 +220,18 @@ def test_create_directory(file_utils):
     """Test directory creation."""
     # Create directory under data
     new_dir = file_utils.create_directory("features")
-    assert new_dir.exists()
-    assert new_dir.is_dir()
-    assert new_dir == file_utils.project_root / "data" / "features"
+    new_dir_path = Path(new_dir)  # Now returns string, convert to Path for assertions
+    assert new_dir_path.exists()
+    assert new_dir_path.is_dir()
+    assert new_dir_path == file_utils.project_root / "data" / "features"
     assert "features" in file_utils.config["directory_structure"]["data"]
 
     # Create directory under reports
     reports_dir = file_utils.create_directory("monthly", parent_dir="reports")
-    assert reports_dir.exists()
-    assert reports_dir.is_dir()
-    assert reports_dir == file_utils.project_root / "reports" / "monthly"
+    reports_dir_path = Path(reports_dir)  # Now returns string, convert to Path for assertions
+    assert reports_dir_path.exists()
+    assert reports_dir_path.is_dir()
+    assert reports_dir_path == file_utils.project_root / "reports" / "monthly"
     assert "monthly" in file_utils.config["directory_structure"]["reports"]
 
 
@@ -246,7 +248,7 @@ def test_create_directory_exists(file_utils):
     dir1 = file_utils.create_directory("test_dir")
     dir2 = file_utils.create_directory("test_dir")
     assert dir1 == dir2
-    assert dir1.exists()
+    assert Path(dir1).exists()
 
 
 def test_save_yaml_dataframe_records(file_utils, sample_df):
@@ -1453,15 +1455,17 @@ def test_configurable_directory_create_directory(temp_dir):
 
     # Test creating directory with default parent (should use configured data directory)
     custom_dir = file_utils.create_directory("ai_plans")
+    custom_dir_path = Path(custom_dir)  # Now returns string, convert to Path
 
-    assert "documents/ai_plans" in str(custom_dir).replace("\\", "/")
-    assert custom_dir.exists()
+    assert "documents/ai_plans" in str(custom_dir_path).replace("\\", "/")
+    assert custom_dir_path.exists()
 
     # Test creating directory with explicit parent
     custom_dir2 = file_utils.create_directory("reports", parent_dir="documents")
+    custom_dir2_path = Path(custom_dir2)  # Now returns string, convert to Path
 
-    assert "documents/reports" in str(custom_dir2).replace("\\", "/")
-    assert custom_dir2.exists()
+    assert "documents/reports" in str(custom_dir2_path).replace("\\", "/")
+    assert custom_dir2_path.exists()
 
 
 def test_configurable_directory_backward_compatibility(file_utils, sample_df):

@@ -38,6 +38,13 @@ A Python utility package for consistent file operations across local and Azure s
 - Helper: `FileUtils.open_run(prefix, customer) -> (sub_path, run_id)`
 - Deprecations: `save_dataframes(file_format=...)`, `utils.common.get_logger`, `FileUtils._get_default_config()`
 
+### New in v0.8.3
+
+- **File System Operations**: 
+  - `file_exists()`: Check if files exist without raising exceptions
+  - `list_directory()`: List files and directories with pattern filtering
+  - Enhanced `create_directory()`: More flexible directory creation with new signature (backward compatible)
+
 ## Installation
 
 <!-- Choose the installation option that best suits your needs:
@@ -146,6 +153,25 @@ doc = file_utils.load_document_from_storage("readme.md", input_type=InputType.RA
 # Standardize run folders
 sub_path, run_id = file_utils.open_run(sub_path_prefix="presentations", customer="ACME")
 print(sub_path, run_id)
+
+# File system operations (v0.8.3+)
+# Check if file exists (never raises exceptions)
+if file_utils.file_exists("config.yml", input_type="config", sub_path="ACME"):
+    config = file_utils.load_yaml("config.yml", input_type="config", sub_path="ACME")
+
+# List files in directory with pattern filtering
+config_files = file_utils.list_directory(
+    input_type="config", 
+    sub_path="ACME", 
+    pattern="*.yml"
+)
+
+# Enhanced directory creation
+dir_path = file_utils.create_directory(
+    "charts", 
+    input_type="processed", 
+    sub_path="presentations/ACME/run123"
+)
 ```
 
 ## Document Handling
