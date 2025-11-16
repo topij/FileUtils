@@ -625,7 +625,7 @@ class AzureStorage(BaseStorage):
             for blob in container_client.list_blobs(name_starts_with=blob_prefix):
                 # Remove the prefix to get relative path
                 relative_path = (
-                    blob.name[len(blob_prefix):] if blob_prefix else blob.name
+                    blob.name[len(blob_prefix) :] if blob_prefix else blob.name
                 )
 
                 # Skip empty names

@@ -228,7 +228,9 @@ def test_create_directory(file_utils):
 
     # Create directory under reports
     reports_dir = file_utils.create_directory("monthly", parent_dir="reports")
-    reports_dir_path = Path(reports_dir)  # Now returns string, convert to Path for assertions
+    reports_dir_path = Path(
+        reports_dir
+    )  # Now returns string, convert to Path for assertions
     assert reports_dir_path.exists()
     assert reports_dir_path.is_dir()
     assert reports_dir_path == file_utils.project_root / "reports" / "monthly"
