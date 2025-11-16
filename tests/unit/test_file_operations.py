@@ -3,10 +3,8 @@
 import os
 from pathlib import Path
 
-import pandas as pd
 import pytest
 
-from FileUtils import FileUtils
 from FileUtils.core.base import StorageError
 from FileUtils.core.enums import OutputFileType
 
@@ -71,7 +69,9 @@ class TestFileExists:
 
         # Check that file exists
         assert (
-            file_utils.file_exists("test_config.yml", input_type="config", root_level=True)
+            file_utils.file_exists(
+                "test_config.yml", input_type="config", root_level=True
+            )
             is True
         )
 
@@ -134,9 +134,7 @@ class TestListDirectory:
         (test_dir / "file3.txt").write_text("test3")
 
         # List directory
-        items = file_utils.list_directory(
-            directory_path="test_list", input_type="raw"
-        )
+        items = file_utils.list_directory(directory_path="test_list", input_type="raw")
 
         assert len(items) == 3
         assert "file1.csv" in items
@@ -399,4 +397,3 @@ class TestEnhancedCreateDirectory:
         assert "config/environments/production/nested" in dir_path.replace("\\", "/")
         # Should be at root level, not under data
         assert "/data/config" not in dir_path.replace("\\", "/")
-

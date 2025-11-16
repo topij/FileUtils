@@ -1,7 +1,5 @@
 """Azure Blob Storage implementation."""
 
-import csv
-import io
 import json
 import tempfile
 import warnings
@@ -604,9 +602,7 @@ class AzureStorage(BaseStorage):
 
             # Handle Azure paths
             if str(directory_path).startswith("azure://"):
-                container_name, blob_prefix = self._parse_azure_url(
-                    str(directory_path)
-                )
+                container_name, blob_prefix = self._parse_azure_url(str(directory_path))
                 # Ensure prefix ends with / if it's a directory
                 if blob_prefix and not blob_prefix.endswith("/"):
                     blob_prefix += "/"
@@ -628,7 +624,9 @@ class AzureStorage(BaseStorage):
 
             for blob in container_client.list_blobs(name_starts_with=blob_prefix):
                 # Remove the prefix to get relative path
-                relative_path = blob.name[len(blob_prefix) :] if blob_prefix else blob.name
+                relative_path = (
+                    blob.name[len(blob_prefix):] if blob_prefix else blob.name
+                )
 
                 # Skip empty names
                 if not relative_path:

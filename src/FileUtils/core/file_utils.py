@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
-import yaml
 
 from ..config import get_default_config, load_config, validate_config
 from ..core.base import StorageError
@@ -343,7 +342,11 @@ class FileUtils:
                     if parent_dir is None:
                         # Legacy: default to data directory
                         dir_config = self._get_directory_config()
-                        target_dir = self.project_root / dir_config["data_directory"] / directory_path
+                        target_dir = (
+                            self.project_root
+                            / dir_config["data_directory"]
+                            / directory_path
+                        )
                     else:
                         # New behavior: relative to project root
                         target_dir = self.project_root / directory_path
@@ -372,12 +375,14 @@ class FileUtils:
                     # Legacy: default to data directory
                     dir_config = self._get_directory_config()
                     config_parent_dir = dir_config["data_directory"]
-                
+
                 if config_parent_dir is not None:
                     if (
                         "directory_structure" in self.config
                         and dir_name_to_add
-                        not in self.config["directory_structure"].get(config_parent_dir, [])
+                        not in self.config["directory_structure"].get(
+                            config_parent_dir, []
+                        )
                     ):
                         if config_parent_dir not in self.config["directory_structure"]:
                             self.config["directory_structure"][config_parent_dir] = []

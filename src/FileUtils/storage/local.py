@@ -1,8 +1,6 @@
 """Local filesystem storage implementation."""
 
-import csv
 import json
-import tempfile
 import warnings
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
@@ -376,7 +374,6 @@ class LocalStorage(BaseStorage):
         """Save content to DOCX format using python-docx with template support."""
         try:
             from docx import Document
-            from docx.shared import Inches
         except ImportError:
             raise StorageOperationError(
                 "python-docx not installed. Install with: pip install 'FileUtils[documents]'"
