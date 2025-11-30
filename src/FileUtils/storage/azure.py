@@ -316,7 +316,9 @@ class AzureStorage(BaseStorage):
             if file_info["format"] == "csv":
                 # Download to temp file for CSV inference
                 suffix = ".csv"
-                with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as temp_file:
+                with tempfile.NamedTemporaryFile(
+                    suffix=suffix, delete=False
+                ) as temp_file:
                     temp_path = Path(temp_file.name)
                     try:
                         with open(temp_path, "wb") as data_file:
@@ -451,7 +453,9 @@ class AzureStorage(BaseStorage):
 
                         # For Excel files, return mapping of sheet names to URL
                         azure_url = f"azure://{container_name}/{blob_name}"
-                        return {sheet_name: azure_url for sheet_name in dataframes.keys()}
+                        return {
+                            sheet_name: azure_url for sheet_name in dataframes.keys()
+                        }
                     finally:
                         temp_path.unlink(missing_ok=True)
             else:
