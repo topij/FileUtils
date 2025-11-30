@@ -68,7 +68,7 @@ class FileUtils:
         """
         # Determine effective log level
         import logging
-        
+
         if log_level is not None:
             effective_level = log_level  # Explicit log_level has highest priority
         elif quiet:

@@ -43,14 +43,14 @@ class TestLoggingControl:
         """Test that quiet mode suppresses INFO level logging."""
         with caplog.at_level(logging.INFO):
             fu = FileUtils(project_root=temp_dir, quiet=True)
-            
+
             # Even though we captured at INFO level, the logger should be at CRITICAL
             # So INFO messages should not be logged
             assert fu.logger.level == logging.CRITICAL
-            
+
             # Try to log an INFO message
             fu.logger.info("This should not appear")
-            
+
             # Verify that no INFO messages were actually logged
             info_records = [r for r in caplog.records if r.levelno == logging.INFO]
             assert len(info_records) == 0
@@ -68,7 +68,7 @@ class TestLoggingControl:
         try:
             # Create FileUtils in quiet mode
             fu = FileUtils(project_root=temp_dir, quiet=True)
-            
+
             # Perform operations
             df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
             saved_files, _ = fu.save_data_to_storage(
@@ -78,17 +78,17 @@ class TestLoggingControl:
                 file_name="test_json",
                 include_timestamp=False,
             )
-            
+
             # Output should be clean (no logging)
             output = captured_output.getvalue()
-            
+
             # In quiet mode, there should be no INFO logging output
             # (Though the test itself doesn't print JSON, in real usage
             # the application would print structured output here)
             assert "FileUtils initialized" not in output
             assert "Project root:" not in output
             assert "INFO" not in output
-            
+
         finally:
             sys.stdout = old_stdout
 
@@ -96,12 +96,12 @@ class TestLoggingControl:
         """Test that DEBUG mode shows verbose logging."""
         with caplog.at_level(logging.DEBUG):
             fu = FileUtils(project_root=temp_dir, log_level=logging.DEBUG)
-            
+
             assert fu.logger.level == logging.DEBUG
-            
+
             # Log a debug message
             fu.logger.debug("Debug message")
-            
+
             # Verify debug message was captured
             debug_records = [r for r in caplog.records if r.levelno == logging.DEBUG]
             assert len(debug_records) > 0
@@ -110,17 +110,19 @@ class TestLoggingControl:
         """Test that WARNING level filters out INFO messages."""
         with caplog.at_level(logging.DEBUG):  # Capture all levels
             fu = FileUtils(project_root=temp_dir, log_level=logging.WARNING)
-            
+
             assert fu.logger.level == logging.WARNING
-            
+
             # Try logging at different levels
             fu.logger.info("Info message")
             fu.logger.warning("Warning message")
-            
+
             # Only WARNING and above should be logged
             info_records = [r for r in caplog.records if r.levelno == logging.INFO]
-            warning_records = [r for r in caplog.records if r.levelno == logging.WARNING]
-            
+            warning_records = [
+                r for r in caplog.records if r.levelno == logging.WARNING
+            ]
+
             # INFO should be filtered out
             assert len(info_records) == 0
             # WARNING should be present
@@ -136,11 +138,11 @@ class TestLoggingControl:
         # Test lowercase
         fu1 = FileUtils(project_root=temp_dir, log_level="warning")
         assert fu1.logger.level == logging.WARNING
-        
+
         # Test uppercase
         fu2 = FileUtils(project_root=temp_dir, log_level="WARNING")
         assert fu2.logger.level == logging.WARNING
-        
+
         # Test mixed case
         fu3 = FileUtils(project_root=temp_dir, log_level="Warning")
         assert fu3.logger.level == logging.WARNING
