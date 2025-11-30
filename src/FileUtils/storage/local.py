@@ -218,7 +218,7 @@ class LocalStorage(BaseStorage):
 
     def save_dataframes(
         self,
-        data: Dict[str, pd.DataFrame],
+        dataframes: Dict[str, pd.DataFrame],
         file_path: Union[str, Path],
         file_format: Optional[str] = None,
         **kwargs,
@@ -226,7 +226,7 @@ class LocalStorage(BaseStorage):
         """Save multiple DataFrames to local filesystem.
 
         Args:
-            data: Dictionary of DataFrames to save
+            dataframes: Dictionary of DataFrames to save
             file_path: Path to save to
             file_format: File format to save as
             **kwargs: Additional arguments for saving (e.g., engine for Excel)
@@ -256,7 +256,7 @@ class LocalStorage(BaseStorage):
                 with pd.ExcelWriter(
                     path, engine=kwargs.get("engine", "openpyxl")
                 ) as writer:
-                    for sheet_name, df in data.items():
+                    for sheet_name, df in dataframes.items():
                         # Handle MultiIndex columns by flattening them
                         if isinstance(df.columns, pd.MultiIndex):
                             df_to_save = df.copy()
@@ -275,11 +275,11 @@ class LocalStorage(BaseStorage):
                             writer, sheet_name=sheet_name, index=include_index
                         )
                 # For Excel files, return mapping of sheet names to file path
-                return {sheet_name: str(path) for sheet_name in data.keys()}
+                return {sheet_name: str(path) for sheet_name in dataframes.keys()}
             else:
                 # Save each DataFrame to a separate file
                 saved_files = {}
-                for sheet_name, df in data.items():
+                for sheet_name, df in dataframes.items():
                     # Create unique file name for each sheet
                     sheet_path = path.parent / f"{path.stem}_{sheet_name}.{fmt}"
                     saved_path = self.save_dataframe(df, sheet_path, **kwargs)
@@ -316,16 +316,28 @@ class LocalStorage(BaseStorage):
             path.parent.mkdir(parents=True, exist_ok=True)
 
             if suffix == ".docx":
+                if not isinstance(content, (str, dict)):
+                    raise ValueError("DOCX content must be string or dict")
                 return self._save_docx(content, path, **kwargs)
             elif suffix == ".md":
+                if not isinstance(content, (str, dict)):
+                    raise ValueError("Markdown content must be string or dict")
                 return self._save_markdown(content, path, **kwargs)
             elif suffix == ".pdf":
+                if not isinstance(content, (str, dict)):
+                    raise ValueError("PDF content must be string or dict")
                 return self._save_pdf(content, path, **kwargs)
             elif suffix == ".pptx":
+                if not isinstance(content, (bytes, Path, str)):
+                    raise ValueError("PPTX content must be bytes, Path, or str")
                 return self._save_pptx(content, path, **kwargs)
             elif suffix == ".json":
+                if not isinstance(content, (str, dict)):
+                    raise ValueError("JSON content must be string or dict")
                 return self._save_json(content, path, **kwargs)
             elif suffix in (".yaml", ".yml"):
+                if not isinstance(content, (str, dict)):
+                    raise ValueError("YAML content must be string or dict")
                 return self._save_yaml(content, path, **kwargs)
             else:
                 raise ValueError(f"Unsupported document format: {suffix}")
@@ -433,7 +445,7 @@ class LocalStorage(BaseStorage):
             # Fallback: convert to string
             doc.add_paragraph(str(content))
 
-        doc.save(path)
+        doc.save(str(path))
         return str(path)
 
     def _is_markdown_content(self, content: str) -> bool:
@@ -487,7 +499,7 @@ class LocalStorage(BaseStorage):
             )
 
             # Save document
-            doc.save(path)
+            doc.save(str(path))  # type: ignore
             return str(path)
 
         except ImportError as e:
@@ -503,7 +515,7 @@ class LocalStorage(BaseStorage):
                 ) from e
             doc = Document()
             doc.add_paragraph(markdown_content)
-            doc.save(path)
+            doc.save(str(path))
             return str(path)
         except Exception as e:
             raise StorageOperationError(
@@ -528,7 +540,7 @@ class LocalStorage(BaseStorage):
 
             if template_path and template_path.exists():
                 # Load template
-                doc = Document(template_path)
+                doc = Document(str(template_path))
 
                 # Clear template content
                 self._clear_template_content(doc)
@@ -558,7 +570,7 @@ class LocalStorage(BaseStorage):
                                     for j, cell in enumerate(row):
                                         table.cell(i, j).text = str(cell)
 
-                doc.save(path)
+                doc.save(str(path))
                 return str(path)
             else:
                 # Fallback to default if template not found
@@ -609,7 +621,7 @@ class LocalStorage(BaseStorage):
                 "python-docx not installed. Install with: pip install 'FileUtils[documents]'"
             )
 
-        doc = Document(path)
+        doc = Document(str(path))
         text_content = []
 
         for paragraph in doc.paragraphs:
@@ -680,7 +692,7 @@ class LocalStorage(BaseStorage):
     ) -> str:
         """Save content to PDF format using PyMuPDF."""
         try:
-            import fitz  # PyMuPDF
+            import fitz  # type: ignore # PyMuPDF
         except ImportError:
             raise StorageOperationError(
                 "PyMuPDF not installed. Install with: pip install 'FileUtils[documents]'"
@@ -773,7 +785,7 @@ class LocalStorage(BaseStorage):
     def _load_pdf(self, path: Path, **kwargs) -> str:
         """Load PDF file and extract text content."""
         try:
-            import fitz  # PyMuPDF
+            import fitz  # type: ignore # PyMuPDF
         except ImportError:
             raise StorageOperationError(
                 "PyMuPDF not installed. Install with: pip install 'FileUtils[documents]'"

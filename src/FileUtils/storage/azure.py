@@ -314,7 +314,17 @@ class AzureStorage(BaseStorage):
             blob_client = container_client.get_blob_client(blob_name)
 
             if file_info["format"] == "csv":
-                data[key] = self._load_csv_with_inference(blob_client)
+                # Download to temp file for CSV inference
+                suffix = ".csv"
+                with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as temp_file:
+                    temp_path = Path(temp_file.name)
+                    try:
+                        with open(temp_path, "wb") as data_file:
+                            download_stream = blob_client.download_blob()
+                            data_file.write(download_stream.readall())
+                        data[key] = self._load_csv_with_inference(temp_path)
+                    finally:
+                        temp_path.unlink(missing_ok=True)
             else:
                 data[key] = self.load_dataframe(blob_path)
 
@@ -368,7 +378,7 @@ class AzureStorage(BaseStorage):
 
     def save_dataframes(
         self,
-        data: Dict[str, pd.DataFrame],
+        dataframes: Dict[str, pd.DataFrame],
         file_path: Union[str, Path],
         file_format: Optional[str] = None,
         **kwargs,
@@ -376,7 +386,7 @@ class AzureStorage(BaseStorage):
         """Save multiple DataFrames to Azure Blob Storage.
 
         Args:
-            data: Dictionary of DataFrames to save
+            dataframes: Dictionary of DataFrames to save
             file_path: Path to save to (azure:// URL)
             file_format: File format to save as
             **kwargs: Additional arguments for saving (e.g., engine for Excel)
@@ -409,7 +419,7 @@ class AzureStorage(BaseStorage):
                         with pd.ExcelWriter(
                             temp_path, engine=kwargs.get("engine", "openpyxl")
                         ) as writer:
-                            for sheet_name, df in data.items():
+                            for sheet_name, df in dataframes.items():
                                 # Handle MultiIndex columns by flattening them
                                 if isinstance(df.columns, pd.MultiIndex):
                                     df_to_save = df.copy()
@@ -441,13 +451,13 @@ class AzureStorage(BaseStorage):
 
                         # For Excel files, return mapping of sheet names to URL
                         azure_url = f"azure://{container_name}/{blob_name}"
-                        return {sheet_name: azure_url for sheet_name in data.keys()}
+                        return {sheet_name: azure_url for sheet_name in dataframes.keys()}
                     finally:
                         temp_path.unlink(missing_ok=True)
             else:
                 # Save each DataFrame to a separate file
                 saved_files = {}
-                for sheet_name, df in data.items():
+                for sheet_name, df in dataframes.items():
                     # Create unique blob name for each sheet
                     sheet_blob_name = f"{Path(blob_name).stem}_{sheet_name}.{fmt}"
                     sheet_path = f"azure://{container_name}/{sheet_blob_name}"

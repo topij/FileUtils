@@ -60,7 +60,7 @@ def yaml_to_dataframe(path: Path, encoding: str) -> pd.DataFrame:
 def dataframe_to_json(
     path: Path, df: pd.DataFrame, orient: str = "records", indent: int = 2
 ) -> None:
-    df.to_json(path, orient=orient, indent=indent)
+    df.to_json(str(path), orient=orient, indent=indent)  # type: ignore
 
 
 def dataframe_to_yaml(
@@ -75,7 +75,7 @@ def dataframe_to_yaml(
     sort_keys = yaml_options.pop("sort_keys", False)
 
     if orient == "records":
-        data = df.to_dict(orient="records")
+        data: Any = df.to_dict(orient="records")
     elif orient == "index":
         data = df.to_dict(orient="index")
     else:

@@ -1,11 +1,9 @@
 """Tests for new document file types (DOCX, Markdown, PDF)."""
 
 import os
-import tempfile
 import warnings
 from pathlib import Path
 
-import pandas as pd
 import pytest
 
 # Suppress PyMuPDF deprecation warnings
@@ -15,16 +13,14 @@ warnings.filterwarnings(
 )
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="fitz")
 
-from FileUtils import FileUtils
-from FileUtils.core.base import StorageError
-from FileUtils.core.enums import OutputFileType, StorageType
+from FileUtils.core.enums import OutputFileType  # noqa: E402
 
 
 # Helper to check if PyMuPDF is available
 def _pymupdf_available():
     """Check if PyMuPDF (fitz) is available."""
     try:
-        import fitz  # noqa: F401
+        import fitz  # type: ignore  # noqa: F401
 
         return True
     except ImportError:

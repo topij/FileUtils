@@ -10,21 +10,17 @@ warnings.filterwarnings(
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="fitz")
 
 import csv
-import os
 import sys
 import tempfile
 from pathlib import Path
 
-import pandas as pd
-import pytest
+import pandas as pd  # noqa: E402
+import pytest  # noqa: E402
 
 # Add the src directory to Python path
 pkg_root = str(Path(__file__).parent.parent / "src")
 if pkg_root not in sys.path:
     sys.path.insert(0, pkg_root)
-
-from FileUtils import FileUtils
-from FileUtils.core.enums import StorageType
 
 
 @pytest.fixture

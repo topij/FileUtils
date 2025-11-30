@@ -240,7 +240,9 @@ class FileUtils:
             "templates": templates_dir,
         }
 
-    def get_data_path(self, data_type: Union[str, InputType] = "raw") -> Path:
+    def get_data_path(
+        self, data_type: Union[str, InputType, OutputArea] = "raw"
+    ) -> Path:
         """Get the path for a specific data directory.
 
         Args:
@@ -309,12 +311,12 @@ class FileUtils:
 
     def create_directory(
         self,
-        directory_path: str = None,
-        input_type: str = None,
-        sub_path: str = None,
+        directory_path: Optional[str] = None,
+        input_type: Optional[str] = None,
+        sub_path: Optional[str] = None,
         exist_ok: bool = True,
         root_level: bool = False,
-        parent_dir: str = None,  # Legacy parameter for backward compatibility
+        parent_dir: Optional[str] = None,  # Legacy parameter for backward compatibility
     ) -> str:
         """Create a directory in storage.
 
@@ -448,7 +450,7 @@ class FileUtils:
         root_level: bool = False,
         structured_result: bool = False,
         **kwargs,
-    ) -> Tuple[Dict[str, str], Optional[str]]:
+    ) -> Tuple[Union[Dict[str, str], Dict[str, SaveResult]], Optional[str]]:
         """Save data using configured storage backend.
 
         Args:
@@ -1231,10 +1233,12 @@ class FileUtils:
         root_level: bool = False,
         **kwargs,
     ) -> Tuple[Dict[str, str], str]:
-        """Convert Excel file with multiple worksheets to CSV files while maintaining workbook structure.
+        """Convert Excel file with multiple worksheets to CSV files while maintaining
+        workbook structure.
 
-        This method loads all sheets from an Excel file, converts each sheet to a separate CSV file,
-        and creates a JSON file containing the workbook structure and metadata.
+        This method loads all sheets from an Excel file, converts each sheet to a
+        separate CSV file, and creates a JSON file containing the workbook structure
+        and metadata.
 
         Args:
             excel_file_path: Path to Excel file, relative to input_type/sub_path directory
@@ -1243,8 +1247,8 @@ class FileUtils:
             file_name: Base name for output files (defaults to Excel filename without extension)
             preserve_structure: Whether to create a structure JSON file
             sub_path: Optional subdirectory path relative to input_type directory
-            root_level: If True, input_type and output_type are directories at project root level.
-                       If False (default), they are under the data directory.
+            root_level: If True, input_type and output_type are directories at project
+                       root level. If False (default), they are under the data directory.
             **kwargs: Additional arguments for CSV saving (encoding, delimiter, etc.)
 
         Returns:
@@ -1318,7 +1322,11 @@ class FileUtils:
                 )
 
                 # Get the CSV file path (should be single file)
-                csv_file_path = list(saved_files.values())[0]
+                saved_val = list(saved_files.values())[0]
+                if hasattr(saved_val, "path"):
+                    csv_file_path = saved_val.path  # type: ignore
+                else:
+                    csv_file_path = str(saved_val)
                 csv_files[sheet_name] = csv_file_path
 
                 # Collect sheet metadata for structure file
@@ -1356,7 +1364,10 @@ class FileUtils:
                     sub_path=sub_path,
                     root_level=root_level,
                 )
-                structure_json_path = saved_path
+                if isinstance(saved_path, str):
+                    structure_json_path = saved_path
+                else:
+                    structure_json_path = str(saved_path)
                 self.logger.info(f"Created structure file: {structure_json_path}")
 
             self.logger.info(
@@ -1394,8 +1405,8 @@ class FileUtils:
             output_type: Type of output directory for the Excel workbook
             file_name: Base name for output Excel file (defaults to structure file name)
             sub_path: Optional subdirectory path relative to input_type directory
-            root_level: If True, input_type and output_type are directories at project root level.
-                       If False (default), they are under the data directory.
+            root_level: If True, input_type and output_type are directories at project
+                       root level. If False (default), they are under the data directory.
             **kwargs: Additional arguments for Excel saving (engine, etc.)
 
         Returns:
@@ -1537,7 +1548,7 @@ class FileUtils:
             self.logger.info(
                 f"Successfully reconstructed Excel workbook: {excel_file_path}"
             )
-            return excel_file_path
+            return str(excel_file_path)
 
         except Exception as e:
             if isinstance(e, (ValueError, StorageError)):
@@ -1550,8 +1561,8 @@ class FileUtils:
     def file_exists(
         self,
         file_path: str,
-        input_type: str = None,
-        sub_path: str = None,
+        input_type: Optional[str] = None,
+        sub_path: Optional[str] = None,
         root_level: bool = False,
     ) -> bool:
         """Check if a file exists in storage.
@@ -1614,10 +1625,10 @@ class FileUtils:
 
     def list_directory(
         self,
-        directory_path: str = None,
-        input_type: str = None,
-        sub_path: str = None,
-        pattern: str = None,
+        directory_path: Optional[str] = None,
+        input_type: Optional[str] = None,
+        sub_path: Optional[str] = None,
+        pattern: Optional[str] = None,
         root_level: bool = False,
         files_only: bool = False,
         directories_only: bool = False,

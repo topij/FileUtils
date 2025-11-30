@@ -3,9 +3,6 @@
 import io
 import logging
 import sys
-from pathlib import Path
-
-import pytest
 
 from FileUtils import FileUtils
 
@@ -57,8 +54,9 @@ class TestLoggingControl:
 
     def test_json_output_clean(self, temp_dir):
         """Integration test: verify quiet mode produces clean stdout output."""
-        import json
+
         import pandas as pd
+
         from FileUtils.core.enums import OutputFileType
 
         # Capture stdout
