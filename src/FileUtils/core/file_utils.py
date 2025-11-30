@@ -25,7 +25,8 @@ class FileUtils:
         project_root: Optional[Union[str, Path]] = None,
         config_file: Optional[Union[str, Path]] = None,
         storage_type: Union[str, StorageType] = StorageType.LOCAL,
-        log_level: Optional[str] = None,
+        quiet: bool = False,
+        log_level: Optional[Union[str, int]] = None,
         directory_structure: Optional[Dict[str, Any]] = None,
         config_override: Optional[Dict[str, Any]] = None,
         **kwargs,
@@ -36,13 +37,47 @@ class FileUtils:
             project_root: Root directory for project
             config_file: Path to configuration file
             storage_type: Type of storage backend
-            log_level: Logging level
+            quiet: If True, suppress all logging except CRITICAL errors.
+                   Shorthand for log_level=logging.CRITICAL. Useful for
+                   automation scripts and structured output (JSON/XML).
+            log_level: Logging level (string like "INFO" or logging constant
+                      like logging.INFO). If provided, overrides 'quiet' parameter.
             directory_structure: Optional directory structure override
             config_override: Optional dictionary to override any config values
             **kwargs: Additional arguments for storage backend
+
+        Examples:
+            # Default behavior (INFO level logging)
+            fu = FileUtils()
+
+            # Quiet mode for automation/JSON output
+            fu = FileUtils(quiet=True)
+
+            # Custom log level (string)
+            fu = FileUtils(log_level="WARNING")
+
+            # Custom log level (logging constant)
+            import logging
+            fu = FileUtils(log_level=logging.DEBUG)
+
+            # With storage type
+            fu = FileUtils(storage_type="azure", quiet=True)
+
+        Note:
+            Parameter priority: log_level > quiet > default (INFO)
         """
+        # Determine effective log level
+        import logging
+        
+        if log_level is not None:
+            effective_level = log_level  # Explicit log_level has highest priority
+        elif quiet:
+            effective_level = logging.CRITICAL  # quiet=True suppresses most logging
+        else:
+            effective_level = None  # Use setup_logger default (INFO)
+
         # Set up logging
-        self.logger = setup_logger(__name__, log_level)
+        self.logger = setup_logger(__name__, effective_level)
 
         # Load base configuration
         self.config = self._load_configuration(

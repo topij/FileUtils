@@ -8,7 +8,7 @@ from typing import Optional, Union
 
 def setup_logger(
     name: str,
-    level: Optional[str] = None,
+    level: Optional[Union[str, int]] = None,
     log_file: Optional[Union[str, Path]] = None,
     format_string: Optional[str] = None,
 ) -> logging.Logger:
@@ -16,19 +16,28 @@ def setup_logger(
 
     Args:
         name: Logger name
-        level: Logging level
+        level: Logging level (string like "INFO" or logging constant like logging.INFO)
         log_file: Optional path to log file
         format_string: Optional format string for log messages
 
     Returns:
         Configured logger instance
+
+    Examples:
+        >>> setup_logger("myapp", level="DEBUG")
+        >>> setup_logger("myapp", level=logging.WARNING)
     """
     logger = logging.getLogger(name)
 
-    # Set level (default to INFO if not specified)
+    # Determine effective log level
     if level is None:
-        level = "INFO"
-    logger.setLevel(getattr(logging, level.upper()))
+        effective_level = logging.INFO
+    elif isinstance(level, int):
+        effective_level = level  # Use integer directly
+    else:
+        effective_level = getattr(logging, level.upper())  # Convert string to int
+
+    logger.setLevel(effective_level)
 
     # Set format
     if format_string is None:

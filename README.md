@@ -174,6 +174,35 @@ dir_path = file_utils.create_directory(
 )
 ```
 
+## Logging Control
+
+FileUtils logs operations at INFO level by default. For automation scripts and structured output scenarios (JSON, XML, etc.), you can control logging verbosity:
+
+### Quiet Mode
+```python
+# Suppress all logging except CRITICAL errors
+fu = FileUtils(quiet=True)
+
+# Perfect for JSON output scenarios
+import json
+result = fu.save_data_to_storage(data, output_filetype=OutputFileType.JSON, ...)
+print(json.dumps({"status": "success", "files": result}))
+```
+
+### Custom Log Level
+```python
+import logging
+
+# Show only warnings and errors
+fu = FileUtils(log_level=logging.WARNING)
+
+# Debug mode for development
+fu = FileUtils(log_level=logging.DEBUG)
+
+# Also accepts string levels (backward compatible)
+fu = FileUtils(log_level="WARNING")
+```
+
 ## Document Handling
 
 FileUtils now supports rich document formats perfect for AI/agentic workflows:
